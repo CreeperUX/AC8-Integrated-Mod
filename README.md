@@ -4,7 +4,7 @@
 
 > **如何选择安装？** 使用 **v2.3.0 整合安装包**：运行 `Setup.cmd`，在功能菜单输入 **`2` 并回车＝仅鼠标飞控**，输入 **`1` 并回车＝完整安装（飞控＋导弹强化）**。已经安装过的用户，退出游戏并等待清理完成后运行 `Choose-Features.cmd`，同样输入 `1` 或 `2`，下次启动生效。[详细步骤](docs/INSTALL.md#选择仅鼠标飞控或完整安装)
 >
-> **版本提示：** v2.0.0 等旧安装包没有这个菜单。当前 GitHub Releases 尚未上传预编译安装包；以下操作适用于已打包的 v2.3.0 整合包。GitHub 的 Code → Download ZIP 是源码，安装脚本位于 `package-template/`，源码本身不含运行 DLL。
+> **版本提示：** v2.0.0 等旧安装包没有这个菜单。请在 [v2.3.0 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.0) 下载 `AC8-Integrated-v2.3.0-share.zip`。GitHub 的 Code → Download ZIP 是源码，安装脚本位于 `package-template/`，源码本身不含运行 DLL。
 
 ## 项目基础与致谢
 
@@ -38,7 +38,7 @@
 
 ## 快速开始
 
-1. 使用 v2.3.0 整合安装包（公开发布后可从 Releases 下载），完整解压到**游戏目录之外**。GitHub 的 Source code ZIP 是源码，不是可运行安装包。
+1. 从 [v2.3.0 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.0) 下载整合安装包，完整解压到**游戏目录之外**。GitHub 的 Source code ZIP 是源码，不是可运行安装包。
 2. 正常退出游戏；使用过旧包时，先等待旧控制台完成清理。
 3. 运行 `Setup.cmd`，输入 Steam「管理 → 浏览本地文件」打开的游戏根目录；功能菜单输入 **`2` 仅鼠标飞控**，或 **`1` 完整安装**，按回车确认。
 4. 将生成的 `Steam-Launch-Option.txt` 整行复制到 Steam 的游戏启动选项。
