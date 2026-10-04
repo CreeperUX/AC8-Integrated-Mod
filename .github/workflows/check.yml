@@ -25,3 +25,5 @@ jobs:
         shell: powershell
       - run: .\tests\Test-Cleanup.ps1
         shell: powershell
+      - run: .\tests\Test-InstallUX.ps1
+        shell: powershell

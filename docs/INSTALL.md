@@ -2,11 +2,11 @@
 
 ## 选择仅鼠标飞控或完整安装
 
-**此功能从 v2.3.0 整合包开始提供。v2.0.0 等旧包没有 `Choose-Features.cmd`，需要先换用新版。**请从 [v2.3.2 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.2) 下载 `AC8-Integrated-v2.3.2-share.zip`。源码 ZIP 中的 `package-template` 是构建模板，缺少运行 DLL，不能直接当作安装包启动。
+**此功能从 v2.3.0 整合包开始提供。v2.0.0 等旧包没有 `Choose-Features.cmd`，需要先换用新版。**请从 [v2.3.3 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.3) 下载 `AC8-Integrated-v2.3.3-share.zip`。源码 ZIP 中的 `package-template` 是构建模板，缺少运行 DLL，不能直接当作安装包启动。
 
 ### 首次安装
 
-1. 完整解压 v2.3.2 安装包到游戏目录之外。
+1. 完整解压 v2.3.3 安装包到游戏目录之外。
 2. 双击包根目录的 **`Setup.cmd`**，输入游戏目录。
 3. 出现以下功能菜单时，输入 **`2`** 选择仅鼠标飞控，或输入 **`1`** 选择完整安装，再按回车：
 
@@ -38,9 +38,11 @@ Choose 1 or 2 (Enter keeps 1):
 
 ## 第一次使用
 
-从 [v2.3.2 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.2) 下载 `AC8-Integrated-v2.3.2-share.zip`，解压到例如 `D:\Mods\AC8-Integrated`。不要直接从 ZIP 运行，也不要放进游戏目录。
+从 [v2.3.3 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.3) 下载 `AC8-Integrated-v2.3.3-share.zip`，解压到例如 `D:\Mods\AC8-Integrated`。不要直接从 ZIP 运行，也不要放进游戏目录。
 
-运行 `Setup.cmd`。它会验证游戏 EXE、定位 Steam、询问安装内容，并在包内生成路径文件和 `Steam-Launch-Option.txt`。Setup 不修改游戏文件、Steam 设置或存档。
+运行 `Setup.cmd`。它接受游戏根目录、`Game\Binaries\Win64` 目录或 `AceCombat8.exe` 的完整路径，并显示自动识别出的游戏根目录；输入错误可以重试，输入 `Q` 取消。路径可带引号、中文和空格。
+
+Setup 会验证游戏 EXE、定位 Steam、询问安装内容，并在包内生成路径文件和 `Steam-Launch-Option.txt`。它会创建并移除一个临时文件检查目录可写性；发现历史加载器时会先列出文件，只有输入 `RECOVER` 确认归属后才调用备份清理。Steam 启动选项仍需手动粘贴，存档不会被 Setup 修改。
 
 将生成的一整行粘贴到 Steam → 游戏属性 → 通用 → 启动选项。形式如下，使用你自己生成的实际路径：
 
@@ -90,11 +92,27 @@ F10 重载的是游戏目录中**本次运行副本**，并会恢复该副本的
 
 需要恢复原版时，退出并清理，然后移除本包的 Steam 启动选项。F8 只关鼠标辅助，不能代替卸载全部 Mod。
 
-`Existing loader conflict` 表示已有加载器：先核实来源。属于旧包时使用那个旧包的 `Cleanup-Offline.cmd`，不要直接删除来源不明的 `ue4ss` 目录。
+v2.3.3 的 Setup 和 Steam 启动入口会列出已有加载器，并提供输入 `RECOVER` 后备份清理的入口。只有确认这些文件属于本整合包时才继续，直接回车取消。未知 DLL、其他 Mod 和无法确认归属的目录仍会保留。旧版本的 `Existing loader conflict` 可使用 [独立历史清理工具](CLEANUP.md) 处理。
 
 如果旧清理命令提示 `No active candidate session` 但仍有残留，或因 `ue4ss` 已删除而无法清掉 DLL，请使用独立 [历史残留清理工具](CLEANUP.md)。完整解压到游戏目录之外，关闭游戏，运行 `Recover-Cleanup.cmd` 并输入游戏根目录；确认残留属于本整合包后输入 `RECOVER`。工具先备份并校验，再处理可确认归属的残留。未知文件或其他 Mod 会被保留并报错。旧 ZIP 不会自动获得新清理逻辑。
 
 ## 可选分析
 
-普通游玩不需要 Python。自动离线报告需要 Python 和 NumPy。缺少分析依赖时不会阻止游戏清理。`sessions` 中含日志、试飞数据和个人存档备份，**不要直接转发**。分享干净 Release ZIP 即可。
+普通游玩不需要 Python。自动离线报告需要 Python 和 NumPy。v2.3.3 会先检查可选依赖，缺少时仅显示一行说明；分析失败的详细输出写入本次会话的 `analysis-output.txt`，不在启动窗口刷堆栈。`sessions` 中含日志、试飞数据和个人存档备份，**不要直接转发**。分享干净 Release ZIP 即可。
 
+
+## 常见报错与处理
+
+| 情况 | v2.3.3 的处理 |
+|---|---|
+| 输入了 Win64 或 EXE 路径 | 自动识别游戏根目录，不再重复拼接路径 |
+| 整合包解压在游戏内部 | 给出当前包位置和搬移示例；请把整个整合包移到例如 `D:\Mods\AC8-Integrated`，再运行 Setup |
+| 旧加载器残留 | 列出项目；确认后进入备份校验清理，可取消 |
+| `dwmapi.dll` 写入被拒绝 | 先显示失败阶段和文件路径，提示检查只读属性、目录权限及安全软件保护历史，然后报告清理结果 |
+| 缺少 NumPy/Python | 跳过可选分析，不影响普通游玩 |
+| 尚无本地存档目录 | 按首次运行处理，不因不存在的存档目录阻断部署 |
+| v2.3.1 第一行命令错误 | 换用新版；所有发布 PowerShell 脚本检查 BOM 与实际执行 |
+
+**目录可写性检查不能保证 DLL 不被单独拦截。** 程序不能自动修复外部权限策略或安全软件规则，也不会关闭防护。应根据实际报错检查对应文件，而非盲目以管理员身份重试。
+
+常用 CMD 入口会显示简短错误和下一步说明，详细诊断写入包内 `diagnostics`。启动失败时会先报告主因，再执行清理；清理完成不等于游戏启动成功。诊断包含本机路径，分享前可遮去用户名等个人信息。

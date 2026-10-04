@@ -1,5 +1,5 @@
 @echo off
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Recover-Cleanup.ps1" -Interactive
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Run-Console.ps1" -Action Recover
 set "AC8_RESULT=%errorlevel%"
 pause
 exit /b %AC8_RESULT%

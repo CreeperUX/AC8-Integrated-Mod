@@ -15,6 +15,7 @@ def build(output):
     output.mkdir(parents=True)
     for name in ('Cleanup-Core.ps1', 'Recover-Cleanup.ps1', 'Recover-Cleanup.cmd'):
         shutil.copy2(REPO / 'package-template' / name, output / name)
+    (output / 'Recover-Cleanup.cmd').write_bytes(b'@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Recover-Cleanup.ps1" -Interactive\r\nset "AC8_RESULT=%errorlevel%"\r\npause\r\nexit /b %AC8_RESULT%\r\n')
     shutil.copy2(REPO / 'docs/CLEANUP.md', output / 'README.md')
     shutil.copy2(REPO / 'LICENSE', output / 'LICENSE')
     files = sorted(output.iterdir())

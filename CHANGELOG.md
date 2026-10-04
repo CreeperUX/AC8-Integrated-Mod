@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.3 — installation and startup experience
+
+- Accepts the game root, Win64 folder or AceCombat8.exe path with Chinese/space/quoted paths and retryable input.
+- Adds Chinese console guidance, local diagnostic logs and retained nonzero failure codes across CMD entrypoints.
+- Integrates confirmed historical residual recovery and directory write probes; unknown loaders remain protected.
+- Reports deployment failures before cleanup, keeps the primary failure if cleanup also fails, and skips optional analysis on failed deployment.
+- Treats Python/NumPy as optional, captures analysis errors to a session log, and tolerates a first run without a saves directory.
+- Includes the cleanup 1.0.0 fixes in the full package. Retains the exact v2.3.2 native DLL and payload; no flight-control or missile changes.
+
 ## Cleanup tool 1.0.0 — historical loader recovery
 
 - Adds a standalone cleaner for historical package-state loss and partial cleanup; no controller or missile changes.

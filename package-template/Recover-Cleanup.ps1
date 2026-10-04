@@ -1,8 +1,9 @@
-param([string]$GameRoot,[switch]$RecoverHistorical,[switch]$CheckOnly,[switch]$Interactive)
+﻿param([string]$GameRoot,[switch]$RecoverHistorical,[switch]$CheckOnly,[switch]$Interactive)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Cleanup-Core.ps1')
 if(!$GameRoot -and (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'game-path.txt'))){$GameRoot=(Get-Content -LiteralPath (Join-Path $PSScriptRoot 'game-path.txt') -Raw -Encoding UTF8).Trim()}
 if(!$GameRoot){$GameRoot=(Read-Host 'Paste the AC8 game root from Steam > Manage > Browse local files').Trim().Trim('"')}
+if(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'Install-Common.ps1')){. (Join-Path $PSScriptRoot 'Install-Common.ps1');$GameRoot=Resolve-AC8GameRoot $GameRoot}
 $statePath=Join-Path $PSScriptRoot 'active-session.json'
 $state=$null
 if(Test-Path -LiteralPath $statePath){$state=Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json}

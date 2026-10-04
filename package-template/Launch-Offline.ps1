@@ -1,9 +1,11 @@
 ﻿param([switch]$CleanupOnly,[switch]$CheckOnly)
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
+. (Join-Path $root 'Install-Common.ps1')
 if(!$CleanupOnly){& (Join-Path $root 'Check-Package.ps1') -PackageRoot $root}
 $gameRoot=([string](Get-Content -LiteralPath (Join-Path $root 'game-path.txt') -Raw -Encoding UTF8)).Trim()
-if(!$gameRoot){throw 'Run Setup.cmd first.'}
+$gameRoot=Resolve-AC8GameRoot $gameRoot
+Assert-AC8PackageLocation $root $gameRoot
 $w64=[IO.Path]::GetFullPath((Join-Path $gameRoot 'Game/Binaries/Win64'))
 $exe=Join-Path $w64 'AceCombat8.exe'
 $statePath=Join-Path $root 'active-session.json'
@@ -11,11 +13,12 @@ $statePath=Join-Path $root 'active-session.json'
 $expectedHash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'
 function Get-SaveHashes {
  $save=Join-Path $env:LOCALAPPDATA 'BANDAI NAMCO Entertainment/ACE COMBAT 8/Saved/SaveGames'
+ if(!(Test-Path -LiteralPath $save)){return @()}
  @(Get-ChildItem -LiteralPath $save -File | ForEach-Object {
   [pscustomobject]@{Name=$_.Name;SHA256=(Get-FileHash -LiteralPath $_.FullName).Hash}
  })
 }
-function Cleanup-Owned($state) {
+function Cleanup-Owned($state,[bool]$Analyze=$true) {
  $archive=Invoke-AC8Cleanup -GameRoot $gameRoot -BackupRoot (Join-Path $root 'cleanup-backups') -State $state
  if(!$archive){$archive=Join-Path $root ('cleanup-backups/completed-'+[guid]::NewGuid().ToString('N'));New-Item -ItemType Directory -Path $archive -Force | Out-Null}
  Move-Item -LiteralPath $statePath -Destination (Join-Path $archive 'completed-session.json')
@@ -30,11 +33,8 @@ function Cleanup-Owned($state) {
   }
   $after=Get-SaveHashes
   ConvertTo-Json -InputObject $after | Set-Content -LiteralPath (Join-Path $state.Results 'save-hashes-after.json') -Encoding UTF8
-  if(Get-Command python.exe -ErrorAction SilentlyContinue){
-   & python.exe -X utf8 (Join-Path $root 'tools/analyze_experiment.py') --session $state.Results
-   if($LASTEXITCODE -ne 0){Write-Host 'Analysis failed; verified cleanup backup retained.'}
-  }
- }catch{Write-Host ('Optional diagnostics skipped after successful cleanup: '+$_.Exception.Message)}
+  if($Analyze){Invoke-AC8OptionalAnalysis $root $state.Results}
+ }catch{Write-Host ('清理已完成，可选诊断未完成：'+$_.Exception.Message)}
 }
 
 if($CleanupOnly){
@@ -44,12 +44,12 @@ if($CleanupOnly){
 }
 $validation=Get-Content -LiteralPath (Join-Path $root 'validation-status.json') -Raw | ConvertFrom-Json
 if($validation.deploymentAllowed -ne $true){throw 'Candidate is gated off. No game files staged. See validation-status.json.'}
-if(Test-Path -LiteralPath $statePath){throw 'Previous candidate session needs cleanup. Close game and run Cleanup-Offline.cmd.'}
+if(Test-Path -LiteralPath $statePath){Stop-AC8Problem 'OLD_SESSION' '上一次运行尚未完成清理。' '正常关闭游戏后运行 Cleanup-Offline.cmd，再从 Steam 或 Start.cmd 启动。'}
 if(Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue){throw 'Game is already running.'}
 if(!(Get-Process -Name steam -ErrorAction SilentlyContinue)){throw 'Start Steam first.'}
 if(!(Test-Path -LiteralPath $exe) -or (Get-FileHash -LiteralPath $exe).Hash -ne $expectedHash){throw 'Game build mismatch. This candidate supports build 25201480 only.'}
 foreach($n in 'dwmapi.dll','ue4ss','steam_appid.txt'){
- if(Test-Path -LiteralPath (Join-Path $w64 $n)){throw "Existing loader conflict: $n. Nothing overwritten."}
+ if(Test-Path -LiteralPath (Join-Path $w64 $n)){Stop-AC8Problem 'LOADER_CONFLICT' "检测到已有加载器：$n" '请从 Steam 或 Start.cmd 进入恢复流程，或运行 Recover-Cleanup.cmd 核对归属后清理。'}
 }
 $payloadRoot=[IO.Path]::GetFullPath((Join-Path $root 'payload'))
 $manifest=Get-Content -LiteralPath (Join-Path $root 'payload-manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -61,13 +61,15 @@ foreach($entry in $manifest){
  if(!(Test-Path -LiteralPath $file) -or (Get-FileHash -LiteralPath $file).Hash -ne $entry.SHA256){throw 'Payload hash verification failed.'}
 }
 if($CheckOnly){Write-Host 'LAUNCH PREFLIGHT passed. No files staged and no game started.';exit 0}
+Assert-AC8WriteAccess $root
+Assert-AC8WriteAccess $w64
 $id=[guid]::NewGuid().ToString()
 $results=Join-Path $root ('sessions/'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'-'+$id.Substring(0,8))
 New-Item -ItemType Directory -Path $results -Force | Out-Null
 $saveRoot=Join-Path $env:LOCALAPPDATA 'BANDAI NAMCO Entertainment/ACE COMBAT 8/Saved/SaveGames'
 $saveBackup=Join-Path $results 'SaveGames-before'
 New-Item -ItemType Directory -Path $saveBackup -Force | Out-Null
-Get-ChildItem -LiteralPath $saveRoot -File | ForEach-Object {Copy-Item -LiteralPath $_.FullName -Destination $saveBackup}
+if(Test-Path -LiteralPath $saveRoot){Get-ChildItem -LiteralPath $saveRoot -File | ForEach-Object {Copy-Item -LiteralPath $_.FullName -Destination $saveBackup}}
 $before=Get-SaveHashes
 ConvertTo-Json -InputObject $before | Set-Content -LiteralPath (Join-Path $results 'save-hashes-before.json') -Encoding UTF8
 foreach($saveFile in $before){if((Get-FileHash -LiteralPath (Join-Path $saveBackup $saveFile.Name)).Hash -ne $saveFile.SHA256){throw 'Save backup verification failed.'}}
@@ -84,19 +86,23 @@ try{$appidHash=[BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::ASCII.
 $planned=@([pscustomobject]@{Name='dwmapi.dll';SHA256=(Get-FileHash -LiteralPath (Join-Path $payload 'dwmapi.dll')).Hash},[pscustomobject]@{Name='steam_appid.txt';SHA256=$appidHash})
 $state=[pscustomobject]@{Id=$id;Win64=$w64;Results=$results;Files=$planned;PID=$null}
 Write-AC8Json $state $statePath
+$launchFailure=$null
+$stage='准备加载器'
 try {
  New-Item -ItemType Directory -Path (Join-Path $w64 'ue4ss') | Out-Null
  Set-Content -LiteralPath (Join-Path $w64 'ue4ss/AC8SourceInit-owner.txt') -Value $id -Encoding ASCII
  Install-SelectedUE4SS (Join-Path $payload 'ue4ss') (Join-Path $w64 'ue4ss') $features
  Apply-MouseSettings $mouseSettings (Join-Path $w64 'ue4ss/Mods/AC8MouseAim')
+ $stage="写入加载器 $(Join-Path $w64 'dwmapi.dll')"
  Copy-Item -LiteralPath (Join-Path $payload 'dwmapi.dll') -Destination $w64
  Write-AC8Json $state $statePath
  Set-Content -LiteralPath (Join-Path $w64 'steam_appid.txt') -Value '2288340' -Encoding ASCII
  Write-AC8Json $state $statePath
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
- Write-Host 'AC8 2.3.2 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
+ Write-Host 'AC8 2.3.3 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
  Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F10 reload mouse settings; hold C for free look.'
  if($features.MissileEnhancement){Write-Host 'FEATURES: mouse flight + missile enhancement/cosmetics.'}else{Write-Host 'FEATURES: mouse flight only. Missile module is not installed.'}
+ $stage='启动游戏'
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru
  $state.PID=$game.Id
  Write-AC8Json $state $statePath
@@ -120,10 +126,16 @@ try {
   Write-Host '[EXITED] Game ended before source initialization readiness. Log will be preserved.'
  }
  $game.WaitForExit()
+ }catch{
+ $launchFailure=$_
+ Show-AC8Problem $launchFailure $root $stage
+ throw
 } finally {
  if(!(Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue)){
-  Cleanup-Owned (Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json)
- }else{Write-Host 'Game still active; staged files retained. Close normally, then run Cleanup-Offline.cmd.'}
+  try{
+   Cleanup-Owned (Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json) -Analyze:(!$launchFailure)
+  }catch{
+   if($launchFailure){Show-AC8Problem $_ $root '后续清理'}else{throw}
+  }
+ }else{Write-Host '游戏仍在运行，已保留加载器。正常退出后运行 Cleanup-Offline.cmd。'}
 }
-
-

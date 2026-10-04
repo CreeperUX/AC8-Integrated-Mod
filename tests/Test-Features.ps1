@@ -1,4 +1,4 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $repo=Split-Path $PSScriptRoot -Parent
 $template=Join-Path $repo 'package-template'
 . (Join-Path $template 'Feature-Settings.ps1')
@@ -33,7 +33,10 @@ Get-ChildItem -LiteralPath $template -Filter *.ps1 -Recurse | ForEach-Object {
 if($errorsAll.Count){throw 'PowerShell syntax validation failed'}
 Copy-Item -LiteralPath (Join-Path $template 'Choose-Features.ps1'),(Join-Path $template 'Feature-Settings.ps1') -Destination $tempRoot
 function Get-Process { [CmdletBinding()] param([string]$Name) if($global:AC8TestRunning){[pscustomobject]@{Id=1}} }
-function Read-Host { param([string]$Prompt) return $global:AC8TestChoice }
+function Read-Host { param([string]$Prompt)
+ if($global:AC8TestChoice -eq 'bad'){$global:AC8TestChoice='Q';return 'bad'}
+ return $global:AC8TestChoice
+}
 $global:AC8TestRunning=$false
 foreach($choice in @('2','1')){
  $global:AC8TestChoice=$choice;& (Join-Path $tempRoot 'Choose-Features.ps1')

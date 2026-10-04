@@ -1,4 +1,4 @@
-function Read-FeatureSettings([string]$Path) {
+﻿function Read-FeatureSettings([string]$Path) {
  $enabled=$true
  if(Test-Path -LiteralPath $Path){
   foreach($line in Get-Content -LiteralPath $Path){

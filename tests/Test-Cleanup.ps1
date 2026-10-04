@@ -1,4 +1,6 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
+# All filesystem operations below target isolated fixtures, independent of real game processes.
+function Get-Process {param($Name,$ErrorAction) return $null}
 $repo=Split-Path $PSScriptRoot -Parent
 . (Join-Path $repo 'package-template/Cleanup-Core.ps1')
 $runtime=Get-Content -LiteralPath (Join-Path $repo 'runtime-dependencies.json') -Raw | ConvertFrom-Json
@@ -73,7 +75,7 @@ $f=New-Fixture 'interrupted-removal'
 $null=Invoke-AC8Cleanup $f.Game $f.Backup $f.State;Assert-Clean $f;Pass 'retry after DLL and directory already removed'
 $f=New-Fixture 'missing-saves';$package=Join-Path (Split-Path $f.Game -Parent) 'package'
 New-Item -ItemType Directory -Path $package | Out-Null
-foreach($n in 'Launch-Offline.ps1','Cleanup-Core.ps1'){Copy-Item -LiteralPath (Join-Path $repo ('package-template/'+$n)) -Destination $package}
+foreach($n in 'Launch-Offline.ps1','Cleanup-Core.ps1','Install-Common.ps1'){Copy-Item -LiteralPath (Join-Path $repo ('package-template/'+$n)) -Destination $package}
 Set-Content -LiteralPath (Join-Path $package 'game-path.txt') -Value $f.Game -Encoding UTF8
 $f.State | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $package 'active-session.json') -Encoding UTF8
 $before=$env:LOCALAPPDATA

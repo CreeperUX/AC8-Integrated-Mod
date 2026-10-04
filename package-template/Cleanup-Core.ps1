@@ -1,4 +1,4 @@
-# Shared by the session launcher and the standalone historical recovery tool.
+﻿# Shared by the session launcher and the standalone historical recovery tool.
 $AC8LoaderHash='CF440B9EB8643BB7C434ACFDA696AEE57FD981D185DCA5E57FB8DBB18F8FC1CD'
 function Write-AC8Json($Value,[string]$Path) {
  $Value | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath ($Path+'.tmp') -Encoding UTF8

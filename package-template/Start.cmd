@@ -1,3 +1,5 @@
 @echo off
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Launch-AC8-via-Steam.ps1"
-if errorlevel 1 pause
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Run-Console.ps1" -Action Start
+set "AC8_RESULT=%errorlevel%"
+if not "%AC8_RESULT%"=="0" pause
+exit /b %AC8_RESULT%
