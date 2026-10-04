@@ -107,7 +107,7 @@ try {
  $state.Files+= [pscustomobject]@{Name='steam_appid.txt';SHA256=(Get-FileHash -LiteralPath (Join-Path $w64 'steam_appid.txt')).Hash}
  $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $statePath -Encoding UTF8
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
- Write-Host 'AC8 2.3.1 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
+ Write-Host 'AC8 2.3.2 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
  Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F10 reload mouse settings; hold C for free look.'
  if($features.MissileEnhancement){Write-Host 'FEATURES: mouse flight + missile enhancement/cosmetics.'}else{Write-Host 'FEATURES: mouse flight only. Missile module is not installed.'}
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru

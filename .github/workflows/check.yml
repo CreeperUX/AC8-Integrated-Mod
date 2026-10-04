@@ -16,6 +16,7 @@ jobs:
         shell: cmd
       - run: python -X utf8 tests/test_visuals.py
       - run: python -X utf8 tests/test_integration.py
+      - run: python -X utf8 tests/test_observation.py
       - run: .\tests\Test-Features.ps1
         shell: powershell
       - run: .\tests\Test-Package.ps1

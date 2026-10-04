@@ -11,9 +11,13 @@ local camera_native = assert(package.loadlib(directory .. "ac8_mouse_aim_010.dll
 local release_native = assert(package.loadlib(directory .. "ac8_mouse_aim_010.dll", "ac8_mouseaim_release"))
 local perf_native = assert(package.loadlib(directory .. "ac8_mouse_aim_010.dll", "ac8_mouseaim_perf"))
 local shadow_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_observe"))
+local control_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_control_observe"))
+local observation = dofile(directory .. "observation.lua")
 local shadow_next=0
 local shadow_sim_seconds=0
-local shadow_failed=false
+local shadow_retry=0
+local control_identity=nil
+local observation_notice_time=0
 local current_address = nil
 local startup_address, startup_time = nil, 0
 local next_search = 0
@@ -144,6 +148,8 @@ else
                 aim_camera.restore()
                 release_native()
                 current_address=nil
+                control_identity=nil
+                shadow_retry=0; shadow_next=0
                 startup_address=incoming_address
                 startup_time=0
             end
@@ -190,20 +196,47 @@ else
             local on,target_pitch,target_yaw=frame_native(address,pitch,yaw,roll,
                 camera_pitch,camera_yaw,camera_roll,fov,ox,oy,oz,paused and 1 or 0,gazing and 1 or 0)
             assert(on~=nil,'Native frame rejected')
-            -- Shadow diagnostics are isolated from the flight-control error path.
-            if on==1 and not shadow_failed then
+            -- Essential metadata is refreshed every game frame, independently of
+            -- the optional recorder and its position/simulation-time validation.
+            if on==1 then
+                local report_time=os.time()
                 local observe_ok,observe_err=pcall(function()
-                    local t=pause_gameplay:GetRealTimeSeconds(pawn)
-                    if t<shadow_next-0.2 or t>shadow_next+0.2 then shadow_next=t end
-                    if t>=shadow_next then
-                        shadow_next=shadow_next+1/30
-                        local v=pawn:GetVelocity()
-                        shadow_native(address,rotation_component(position,'X'),rotation_component(position,'Y'),rotation_component(position,'Z'),
-                            rotation_component(v,'X'),rotation_component(v,'Y'),rotation_component(v,'Z'),
-                            unwrap_number(pawn.InputThrottle)or -999,unwrap_number(pawn.InputBrake)or -999,unwrap_number(pawn.PlaneTypeID)or -1,dt,shadow_sim_seconds,(pawn.bIsInCloud==true or pawn.bIsInSand==true or pawn.bIsInIce==true)and 1 or 0)
+                    if not control_identity then
+                        local raw_id
+                        pcall(function() raw_id=unwrap_number(pawn.PlaneTypeID) end)
+                        local class_name=pawn:GetFullName():match("^([^ ]+)")
+                        control_identity=observation.identity(raw_id,class_name)
+                        if control_identity then
+                            print('[ControlObservation] class='..tostring(class_name)..' raw_id='..tostring(raw_id)..' model_key='..control_identity..'\n')
+                        end
+                    end
+                    local v=pawn:GetVelocity()
+                    local vx,vy,vz=rotation_component(v,'X'),rotation_component(v,'Y'),rotation_component(v,'Z')
+                    local brake=unwrap_number(pawn.InputBrake)or -999
+                    local environment=(pawn.bIsInCloud==true or pawn.bIsInSand==true or pawn.bIsInIce==true)and 1 or 0
+                    local status=control_native(address,vx,vy,vz,brake,control_identity or -1,environment)
+                    assert(status==1,'essential metadata rejected status='..tostring(status))
+                    if report_time>=shadow_retry then
+                        local record_ok,record_err=pcall(function()
+                            local t=pause_gameplay:GetRealTimeSeconds(pawn)
+                            if t<shadow_next-0.2 or t>shadow_next+0.2 then shadow_next=t end
+                            if t>=shadow_next then
+                                shadow_next=shadow_next+1/30
+                                local recorded=shadow_native(address,rotation_component(position,'X'),rotation_component(position,'Y'),rotation_component(position,'Z'),
+                                    vx,vy,vz,unwrap_number(pawn.InputThrottle)or -999,brake,control_identity,dt,shadow_sim_seconds,environment)
+                                assert(recorded==1,'recorder rejected status='..tostring(recorded)..' dt='..tostring(dt))
+                            end
+                        end)
+                        if not record_ok then
+                            shadow_retry=report_time+10
+                            print('[ShadowLab] Recorder retry in 10s; model metadata remains active: '..tostring(record_err)..'\n')
+                        end
                     end
                 end)
-                if not observe_ok then shadow_failed=true;print('[ShadowLab] Recording disabled; normal flight retained: '..tostring(observe_err)..'\n')end
+                if not observe_ok and report_time>=observation_notice_time then
+                    observation_notice_time=report_time+10
+                    print('[ControlObservation] DEGRADED: '..tostring(observe_err)..'\n')
+                end
             end
             local desired_camera
             if gazing then

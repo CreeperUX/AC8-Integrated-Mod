@@ -806,18 +806,33 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_perf(void*) {
     return 0;
 }
 
+#include "control_observation.h"
+extern "C" __declspec(dllexport) int ac8_mouseaim_control_observe(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);double v[7]{};
+    int status=read_numbers(lua,v)?accept_control_observation(v):-1;
+    static int last=0;static uint64_t tick=0;
+    auto now=GetTickCount64();
+    if(last==0||now-tick>=10000){
+        log_line("CONTROL_OBSERVATION status=%d plane=%.0f speed=%.2f",status,v[5],assist_speed.load());last=status;tick=now;
+    }
+    lua.set_number(status);return 1;
+}
 extern "C" __declspec(dllexport) int ac8_mouseaim_observe(lua_State* state){
-    if(!running.load()||!on_bridge_thread()||!active.load()||game_paused.load()||gaze_active.load())return 0;
+    if(!running.load()||!on_bridge_thread())return 0;
     LuaView lua(state);double v[13]{};
-    if(!read_numbers(lua,v)||!live_pointer_number(v[0])||static_cast<uintptr_t>(v[0])!=aircraft.load())return 0;
-    for(int i=1;i<13;++i)if(std::abs(v[i])>1e12)return 0;
-    if(v[9]<-1||v[9]>100000||v[10]<0||v[10]>.25||v[11]<0)return 0;
-    if(v[12]!=0 && v[12]!=1)return 0;
-    assist_speed.store(float(std::sqrt(v[4]*v[4]+v[5]*v[5]+v[6]*v[6])/100));
-    assist_brake.store(float(v[8]));assist_environment_unsafe.store(v[12]!=0 || v[8]<0 || v[8]>1);
-    assist_plane_type.store(int(v[9]));
-    assist_speed_pawn.store(static_cast<uintptr_t>(v[0]));assist_speed_tick.store(GetTickCount64());
-    shadow_capture_state(v);return 0;
+    int status=1;
+    if(!read_numbers(lua,v))status=-1;
+    else if(!active.load()||game_paused.load()||gaze_active.load())status=-2;
+    else if(!live_pointer_number(v[0])||static_cast<uintptr_t>(v[0])!=aircraft.load())status=-3;
+    else {
+        for(int i=1;i<13;++i)if(std::abs(v[i])>1e12)status=-4;
+        if(v[9]<0||v[9]>2147483647.0||v[9]!=std::floor(v[9]))status=-5;
+        if(v[10]<0||v[10]>.25||v[11]<0)status=-6;
+        if(v[12]!=0&&v[12]!=1)status=-7;
+    }
+    if(status==1)shadow_capture_state(v);
+    lua.set_number(status);return 1;
 }
 
 BOOL WINAPI DllMain(HINSTANCE module, DWORD reason, LPVOID) {

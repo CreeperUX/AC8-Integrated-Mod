@@ -1,3 +1,7 @@
+# 2.3.2 (local candidate)
+
+Repair mission-specific A-6E control metadata; isolate model observation from optional recorder failures. Retains the 2.3.1 control law. See docs/V232-OBSERVATION.md. Actual mission acceptance pending.
+
 # Changelog
 
 ## 2.3.1 — startup packaging fix
