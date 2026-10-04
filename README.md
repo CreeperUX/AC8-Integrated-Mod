@@ -2,6 +2,12 @@
 
 为 **ACE COMBAT 8 Steam 版**提供鼠标飞控、在线响应模型学习和可选的导弹强化模块。
 
+## 项目基础与致谢
+
+**本项目基于 [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim) 发展而来。**原项目为 AC8 鼠标飞控的实现提供了重要基础；在此基础上，本项目进一步加入在线模型学习、双档控制切换、GUI 改进及可选导弹模块等功能。
+
+**特别感谢原作者 FletcherMiya 及原项目贡献者的开发与分享。**本仓库保留上游署名和许可说明；这是独立维护的社区衍生项目，不代表原作者对本项目改动的背书。其他参考项目与导弹模块的来源见 [第三方署名与许可](THIRD_PARTY_NOTICES.md)。
+
 鼠标指定世界方向，飞机自动追随；按住 C 自由观察，F4 在稳健与积极两档飞控间切换。**不需要导弹改动时，可以只安装鼠标飞控。**
 
 当前版本：**v2.3.0 预发布**。适配游戏 Build **25201480**、Windows x64。启动器校验游戏文件和固定 UE4SS 运行库；其他游戏构建尚未适配。仅用于离线单人任务，Steam 客户端可保持在线进行云同步。
@@ -72,5 +78,7 @@ LAAM 的 4 发待发是配置目标，全部机型的实际槽位尚未确认。
 本项目继承并修改了 [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim)，并使用 MouseFlight、MinHook、RE-UE4SS 的相关代码。署名和许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## English overview
+
+This project is developed from [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim). Special thanks to FletcherMiya and the upstream contributors for their work and for sharing the original project. This is an independently maintained community derivative; upstream attribution and license notices are preserved.
 
 Mouse-directed flight control with per-aircraft online response identification, runtime Classic/Agile switching, free look and an **optional** missile enhancement module. Windows x64 / Steam build 25201480 / offline single-player only. Download a release package, run `Setup.cmd`, choose features, and paste the generated Steam launch option. F4 selects the control policy; F8 toggles mouse assistance. See the linked documentation for limitations and source builds.

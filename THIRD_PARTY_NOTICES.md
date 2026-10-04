@@ -1,5 +1,13 @@
 # Attribution and licensing
 
+## Project foundation and thanks
+
+**AC8 Integrated Mod is developed from [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim).** We thank FletcherMiya and the upstream contributors for developing and sharing the mouse-flight foundation used by this project. Our online learning, control-policy switching, GUI extensions and optional missile integration build on that foundation.
+
+This repository is independently maintained. Attribution does not imply upstream endorsement of our modifications, and upstream copyright and license notices remain in place.
+
+## Licenses
+
 Original integration code and modifications are provided under the root MIT license. Third-party material keeps its own license and copyright notice.
 
 | Component | Origin / license |
