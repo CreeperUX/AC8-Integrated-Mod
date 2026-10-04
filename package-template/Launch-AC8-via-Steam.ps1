@@ -11,7 +11,12 @@ if(Get-Process AceCombat8 -ErrorAction SilentlyContinue){throw 'Game is already 
 # Read only the app-specific launch setting, never print account/auth data.
 $configured=$false
 $userRoots=Join-Path (Split-Path $steam) 'userdata'
-foreach($user in @(Get-ChildItem -LiteralPath $userRoots -Directory -ErrorAction SilentlyContinue)){
+$users=@(Get-ChildItem -LiteralPath $userRoots -Directory -ErrorAction SilentlyContinue | Where-Object {$_.Name -match '^\d+$' -and $_.Name -ne '0'})
+$activeUser=$null
+try{$value=(Get-ItemProperty -LiteralPath 'HKCU:\Software\Valve\Steam\ActiveProcess' -ErrorAction Stop).ActiveUser;$accountId=([long]$value -band 4294967295);if($accountId -gt 0){$activeUser=[string]$accountId}}catch{}
+if($activeUser){$users=@($users | Where-Object Name -eq $activeUser)}
+elseif($users.Count -gt 1){Stop-AC8Problem 'STEAM_ACCOUNT' 'Cannot verify the active Steam account launch option.' 'Open Steam with the intended account and verify its AC8 launch option; then retry.'}
+foreach($user in $users){
  $file=Join-Path $user.FullName 'config/localconfig.vdf'
  if(!(Test-Path -LiteralPath $file)){continue}
  $text=Get-Content -LiteralPath $file -Raw -Encoding UTF8

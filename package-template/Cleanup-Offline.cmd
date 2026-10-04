@@ -1,5 +1,5 @@
 @echo off
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Run-Console.ps1" -Action Cleanup
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0Run-Console.ps1" -Action Cleanup
 set "AC8_RESULT=%errorlevel%"
 pause
 exit /b %AC8_RESULT%

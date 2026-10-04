@@ -1,4 +1,4 @@
-function Read-FeatureSettings([string]$Path) {
+﻿function Read-FeatureSettings([string]$Path) {
  $mode='full';$seen=$false
  if(Test-Path -LiteralPath $Path){
   foreach($line in Get-Content -LiteralPath $Path){

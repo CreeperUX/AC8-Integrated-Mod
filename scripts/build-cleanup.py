@@ -6,16 +6,16 @@ import shutil
 import zipfile
 
 REPO = Path(__file__).resolve().parents[1]
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 def build(output):
     archive = Path(str(output) + '.zip')
     if output.exists() or archive.exists():
         raise ValueError('Use a fresh output directory')
     output.mkdir(parents=True)
-    for name in ('Cleanup-Core.ps1', 'Recover-Cleanup.ps1', 'Recover-Cleanup.cmd'):
+    for name in ('PowerShell-Compat.ps1', 'Cleanup-Core.ps1', 'Recover-Cleanup.ps1', 'Recover-Cleanup.cmd'):
         shutil.copy2(REPO / 'package-template' / name, output / name)
-    (output / 'Recover-Cleanup.cmd').write_bytes(b'@echo off\r\npowershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Recover-Cleanup.ps1" -Interactive\r\nset "AC8_RESULT=%errorlevel%"\r\npause\r\nexit /b %AC8_RESULT%\r\n')
+    (output / 'Recover-Cleanup.cmd').write_bytes(b'@echo off\r\n"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0Recover-Cleanup.ps1" -Interactive\r\nset "AC8_RESULT=%errorlevel%"\r\npause\r\nexit /b %AC8_RESULT%\r\n')
     shutil.copy2(REPO / 'docs/CLEANUP.md', output / 'README.md')
     shutil.copy2(REPO / 'LICENSE', output / 'LICENSE')
     files = sorted(output.iterdir())

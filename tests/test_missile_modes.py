@@ -16,11 +16,13 @@ assert(config.msl_visuals==(test_mode=='full'))
 assert(#spec.patches==(test_mode=='guidance' and 32 or 375))
 local values,rows,classes={}, {}, {}
 local writes={}
+local failRow,failField,failValue
 for _,p in ipairs(original.patches)do
     if not values[p.row]then
         values[p.row]={};local key=p.row
         rows[key]=setmetatable({IsValid=function()return true end},{__index=values[key],__newindex=function(_,field,v)
             writes[#writes+1]={row=key,field=field};values[key][field]=v
+            if key==failRow and field==failField and v==failValue then failRow=nil;error("injected setter failure after mutation")end
         end})
     end
     values[p.row][p.field]=p.before
@@ -48,6 +50,15 @@ if test_mode=='guidance'then for _,w in ipairs(writes)do assert(w.field=='Homing
 assert(source.apply(false).written==0)
 assert(source.apply(true).ok)
 for _,p in ipairs(original.patches)do assert(values[p.row][p.field]==p.before)end
+local first=spec.patches[1]
+values[first.row][first.field]='unsupported';writes={}
+assert(not source.apply(false).ok and #writes==0)
+values[first.row][first.field]=first.before
+failRow,failField,failValue=first.row,first.field,first.after
+local failed=source.apply(false)
+assert(not failed.ok and #failed.rollbackErrors==0)
+for _,p in ipairs(original.patches)do assert(values[p.row][p.field]==p.before)end
+
 -- Execute the actual initialization entry point. Guidance must not even load
 -- the visual replacement module, including later mission/checkpoint events.
 visual_loads=0
@@ -63,7 +74,7 @@ bootstrap()
 mission_hook({get=function()return {IsValid=function()return true end,GetFullName=function()return 'Mode /Game/Maps/Ingame/Test'end}end})
 assert(visual_loads==(test_mode=='full'and 1 or 0))
 ''')
-    print(f'PASS {mode}: actual source resolver/apply/restore, field isolation, repeated initialization, visual-module loading gate.')
+    print(f'PASS {mode}: actual source resolver/apply/restore, field isolation, unknown-value refusal, post-mutation setter rollback, repeated initialization, visual-module loading gate.')
 lua=LuaRuntime()
 lua.execute("package.preload.config=assert(load(...))",(scripts/'config.lua').read_text())
 lua.execute("package.preload.installation_mode=function()return 'invalid' end; assert(not pcall(require,'config'))")

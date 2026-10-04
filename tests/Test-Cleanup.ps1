@@ -75,7 +75,7 @@ $f=New-Fixture 'interrupted-removal'
 $null=Invoke-AC8Cleanup $f.Game $f.Backup $f.State;Assert-Clean $f;Pass 'retry after DLL and directory already removed'
 $f=New-Fixture 'missing-saves';$package=Join-Path (Split-Path $f.Game -Parent) 'package'
 New-Item -ItemType Directory -Path $package | Out-Null
-foreach($n in 'Launch-Offline.ps1','Cleanup-Core.ps1','Install-Common.ps1'){Copy-Item -LiteralPath (Join-Path $repo ('package-template/'+$n)) -Destination $package}
+foreach($n in 'PowerShell-Compat.ps1','Launch-Offline.ps1','Cleanup-Core.ps1','Install-Common.ps1'){Copy-Item -LiteralPath (Join-Path $repo ('package-template/'+$n)) -Destination $package}
 Set-Content -LiteralPath (Join-Path $package 'game-path.txt') -Value $f.Game -Encoding UTF8
 $f.State | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $package 'active-session.json') -Encoding UTF8
 $before=$env:LOCALAPPDATA
@@ -83,6 +83,8 @@ try{$env:LOCALAPPDATA=Join-Path $root 'nonexistent-saves'; & (Join-Path $package
 Assert-Clean $f
 if(Test-Path -LiteralPath (Join-Path $package 'active-session.json')){throw 'Missing saves kept active state'}
 Pass 'actual launcher cleanup retires state before missing-save diagnostics'
+if(Test-Path -LiteralPath $f.State.Results){throw 'Invalid diagnostics destination was created'}
+Pass 'invalid session diagnostics path is not written'
 # On Windows a junction requires no developer mode or symlink privilege.
 $f=New-Fixture 'junction';$outside=Join-Path $root 'outside';New-Item -ItemType Directory -Path $outside | Out-Null
 Set-Content -LiteralPath (Join-Path $outside 'keep.txt') -Value 'keep'
@@ -107,7 +109,7 @@ try {
  New-Item -ItemType Directory -Path (Join-Path $env:LOCALAPPDATA 'BANDAI NAMCO Entertainment/ACE COMBAT 8/Saved/SaveGames') -Force | Out-Null
  & {
   function Get-Process {param($Name,$ErrorAction) if($Name -eq 'steam'){return [pscustomobject]@{Id=123}}}
-  function Get-FileHash {param($LiteralPath)
+  function Get-AC8FileHash {param($LiteralPath)
    if([IO.Path]::GetFileName($LiteralPath) -eq 'AceCombat8.exe'){return [pscustomobject]@{Hash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'}}
    Microsoft.PowerShell.Utility\Get-FileHash -LiteralPath $LiteralPath
   }

@@ -34,3 +34,8 @@ jobs:
         shell: powershell
       - run: .\tests\Test-Discovery.ps1
         shell: powershell
+
+      - run: .\tests\Test-HostIsolation.ps1
+        shell: powershell
+      - run: .\tests\Test-SteamBridge.ps1
+        shell: powershell

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.4 GUI preview3 — local release audit
+
+- Unifies SHA256 and host/module loading across console, GUI and cleanup.
+- Adds truly read-only session preflight, per-game operation exclusion, manifest uniqueness and archive path guards.
+- Fixes Steam escaping/account validation and surfaces hidden GUI bootstrap failures.
+- Adds environment-isolation and Steam-bridge regressions; see docs/RELEASE-AUDIT-20261004.md for remaining real-game acceptance.
+
 ## 2.3.4-gui-preview.2 / GUI-Test2 — local automatic discovery
 
 - Reads Steam registration and default/multiple-library app manifests to locate AC8 on startup.

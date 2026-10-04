@@ -1,4 +1,5 @@
-﻿# Shared by the session launcher and the standalone historical recovery tool.
+﻿. ([IO.Path]::Combine($PSScriptRoot,'PowerShell-Compat.ps1'))
+# Shared by the session launcher and the standalone historical recovery tool.
 $AC8LoaderHash='CF440B9EB8643BB7C434ACFDA696AEE57FD981D185DCA5E57FB8DBB18F8FC1CD'
 function Write-AC8Json($Value,[string]$Path) {
  $Value | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath ($Path+'.tmp') -Encoding UTF8
@@ -18,10 +19,10 @@ function Assert-AC8NoLinks([string]$Path,[switch]$Tree) {
 function Get-AC8Snapshot([string]$Path) {
  Assert-AC8NoLinks $Path -Tree
  if(Test-Path -LiteralPath $Path -PathType Leaf){
-  return @([pscustomobject]@{Path='';SHA256=(Get-FileHash -LiteralPath $Path).Hash})
+  return @([pscustomobject]@{Path='';SHA256=(Get-AC8FileHash -LiteralPath $Path).Hash})
  }
  $files=@(Get-ChildItem -LiteralPath $Path -File -Recurse -Force | Sort-Object FullName)
- return @($files | ForEach-Object {[pscustomobject]@{Path=$_.FullName.Substring($Path.Length+1);SHA256=(Get-FileHash -LiteralPath $_.FullName).Hash}})
+ return @($files | ForEach-Object {[pscustomobject]@{Path=$_.FullName.Substring($Path.Length+1);SHA256=(Get-AC8FileHash -LiteralPath $_.FullName).Hash}})
 }
 function Assert-AC8Snapshot([string]$Path,$Expected) {
  $actual=@(Get-AC8Snapshot $Path)
@@ -31,6 +32,9 @@ function Invoke-AC8Cleanup {
  param([string]$GameRoot,[string]$BackupRoot,$State,[switch]$RecoverHistorical,[switch]$CheckOnly)
  if(Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue){throw 'Close AC8 normally before cleanup.'}
  $game=[IO.Path]::GetFullPath($GameRoot).TrimEnd('\','/')
+ $operation=$null
+ if(!$CheckOnly){$operation=Enter-AC8Operation $game}
+ try {
  $w64=[IO.Path]::GetFullPath((Join-Path $game 'Game/Binaries/Win64'))
  if(!(Test-Path -LiteralPath (Join-Path $w64 'AceCombat8.exe') -PathType Leaf)){throw 'Select the game root containing Game/Binaries/Win64/AceCombat8.exe.'}
  Assert-AC8NoLinks $w64
@@ -107,4 +111,5 @@ function Invoke-AC8Cleanup {
  $report.Status='complete';Write-AC8Json $report $reportPath
  Write-Host "CLEANUP COMPLETE: all three deployed items are absent. Verified backup: $archive"
  return $archive
+ }finally{Exit-AC8Operation $operation}
 }

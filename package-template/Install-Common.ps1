@@ -1,4 +1,5 @@
-﻿function Stop-AC8Problem([string]$Code,[string]$Message,[string]$Hint) {
+﻿. ([IO.Path]::Combine($PSScriptRoot,'PowerShell-Compat.ps1'))
+function Stop-AC8Problem([string]$Code,[string]$Message,[string]$Hint) {
  $errorObject=New-Object InvalidOperationException($Message)
  $errorObject.Data['AC8Code']=$Code;$errorObject.Data['AC8Hint']=$Hint
  throw $errorObject

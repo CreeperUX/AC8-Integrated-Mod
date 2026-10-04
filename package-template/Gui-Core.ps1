@@ -54,6 +54,7 @@ function Invoke-AC8GuiAction {
  }
  $game=Resolve-AC8GameRoot $GamePath
  Assert-AC8PackageLocation $Root $game
+ Assert-AC8NoLinks $game
  if($Action -eq 'Recover'){
   if(!$ConfirmRecovery){Stop-AC8Problem 'CONFIRM_REQUIRED' '清理尚未确认。' '请先确认这些残留属于本整合包。'}
   & (Join-Path $Root 'Recover-Cleanup.ps1') -GameRoot $game -RecoverHistorical
@@ -61,7 +62,7 @@ function Invoke-AC8GuiAction {
  }
  & (Join-Path $Root 'Check-Package.ps1') -PackageRoot $Root
  $exe=Join-Path $game 'Game/Binaries/Win64/AceCombat8.exe'
- if((Get-FileHash -LiteralPath $exe).Hash -ne '51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'){
+ if((Get-AC8FileHash -LiteralPath $exe).Hash -ne '51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'){
   Stop-AC8Problem 'GAME_BUILD' '游戏版本与本包适配版本不一致。' '本包适配 Build 25201480，请核对游戏版本。'
  }
  $steam=$SteamPath.Trim().Trim('"')

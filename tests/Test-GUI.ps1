@@ -3,7 +3,7 @@ Import-Module Microsoft.PowerShell.Utility
 $repo=Split-Path $PSScriptRoot -Parent;$template=Join-Path $repo 'package-template'
 . (Join-Path $template 'Gui-Core.ps1')
 function Get-Process {param($Name,$ErrorAction) return $null}
-function Get-FileHash {param($LiteralPath)
+function Get-AC8FileHash {param($LiteralPath)
  if([IO.Path]::GetFileName($LiteralPath) -eq 'AceCombat8.exe'){return [pscustomobject]@{Hash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'}}
  Microsoft.PowerShell.Utility\Get-FileHash -LiteralPath $LiteralPath
 }
@@ -113,5 +113,16 @@ Pass 'start action delegates to Steam bridge after matching saved settings'
 & powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $package 'Launcher-GUI.ps1') -SmokeTest
 if($LASTEXITCODE){throw 'Real GUI dispatcher smoke failed'}
 Pass 'real WPF button, disabled busy state and asynchronous error presentation'
+
+# A hidden GUI startup failure must leave a diagnostic and nonzero exit status.
+Rename-Item -LiteralPath (Join-Path $package 'Gui-Core.ps1') -NewName 'Gui-Core.original'
+$oldPreference=$ErrorActionPreference;$ErrorActionPreference='Continue'
+try{$startupOutput=@(& powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $package 'Launcher-GUI.ps1') -NoDialog 2>&1);$startupCode=$LASTEXITCODE}finally{$ErrorActionPreference=$oldPreference}
+Rename-Item -LiteralPath (Join-Path $package 'Gui-Core.original') -NewName 'Gui-Core.ps1'
+if($startupCode -eq 0 -or !@(Get-ChildItem -LiteralPath (Join-Path $package 'diagnostics') -Filter 'gui-startup-*.txt').Count){throw 'Hidden startup failure had no diagnostic'}
+Pass 'hidden GUI bootstrap errors are recorded and return failure'
+
+$global:LASTEXITCODE=0
+
 Write-Host "PASS $count GUI backend scenarios. No real game or Steam settings changed."
 exit 0

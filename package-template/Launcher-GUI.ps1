@@ -1,4 +1,7 @@
-﻿param([switch]$RenderPreview,[string]$PreviewPath,[switch]$SmokeTest,[ValidateSet('dark','light')][string]$Theme='dark')
+﻿param([switch]$RenderPreview,[string]$PreviewPath,[switch]$SmokeTest,[ValidateSet('dark','light')][string]$Theme='dark',[switch]$NoDialog)
+$ErrorActionPreference='Stop'
+try {
+. ([IO.Path]::Combine($PSScriptRoot,'PowerShell-Compat.ps1'))
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System.Windows.Forms
 . (Join-Path $PSScriptRoot 'Gui-Core.ps1')
@@ -200,3 +203,22 @@ if(!$created){[void][Windows.MessageBox]::Show('此整合包的玩家工具已�
 $script:autoDiscoveryStarted=$false
 $window.Add_ContentRendered({if(!$script:autoDiscoveryStarted){$script:autoDiscoveryStarted=$true;Start-AC8GuiWork 'Discover'}})
 try{[void]$window.ShowDialog()}finally{$timer.Stop();$mutex.ReleaseMutex();$mutex.Dispose()}
+
+}catch{
+ $failure=$_;$diagnostic=''
+ try{
+  $dir=[IO.Path]::Combine($PSScriptRoot,'diagnostics');[void][IO.Directory]::CreateDirectory($dir)
+  $diagnostic=[IO.Path]::Combine($dir,('gui-startup-'+[guid]::NewGuid().ToString('N')+'.txt'))
+  [IO.File]::WriteAllText($diagnostic,($failure.ToString()+[Environment]::NewLine+$failure.ScriptStackTrace),[Text.UTF8Encoding]::new($true))
+ }catch{}
+ $message='玩家工具未能启动：'+$failure.Exception.Message
+ if($diagnostic){$message+=[Environment]::NewLine+'诊断文件：'+$diagnostic}
+ [Console]::Error.WriteLine($message)
+ if(!$NoDialog){
+  try{
+   [void][Reflection.Assembly]::Load('PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35')
+   [void][Windows.MessageBox]::Show($message,'AC8 启动失败')
+  }catch{}
+ }
+ exit 1
+}

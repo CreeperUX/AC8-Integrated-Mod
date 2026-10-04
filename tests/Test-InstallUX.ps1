@@ -35,7 +35,7 @@ $fakeSteam=Join-Path $root 'steam.exe';Set-Content -LiteralPath $fakeSteam -Valu
  function Read-Host {param($Prompt) if(!$global:AC8UXAnswers.Count){throw 'Unexpected prompt'};return $global:AC8UXAnswers.Dequeue()}
  function Get-Process {param($Name,$ErrorAction) if($Name -eq 'steam'){return [pscustomobject]@{Path=$fakeSteam}}}
  function Get-ItemProperty {throw 'No registry access in fixture'}
- function Get-FileHash {param($LiteralPath)
+ function Get-AC8FileHash {param($LiteralPath)
   if($LiteralPath -eq $exe){return [pscustomobject]@{Hash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'}}
   Microsoft.PowerShell.Utility\Get-FileHash -LiteralPath $LiteralPath
  }
