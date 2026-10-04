@@ -36,7 +36,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests/Test-Features.ps1
 源码不提交预编译DLL。先下载本仓库已发布的便携包，将其解压到游戏目录以外，取其中 `payload` 作为固定UE4SS运行库输入。构建器只读取清单中两个运行库文件，并校验SHA256；不会读取其中的会话、存档或其它文件。
 
 ```powershell
-python scripts/build-package.py --runtime-root "D:\Mods\AC8-Integrated-v2.3.1-share\payload"
+python scripts/build-package.py --runtime-root "D:\Mods\AC8-Integrated-v2.3.2-share\payload"
 ```
 
 产物在 `dist/`，包含运行DLL、源码、许可证、文档和两种安装选择。`--native-dll` 可指定你构建的原生DLL，`--output` 可指定一个尚不存在的输出目录。这个引导依赖已经发布的运行库包；脚本不会自动寻找或下载未知来源DLL。若需要从上游重建UE4SS，需要维持本项目所用ABI及明确更新运行库哈希，不能直接替换成最新DLL。

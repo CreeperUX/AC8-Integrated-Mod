@@ -12,6 +12,8 @@ def build(runtime_root,native_dll,output):
   if not p.is_file()or sha(p)!=entry['sha256']:raise ValueError(f"Pinned runtime mismatch: {entry['path']}")
  if not native_dll.is_file():raise ValueError('Build native/build.cmd first, or supply --native-dll')
  if output.exists()or Path(str(output)+'.zip').exists():raise ValueError('Output already exists; use a fresh directory')
+ for script in (REPO/'package-template').rglob('*.ps1'):
+  if script.read_bytes().startswith(b'\xef\xbb\xbf\xef\xbb\xbf'):raise ValueError(f'Duplicate UTF-8 BOM: {script.name}')
  gate=REPO/'package-template/validation-status.json'
  if not gate.is_file()or json.loads(gate.read_text())['deploymentAllowed'] is not True:raise ValueError('Missing or disabled distribution gate')
  shutil.copytree(REPO/'package-template',output)

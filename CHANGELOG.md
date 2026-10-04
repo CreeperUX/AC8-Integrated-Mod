@@ -1,8 +1,12 @@
-# 2.3.2 (local candidate)
-
-Repair mission-specific A-6E control metadata; isolate model observation from optional recorder failures. Retains the 2.3.1 control law. See docs/V232-OBSERVATION.md. Actual mission acceptance pending.
-
 # Changelog
+
+## 2.3.2 — installation encoding and mission observation fixes
+
+- Removes the duplicate UTF-8 BOM in Setup.ps1 that turned its first assignment into a CommandNotFoundException.
+- Adds actual Windows PowerShell Setup execution regression, first-statement checks and build-time duplicate-BOM rejection.
+- Separates essential model metadata from optional recording; supports the mission15 A-6E with an independent learning identity. Recorder failures no longer disable model observations.
+- Reports unconfirmed model actuation when no state evidence exists.
+- Retains v2.3.1 control laws and missile parameters. The mission-specific fix has automated validation; real mission flight acceptance remains pending. See docs/V232-OBSERVATION.md.
 
 ## 2.3.1 — startup packaging fix
 
