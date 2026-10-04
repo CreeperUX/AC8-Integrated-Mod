@@ -1,5 +1,7 @@
 # AC8 Integrated Mod
 
+> **图形界面本地预览：** 完整解压后双击 `Start-GUI.cmd`，通过按钮选择游戏目录、保存设置、复制启动选项、启动与清理。此预览未发布；[使用说明](docs/GUI-PREVIEW.md)。
+
 > **v2.3.3 已撤回为草稿，功能仍在完善，暂不提供公开安装包。** 当前公开整合包为 v2.3.2。[待发布功能说明](docs/INSTALL-PREVIEW.md)
 
 > **旧版清理后仍报加载器冲突？** 已发布独立 [历史残留清理工具 v1.0.0](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/cleanup-v1.0.0)，用于旧包会话记录丢失、只剩 DLL 或清理中断等问题。先备份校验再处理可确认归属的残留；[使用步骤与限制](docs/CLEANUP.md)。旧版整合包不会自动更新，工具不改变飞控版本。

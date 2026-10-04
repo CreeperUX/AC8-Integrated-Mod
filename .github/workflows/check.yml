@@ -27,3 +27,5 @@ jobs:
         shell: powershell
       - run: .\tests\Test-InstallUX.ps1
         shell: powershell
+      - run: .\tests\Test-GUI.ps1
+        shell: powershell
