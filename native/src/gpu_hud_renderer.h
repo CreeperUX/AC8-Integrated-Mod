@@ -70,7 +70,7 @@ struct Renderer {
         }
         // The game already renders its crosshair. Nose projection drives ticks only.
         if((frame.mode_notice>=0||frame.camera_notice>=0)&&text_format){
-            const wchar_t* label=frame.camera_notice>=0?(frame.camera_notice?L"F3: FAR CAMERA":L"F3: GAME CAMERA"):(frame.mode_notice?L"F4: AGILE 2.1":L"F4: CLASSIC 2.0");
+            const wchar_t* label=frame.camera_notice>=0?(frame.camera_notice?L"F3: FAR CAMERA":L"F3: NATIVE POSITION"):(frame.mode_notice?L"F4: AGILE 2.1":L"F4: CLASSIC 2.0");
             ink->SetOpacity(frame.notice_alpha);outline->SetOpacity(.6f*frame.notice_alpha);
             D2D1_RECT_F box=D2D1::RectF(width*.5f-130,height*.12f,width*.5f+130,height*.12f+32);
             dc->FillRoundedRectangle(D2D1::RoundedRect(box,5,5),outline.Get());

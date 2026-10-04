@@ -25,8 +25,15 @@ bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraS
         memcpy(sample.pov,static_cast<unsigned char*>(manager)+0x14A0,sizeof(sample.pov));
         for(double n:sample.actor)if(!std::isfinite(n)||std::abs(n)>1e12)return false;
         for(double n:sample.pov)if(!std::isfinite(n)||std::abs(n)>1e12)return false;
-        // Native mode only samples the finished game camera. No POV/FOV writes.
-        if(mode==0)return true;
+        for(double n:{cmd.p,cmd.y,cmd.r})if(!std::isfinite(n)||std::abs(n)>1e9)return false;
+        if(mode!=0&&mode!=1)return false;
+        // Profiles select position only; both retain mouse-follow rotation.
+        if(mode==0){
+            const double rotation[3]={cmd.p,cmd.y,cmd.r};
+            memcpy(static_cast<unsigned char*>(manager)+0x14A0+3*sizeof(double),rotation,sizeof(rotation));
+            memcpy(sample.pov+3,rotation,sizeof(rotation));
+            return true;
+        }
         auto axes=flight::basis(float(cmd.p),float(cmd.y),float(cmd.r));
         const float distance=camera_distance_cm.load(),height=camera_height_cm.load();
         if(!std::isfinite(distance)||!std::isfinite(height)||distance<1000||distance>10000||height<0||height>2000)return false;

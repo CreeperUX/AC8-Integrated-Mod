@@ -25,8 +25,16 @@ int main(){
  auto originalBytes=manager;
  CameraCommand command;command.pawn=reinterpret_cast<uintptr_t>(pawn.data());command.p=0;command.y=0;command.r=0;
  CameraSample sample;
- assert(apply_native_camera(manager.data(),command,0,sample));assert(manager==originalBytes);
- assert(sample.pov[3]==2&&sample.pov[4]==3);
+ assert(apply_native_camera(manager.data(),command,0,sample));
+ assert(sample.pov[0]==originalPOV[0]&&sample.pov[1]==originalPOV[1]&&sample.pov[2]==originalPOV[2]);
+ assert(sample.pov[3]==0&&sample.pov[4]==0);
+ for(size_t i=0;i<manager.size();++i)if(i<0x14B8||i>=0x14D0)assert(manager[i]==originalBytes[i]);
+ command.p=12;command.y=77;command.r=-3;
+ assert(apply_native_camera(manager.data(),command,0,sample));auto nativeView=sample;
+ assert(apply_native_camera(manager.data(),command,1,sample));
+ for(int i=3;i<6;++i)assert(sample.pov[i]==nativeView.pov[i]);
+ assert(sample.pov[0]!=nativeView.pov[0]);
+ command.p=0;command.y=0;command.r=0;
  camera_distance_cm=3600;camera_height_cm=600;
  assert(apply_native_camera(manager.data(),command,1,sample));
  assert(sample.pov[0]==position[0]-3600&&sample.pov[1]==position[1]&&sample.pov[2]==position[2]+600);
@@ -43,8 +51,10 @@ int main(){
  receive_camera(reinterpret_cast<uintptr_t>(manager.data()),command.pawn,0,0,0);
  HudFrame frame;frame.pawn=command.pawn;frame.tick=GetTickCount64();frame.fov=fov;stage_hud_frame(frame);
  update_native_camera(manager.data(),.016f);
- HudFrame displayed;assert(read_hud_frame(displayed));assert(manager==originalBytes);
- assert(displayed.cp==2&&displayed.cy==3&&displayed.ox==-3000&&displayed.oz==600&&displayed.fov==fov);
+ HudFrame displayed;assert(read_hud_frame(displayed));
+ assert(memcmp(manager.data()+0x14A0,originalBytes.data()+0x14A0,24)==0);
+ assert(displayed.cp==0&&displayed.cy==0&&displayed.ox==-3000&&displayed.oz==600&&displayed.fov==fov);
+ originalBytes=manager;
  camera_view_mode=1;context_suspended=true;update_native_camera(manager.data(),.016f);assert(manager==originalBytes);
  context_suspended=false;game_paused=true;update_native_camera(manager.data(),.016f);assert(manager==originalBytes);game_paused=false;
  // A suspended context cannot steer and cannot consume the pending one-shot centre.
@@ -67,5 +77,5 @@ int main(){
  ac8_mouseaim_begin(nullptr);assert(camera_view_mode==0);
  camera_toggle_requested=true;ac8_mouseaim_begin(nullptr);assert(camera_view_mode==1&&camera_notice_until>GetTickCount64());
  assert(std::abs(target_pitch.load()-10)<.001&&std::abs(target_yaw.load()-30)<.001);
- puts("PASS native camera read-only mode, 36m geometry, exact48-byte write/FOV preservation, pending recenter, gaze return and view-switch target preservation.");
+ puts("PASS native position plus shared mouse-follow rotation, 36m geometry, exact48-byte write/FOV preservation, pending recenter, gaze return and view-switch target preservation.");
 }

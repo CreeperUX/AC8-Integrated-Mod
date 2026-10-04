@@ -16,7 +16,6 @@ local observation = dofile(directory .. "observation.lua")
 local context_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_context"))
 local view_context=dofile(directory..'view_context.lua').new()
 local manual_look_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_manual_look"))
-local previous_camera_mode=nil
 local shadow_next=0
 local shadow_sim_seconds=0
 local shadow_retry=0
@@ -220,9 +219,8 @@ else
                 aim_camera.restore()
                 print('[ViewContext] RECENTER reason='..tostring(view_context.reason)..' pawn='..tostring(address)..'\n')
             end
-            local accepted,camera_mode=context_native(ready and 0 or 1,center and 1 or 0)
+            local accepted=context_native(ready and 0 or 1,center and 1 or 0)
             assert(accepted==1,'Native view context rejected')
-            if previous_camera_mode~=camera_mode then aim_camera.restore();previous_camera_mode=camera_mode end
             local on,target_pitch,target_yaw=frame_native(address,pitch,yaw,roll,
                 camera_pitch,camera_yaw,camera_roll,fov,ox,oy,oz,paused and 1 or 0,gazing and 1 or 0)
             assert(on~=nil,'Native frame rejected')
