@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.1 — startup packaging fix
+
+- Includes the required `validation-status.json` omitted from2.3.0.
+- Runs package preflight during packaging and before installation, checking required files, gate, payload hashes and settings.
+- Adds a read-only launcher `-CheckOnly` and regression coverage for missing metadata, disabled gates and tampered payloads.
+- Flight control and missile parameters are unchanged. Use2.3.1 instead of the affected2.3.0 package.
+
 ## 2.3.0 — optional missile module
 
 - Setup and `Choose-Features.cmd` select mouse-only or mouse-plus-missiles.

@@ -1,6 +1,6 @@
 """Create a clean portable package. Never reads a game installation or user saves."""
 from pathlib import Path
-import argparse,hashlib,json,shutil,zipfile,re
+import argparse,hashlib,json,shutil,zipfile,re,subprocess
 
 REPO=Path(__file__).resolve().parents[1]
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -12,6 +12,8 @@ def build(runtime_root,native_dll,output):
   if not p.is_file()or sha(p)!=entry['sha256']:raise ValueError(f"Pinned runtime mismatch: {entry['path']}")
  if not native_dll.is_file():raise ValueError('Build native/build.cmd first, or supply --native-dll')
  if output.exists()or Path(str(output)+'.zip').exists():raise ValueError('Output already exists; use a fresh directory')
+ gate=REPO/'package-template/validation-status.json'
+ if not gate.is_file()or json.loads(gate.read_text())['deploymentAllowed'] is not True:raise ValueError('Missing or disabled distribution gate')
  shutil.copytree(REPO/'package-template',output)
  for entry in runtime['files']:
   p=output/'payload'/entry['path'];p.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(runtime_root/entry['path'],p)
@@ -24,6 +26,7 @@ def build(runtime_root,native_dll,output):
  manifest=[{'Path':str(p.relative_to(payload)),'SHA256':sha(p).upper()}for p in sorted(payload.rglob('*'))if p.is_file()]
  (output/'payload-manifest.json').write_text(json.dumps(manifest,indent=2))
  (output/'package-info.json').write_text(json.dumps(dict(version,native_sha256=sha(dll)),indent=2))
+ subprocess.run(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(output/'Check-Package.ps1'),'-PackageRoot',str(output)],check=True)
  files=[p for p in sorted(output.rglob('*'))if p.is_file()]
  pinned_runtime={str((output/'payload'/entry['path']).resolve()):entry['sha256']for entry in runtime['files']}
  for p in files:
@@ -46,5 +49,6 @@ def build(runtime_root,native_dll,output):
  return {'archive':str(archive),'bytes':archive.stat().st_size,'sha256':sha(archive),'payload_files':len(manifest)}
 
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('--runtime-root',type=Path,required=True,help='payload directory from the pinned portable runtime distribution');p.add_argument('--native-dll',type=Path,default=REPO/'native/build/ac8_mouse_aim_010.dll');p.add_argument('--output',type=Path,default=REPO/'dist/AC8-Integrated-v2.3.0-share');a=p.parse_args()
+ version=json.loads((REPO/'version.json').read_text())['version']
+ p=argparse.ArgumentParser();p.add_argument('--runtime-root',type=Path,required=True,help='payload directory from the pinned portable runtime distribution');p.add_argument('--native-dll',type=Path,default=REPO/'native/build/ac8_mouse_aim_010.dll');p.add_argument('--output',type=Path,default=REPO/f'dist/AC8-Integrated-v{version}-share');a=p.parse_args()
  print(json.dumps(build(a.runtime_root.resolve(),a.native_dll.resolve(),a.output.resolve()),indent=2))

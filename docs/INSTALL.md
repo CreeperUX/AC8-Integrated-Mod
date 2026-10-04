@@ -2,11 +2,11 @@
 
 ## 选择仅鼠标飞控或完整安装
 
-**此功能从 v2.3.0 整合包开始提供。v2.0.0 等旧包没有 `Choose-Features.cmd`，需要先换用新版。**请从 [v2.3.0 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.0) 下载 `AC8-Integrated-v2.3.0-share.zip`。源码 ZIP 中的 `package-template` 是构建模板，缺少运行 DLL，不能直接当作安装包启动。
+**此功能从 v2.3.1 整合包开始提供。v2.0.0 等旧包没有 `Choose-Features.cmd`，需要先换用新版。**请从 [v2.3.1 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.1) 下载 `AC8-Integrated-v2.3.1-share.zip`。源码 ZIP 中的 `package-template` 是构建模板，缺少运行 DLL，不能直接当作安装包启动。
 
 ### 首次安装
 
-1. 完整解压 v2.3.0 安装包到游戏目录之外。
+1. 完整解压 v2.3.1 安装包到游戏目录之外。
 2. 双击包根目录的 **`Setup.cmd`**，输入游戏目录。
 3. 出现以下功能菜单时，输入 **`2`** 选择仅鼠标飞控，或输入 **`1`** 选择完整安装，再按回车：
 
@@ -38,7 +38,7 @@ Choose 1 or 2 (Enter keeps 1):
 
 ## 第一次使用
 
-从 [v2.3.0 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.0) 下载 `AC8-Integrated-v2.3.0-share.zip`，解压到例如 `D:\Mods\AC8-Integrated`。不要直接从 ZIP 运行，也不要放进游戏目录。
+从 [v2.3.1 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.1) 下载 `AC8-Integrated-v2.3.1-share.zip`，解压到例如 `D:\Mods\AC8-Integrated`。不要直接从 ZIP 运行，也不要放进游戏目录。
 
 运行 `Setup.cmd`。它会验证游戏 EXE、定位 Steam、询问安装内容，并在包内生成路径文件和 `Steam-Launch-Option.txt`。Setup 不修改游戏文件、Steam 设置或存档。
 
@@ -95,3 +95,4 @@ F10 重载的是游戏目录中**本次运行副本**，并会恢复该副本的
 ## 可选分析
 
 普通游玩不需要 Python。自动离线报告需要 Python 和 NumPy。缺少分析依赖时不会阻止游戏清理。`sessions` 中含日志、试飞数据和个人存档备份，**不要直接转发**。分享干净 Release ZIP 即可。
+

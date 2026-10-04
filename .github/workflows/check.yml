@@ -18,3 +18,5 @@ jobs:
       - run: python -X utf8 tests/test_integration.py
       - run: .\tests\Test-Features.ps1
         shell: powershell
+      - run: .\tests\Test-Package.ps1
+        shell: powershell

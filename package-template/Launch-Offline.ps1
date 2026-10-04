@@ -1,6 +1,7 @@
-﻿param([switch]$CleanupOnly)
+param([switch]$CleanupOnly,[switch]$CheckOnly)
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
+if(!$CleanupOnly){& (Join-Path $root 'Check-Package.ps1') -PackageRoot $root}
 $gameRoot=([string](Get-Content -LiteralPath (Join-Path $root 'game-path.txt') -Raw -Encoding UTF8)).Trim()
 if(!$gameRoot){throw 'Run Setup.cmd first.'}
 $w64=[IO.Path]::GetFullPath((Join-Path $gameRoot 'Game/Binaries/Win64'))
@@ -74,6 +75,7 @@ foreach($entry in $manifest){
  if(!$file.StartsWith($payloadRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Payload path escaped package.'}
  if(!(Test-Path -LiteralPath $file) -or (Get-FileHash -LiteralPath $file).Hash -ne $entry.SHA256){throw 'Payload hash verification failed.'}
 }
+if($CheckOnly){Write-Host 'LAUNCH PREFLIGHT passed. No files staged and no game started.';exit 0}
 $id=[guid]::NewGuid().ToString()
 $results=Join-Path $root ('sessions/'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'-'+$id.Substring(0,8))
 New-Item -ItemType Directory -Path $results -Force | Out-Null
@@ -105,7 +107,7 @@ try {
  $state.Files+= [pscustomobject]@{Name='steam_appid.txt';SHA256=(Get-FileHash -LiteralPath (Join-Path $w64 'steam_appid.txt')).Hash}
  $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $statePath -Encoding UTF8
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
- Write-Host 'AC8 2.3.0 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
+ Write-Host 'AC8 2.3.1 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
  Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F10 reload mouse settings; hold C for free look.'
  if($features.MissileEnhancement){Write-Host 'FEATURES: mouse flight + missile enhancement/cosmetics.'}else{Write-Host 'FEATURES: mouse flight only. Missile module is not installed.'}
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru
@@ -136,3 +138,5 @@ try {
   Cleanup-Owned (Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json)
  }else{Write-Host 'Game still active; staged files retained. Close normally, then run Cleanup-Offline.cmd.'}
 }
+
+
