@@ -1,8 +1,44 @@
 # 安装、模块选择与退出
 
+## 选择仅鼠标飞控或完整安装
+
+**此功能从 v2.3.0 整合包开始提供。v2.0.0 等旧包没有 `Choose-Features.cmd`，需要先换用新版。**当前 GitHub Releases 尚未上传预编译安装包；以下步骤针对维护者提供的 v2.3.0 整合包。源码 ZIP 中的 `package-template` 是构建模板，缺少运行 DLL，不能直接当作安装包启动。
+
+### 首次安装
+
+1. 完整解压 v2.3.0 安装包到游戏目录之外。
+2. 双击包根目录的 **`Setup.cmd`**，输入游戏目录。
+3. 出现以下功能菜单时，输入 **`2`** 选择仅鼠标飞控，或输入 **`1`** 选择完整安装，再按回车：
+
+```text
+1. Mouse flight + customized missile enhancements / 鼠标飞控 + 导弹强化
+2. Mouse flight only; original game missiles / 仅鼠标飞控，保留原版导弹
+Choose 1 or 2 (Enter keeps 1):
+```
+
+4. 按 Setup 后续提示设置 Steam 启动选项，再启动游戏。
+
+直接回车保留原选择，括号内数字以实际提示为准；全新包初始为 `1`，即完整安装。
+
+### 已经安装后更改
+
+1. 正常退出游戏，等待旧启动控制台完成清理。
+2. 双击**同一安装包根目录**的 **`Choose-Features.cmd`**。
+3. 输入 `2` 改为仅鼠标飞控，或输入 `1` 改为完整安装，按回车保存。
+4. 通过原 Steam 入口或该包的 `Start.cmd` 再次启动。不需要重新设置 Steam 启动选项。
+
+也可以关闭游戏后手动编辑同目录 `features.ini`：
+
+| 目标 | 配置内容 |
+|---|---|
+| 仅鼠标飞控 | `missile_enhancement=0` |
+| 完整安装 | `missile_enhancement=1` |
+
+注意：**菜单输入 `2`，配置保存为 `0`**。配置只接受 `0/1`。不能在飞行中热卸载导弹模块；F4/F8不是这个安装开关。
+
 ## 第一次使用
 
-从 Releases 下载 `AC8-Integrated-v2.3.0-share.zip`，解压到例如 `D:\Mods\AC8-Integrated`。不要直接从 ZIP 运行，也不要放进游戏目录。
+使用 `AC8-Integrated-v2.3.0-share.zip`（公开发布后可从 Releases 下载），解压到例如 `D:\Mods\AC8-Integrated`。不要直接从 ZIP 运行，也不要放进游戏目录。
 
 运行 `Setup.cmd`。它会验证游戏 EXE、定位 Steam、询问安装内容，并在包内生成路径文件和 `Steam-Launch-Option.txt`。Setup 不修改游戏文件、Steam 设置或存档。
 
