@@ -112,6 +112,11 @@ std::atomic<bool> enabled{true};
 std::atomic<bool> hud_enabled{true};
 std::atomic<bool> game_paused{false};
 std::atomic<bool> gaze_active{false};
+std::atomic<bool> context_suspended{true},transition_center_requested{false};
+std::atomic<int> camera_view_mode{1};
+std::atomic<float> camera_distance_cm{3600},camera_height_cm{600};
+std::atomic<bool> camera_toggle_requested{false};
+std::atomic<uint64_t> camera_notice_until{0};
 std::atomic<bool> resume_center_requested{false};
 std::atomic<bool> active{false};
 std::atomic<bool> model_assist_enabled{true},assist_environment_unsafe{true};
@@ -206,6 +211,9 @@ int read_config_int(const wchar_t* key, int fallback) {
 
 void load_config() {
     init_paths();
+    camera_view_mode.store(std::clamp(read_config_int(L"camera_mode",1),0,1));
+    camera_distance_cm.store(100*std::clamp(read_config_float(L"camera_distance_m",36),10.f,100.f));
+    camera_height_cm.store(100*std::clamp(read_config_float(L"camera_height_m",6),0.f,20.f));
     hud_target_hz.store(std::clamp(read_config_int(L"hud_fps",120),60,240));
     config.mouse_reference_fov=std::clamp(read_config_float(L"mouse_reference_fov",62),30.0f,150.0f);
     config.arrival_braking=std::clamp(read_config_float(L"arrival_braking",1.15f),1.0f,1.35f);
@@ -292,7 +300,7 @@ UINT WINAPI capture_get_raw_input_data(HRAWINPUT input, UINT command, LPVOID dat
         if (raw->header.dwType == RIM_TYPEMOUSE &&
             !(raw->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) &&
             foreground_is_game() && active.load() && enabled.load()) {
-            if(!game_paused.load() && !gaze_active.load()) {
+            if(!game_paused.load() && !gaze_active.load() && !context_suspended.load()) {
                 mouse_delta.add(raw->data.mouse.lLastX,raw->data.mouse.lLastY);
             }
         }
@@ -356,7 +364,7 @@ void mouse_loop() {
             if (FAILED(result)) {
                 mouse_device->Acquire();
             } else if (foreground_is_game() && active.load()) {
-                if(!game_paused.load() && !gaze_active.load()) {
+                if(!game_paused.load() && !gaze_active.load() && !context_suspended.load()) {
                     mouse_delta.add(state.lX,state.lY);
                 }
             }
@@ -368,17 +376,20 @@ void mouse_loop() {
             log_line("HUD only: %s",hud_enabled.load()?"ON":"OFF");
         }
         f7_down=f7;
+        bool plain=(GetAsyncKeyState(VK_MENU)&0x8000)==0&&(GetAsyncKeyState(VK_CONTROL)&0x8000)==0&&(GetAsyncKeyState(VK_SHIFT)&0x8000)==0;
+        static control_modes::KeyLatch camera_key;
+        const bool f3=(GetAsyncKeyState(VK_F3)&0x8000)!=0;
+        if(camera_key.press(f3,plain&&foreground_is_game()&&enabled.load()&&active.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load()))camera_toggle_requested=true;
         static control_modes::KeyLatch mode_key;
         bool f4=(GetAsyncKeyState(VK_F4)&0x8000)!=0;
-        bool plain=(GetAsyncKeyState(VK_MENU)&0x8000)==0&&(GetAsyncKeyState(VK_CONTROL)&0x8000)==0&&(GetAsyncKeyState(VK_SHIFT)&0x8000)==0;
         if(mode_key.press(f4,plain&&foreground_is_game()&&active.load())) {
             int next=control_mode.load()==1?0:1;control_mode.store(next);mode_notice_pending=true;
             log_line("CONTROL_MODE selected=%d name=%s; learned models retained",next,next?"AGILE 2.1":"CLASSIC 2.0");
         }
         bool f8 = (GetAsyncKeyState(VK_F8) & 0x8000) != 0;
         bool f9 = (GetAsyncKeyState(VK_F9) & 0x8000) != 0;
-        if (f8 && !f8_down) enabled.store(!enabled.load());
-        if (f9 && !f9_down) recenter_requested.store(true);
+        if (f8 && !f8_down && foreground_is_game()) {enabled.store(!enabled.load());if(enabled.load())transition_center_requested=true;}
+        if (f9 && !f9_down && foreground_is_game()) recenter_requested.store(true);
         f8_down = f8;
         f9_down = f9;
         Sleep(4);
@@ -387,12 +398,16 @@ void mouse_loop() {
 
 void update_commands() {
     using namespace flight;
-    if (!active.load() || !enabled.load() || game_paused.load() || gaze_active.load()) {
+    if (!active.load() || !enabled.load() || game_paused.load() || gaze_active.load() || context_suspended.load()) {
         free_look.reset();reset_model_assist();
         command_pitch.store(0); command_roll.store(0); command_yaw.store(0);
-        if(game_paused.load() || gaze_active.load()) { mouse_delta.clear(); }
+        if(game_paused.load() || gaze_active.load() || context_suspended.load()) { mouse_delta.clear(); }
         previous_pose_tick = 0;
         return;
+    }
+    if(transition_center_requested.exchange(false)){
+        recenter_requested=true;resume_center_requested=false;previous_pose_tick=0;
+        filtered_pitch_rate=filtered_yaw_rate=filtered_roll_rate=0;mouse_delta.clear();free_look.reset();
     }
     const auto now = GetTickCount64();
     const float dt = previous_pose_tick ? std::clamp((now-previous_pose_tick)/1000.0f,0.001f,0.1f) : 1.0f/60;
@@ -615,7 +630,7 @@ uintptr_t __fastcall process_input(unsigned char* state, unsigned char* context)
     }
     if(perf_enabled.load()) ++perf_player_inputs;
     if(!active.load() || GetTickCount64()-pose_tick.load()>1000 || !enabled.load() ||
-       game_paused.load() || gaze_active.load() || !foreground_is_game()) return original(state,context);
+       game_paused.load() || gaze_active.load() || context_suspended.load() || !foreground_is_game()) return original(state,context);
     // Manual pitch also suspends automatic roll, matching MouseFlight maneuvers.
     // Preserve AC's native keyboard values, including opposing-key handling.
     auto held=[](int key) { return (GetAsyncKeyState(key)&0x8000)!=0; };
@@ -722,7 +737,8 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
         return 0;
     }
     load_config();
-    log_line("PROFILE 2.2.0 SWITCHABLE MODEL CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
+    log_line("CAMERA_SETTINGS mode=%d distance_m=%.1f height_m=%.1f F3=toggle; mission/cinematic recenter enabled",camera_view_mode.load(),camera_distance_cm.load()/100,camera_height_cm.load()/100);
+    log_line("PROFILE 2.2.1 CAMERA-CONTEXT SWITCHABLE MODEL CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
     if (!prepare_hook()) return 0;
     install_native_camera();
     if (prepare_raw_input_capture()) {
@@ -749,8 +765,12 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_begin(void*) {
     if(!running.load()) return 0;
     if(!bridge_thread) bridge_thread=GetCurrentThreadId();
     if(!on_bridge_thread()) return 0;
+    if(camera_toggle_requested.exchange(false)){
+        camera_view_mode=1-camera_view_mode.load();camera_notice_until=GetTickCount64()+2500;
+        log_line("CAMERA_MODE selected=%d name=%s distance_m=%.1f height_m=%.1f",camera_view_mode.load(),camera_view_mode.load()?"FAR":"GAME",camera_distance_cm.load()/100,camera_height_cm.load()/100);
+    }
     if(reload_requested.exchange(false)) {
-        load_config(); recenter_requested.store(true); log_line("configuration reloaded");
+        load_config(); recenter_requested.store(true); log_line("configuration reloaded; camera_mode=%d distance_m=%.1f height_m=%.1f",camera_view_mode.load(),camera_distance_cm.load()/100,camera_height_cm.load()/100);
     }
     if(perf_enabled.load()) {
         script_start=perf_clock();
@@ -764,6 +784,23 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_begin(void*) {
     return 0;
 }
 
+extern "C" __declspec(dllexport) int ac8_mouseaim_manual_look(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);if(lua.get_stack_size()!=0)return 0;
+    lua.set_number(foreground_is_game()&&(GetAsyncKeyState('C')&0x8000)?1:0);return 1;
+}
+
+extern "C" __declspec(dllexport) int ac8_mouseaim_context(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);double v[2]{};
+    if(!read_numbers(lua,v)||(v[0]!=0&&v[0]!=1)||(v[1]!=0&&v[1]!=1))return 0;
+    bool changed=context_suspended.exchange(v[0]!=0)!=(v[0]!=0);
+    if(v[1]!=0)transition_center_requested=true;
+    if(changed||v[1]!=0)log_line("VIEW_CONTEXT suspended=%d recenter=%d",int(v[0]),int(v[1]));
+    if(v[0]!=0){command_pitch=0;command_roll=0;command_yaw=0;mouse_delta.clear();}
+    lua.set_number(1);lua.set_number(camera_view_mode.load());return 2;
+}
+
 extern "C" __declspec(dllexport) int ac8_mouseaim_frame(lua_State* state) {
     if(!running.load() || !on_bridge_thread()) return 0;
     PerfSpan timing(perf_bridge);
@@ -772,7 +809,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_frame(lua_State* state) {
     for(size_t i=1;i<11;++i) if(std::abs(v[i])>1e12) { release_controls(); return 0; }
     if((v[11]!=0 && v[11]!=1) || (v[12]!=0 && v[12]!=1)) { release_controls(); return 0; }
     receive_pose(v);
-    const bool on=enabled.load() && !game_paused.load() && !gaze_active.load() && foreground_is_game();
+    const bool on=enabled.load() && !game_paused.load() && !gaze_active.load() && !context_suspended.load() && foreground_is_game();
     lua.set_number(on?1:0); lua.set_number(look_pitch.load()); lua.set_number(look_yaw.load());
     return 3;
 }
@@ -823,7 +860,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_observe(lua_State* state){
     LuaView lua(state);double v[13]{};
     int status=1;
     if(!read_numbers(lua,v))status=-1;
-    else if(!active.load()||game_paused.load()||gaze_active.load())status=-2;
+    else if(!active.load()||game_paused.load()||gaze_active.load()||context_suspended.load())status=-2;
     else if(!live_pointer_number(v[0])||static_cast<uintptr_t>(v[0])!=aircraft.load())status=-3;
     else {
         for(int i=1;i<13;++i)if(std::abs(v[i])>1e12)status=-4;

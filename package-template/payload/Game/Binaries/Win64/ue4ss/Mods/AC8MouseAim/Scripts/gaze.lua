@@ -3,16 +3,24 @@
 local M={}
 local owner,focus,impact,gameplay
 local last_active=false
+local last_time=nil
 local release_at=0
+local automatic_until,manual_until=0,0
 local failed=false
 local manual_gaze=false
 local hold_threshold=0.35 -- Mod debounce; not claimed to be AC's internal threshold.
-function M.update(pawn,frame_time)
+function M.reset() last_time=nil;owner=nil;focus=nil;impact=nil;last_active=false;release_at=0;automatic_until=0;manual_until=0;failed=false;manual_gaze=false end
+function M.update(pawn,frame_time,manual_pressed)
     if owner~=pawn:GetAddress() then
-        owner=pawn:GetAddress(); focus=nil; impact=nil; last_active=false; release_at=0; failed=false; manual_gaze=false
+        owner=pawn:GetAddress(); focus=nil; impact=nil; last_active=false; release_at=0; automatic_until=0; manual_until=0; failed=false; manual_gaze=false
     end
-    if failed then return false end
-    local ok,result=pcall(function()
+    if type(frame_time)=='number' then
+        if last_time and frame_time<last_time-.1 then release_at=0;automatic_until=0;manual_until=0;manual_gaze=false end
+        last_time=frame_time
+    end
+    if manual_pressed and type(frame_time)=='number' then manual_until=frame_time+0.25 end
+    if failed then return false,false,manual_pressed==true or (type(frame_time)=='number' and frame_time<manual_until) end
+    local ok,result,automatic,manual=pcall(function()
         if not focus or not focus:IsValid() then focus=pawn.CameraViewComponent.CachedFocusTarget end
         if not impact or not impact:IsValid() then impact=pawn.ImpactCamera end
         local cinematic=impact and impact:IsValid() and impact.bIsActive==true
@@ -27,6 +35,8 @@ function M.update(pawn,frame_time)
         local forced=valid_focus and focus.bForceInput==true
         local event_active=event and event:IsValid()
         local now=frame_time or gameplay:GetRealTimeSeconds(pawn)
+        if manual_gaze or manual_pressed then manual_until=now+0.25 end
+        if event_active or cinematic or (forced and not manual_gaze and not manual_pressed) then automatic_until=now+0.25 end
         if manual_gaze or forced or event_active or cinematic then release_at=now+0.25 end
         local active=manual_gaze or forced or event_active or cinematic or now<release_at
         if active~=last_active then
@@ -34,13 +44,13 @@ function M.update(pawn,frame_time)
                 active and 'yield' or 'resume',tostring(manual_gaze),held,tostring(forced),tostring(event_active==true),tostring(cinematic==true)))
             last_active=active
         end
-        return active
+        return active,now<automatic_until,manual_gaze or manual_pressed==true or now<manual_until
     end)
     if not ok then
         failed=true
         print('[AC8MouseAim] Gaze detection unavailable: '..tostring(result)..'; F8 remains available.\n')
-        return false
+        return false,false,manual_pressed==true or (type(frame_time)=='number' and frame_time<manual_until)
     end
-    return result==true
+    return result==true,automatic==true,manual==true
 end
 return M

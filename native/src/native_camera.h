@@ -14,29 +14,34 @@ bool receive_camera(uintptr_t manager,uintptr_t pawn,double p,double y,double r)
     camera_command={manager,pawn,p,y,r,GetTickCount64()};
     return true;
 }
-bool apply_native_camera(void* manager,const CameraCommand& cmd) {
+struct CameraSample {double actor[3]{},pov[6]{};};
+bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraSample& sample) {
     __try {
         auto base=reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
         if(*reinterpret_cast<uintptr_t*>(manager)!=base+0xC9D3160) return false;
         auto root=*reinterpret_cast<uintptr_t*>(cmd.pawn+0x1A0);
-        if(!root) return false;
-        const double* position=reinterpret_cast<const double*>(root+0x220);
-        double loc[3]={position[0],position[1],position[2]};
-        for(double n:loc) if(!std::isfinite(n)||std::abs(n)>1e12) return false;
-        const double* previous=reinterpret_cast<const double*>(static_cast<unsigned char*>(manager)+0x14A0);
-        for(unsigned i=0;i<6;++i) if(!std::isfinite(previous[i])) return false;
-        auto axes=flight::basis(static_cast<float>(cmd.p),static_cast<float>(cmd.y),static_cast<float>(cmd.r));
-        double result[6]={loc[0]-3000*axes.f.x+600*axes.u.x,
-            loc[1]-3000*axes.f.y+600*axes.u.y,loc[2]-3000*axes.f.z+600*axes.u.z,cmd.p,cmd.y,cmd.r};
-        // GetCameraLocation/Rotation both read this same current POV cache.
+        if(root<65536||(root&7)) return false;
+        memcpy(sample.actor,reinterpret_cast<const void*>(root+0x220),sizeof(sample.actor));
+        memcpy(sample.pov,static_cast<unsigned char*>(manager)+0x14A0,sizeof(sample.pov));
+        for(double n:sample.actor)if(!std::isfinite(n)||std::abs(n)>1e12)return false;
+        for(double n:sample.pov)if(!std::isfinite(n)||std::abs(n)>1e12)return false;
+        // Native mode only samples the finished game camera. No POV/FOV writes.
+        if(mode==0)return true;
+        auto axes=flight::basis(float(cmd.p),float(cmd.y),float(cmd.r));
+        const float distance=camera_distance_cm.load(),height=camera_height_cm.load();
+        if(!std::isfinite(distance)||!std::isfinite(height)||distance<1000||distance>10000||height<0||height>2000)return false;
+        auto offset=axes.f*(-distance)+axes.u*height;
+        double result[6]={sample.actor[0]+offset.x,sample.actor[1]+offset.y,sample.actor[2]+offset.z,cmd.p,cmd.y,cmd.r};
+        // Exactly location+rotation; preserve the game's FOV and post effects.
         memcpy(static_cast<unsigned char*>(manager)+0x14A0,result,sizeof(result));
+        memcpy(sample.pov,result,sizeof(result));
         return true;
     } __except(EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 void __fastcall update_native_camera(void* manager,float dt) {
     original_camera_update(manager,dt);
     PerfSpan timing(perf_camera);
-    if(native_camera_fault || !running.load() || !active.load() || !enabled.load() || gaze_active.load()) return;
+    if(native_camera_fault || !running.load() || !active.load() || !enabled.load() || game_paused.load() || gaze_active.load() || context_suspended.load()) return;
     CameraCommand cmd;
     {
         std::unique_lock<std::mutex> lock(camera_command_mutex,std::try_to_lock);
@@ -58,18 +63,18 @@ void __fastcall update_native_camera(void* manager,float dt) {
         previous_reason=reason;
     }
     if(reason) return;
-    if(!apply_native_camera(manager,cmd)) {
+    CameraSample sample;
+    if(!apply_native_camera(manager,cmd,camera_view_mode.load(),sample)) {
         native_camera_fault=true;
         log_line("native camera disabled: invalid live camera/aircraft data");
         return;
     }
     HudFrame frame;
     if(read_pending_hud_frame(frame) && frame.pawn==cmd.pawn && GetTickCount64()-frame.tick<250){
-        auto axes=flight::basis(float(cmd.p),float(cmd.y),float(cmd.r));
-        frame.cp=float(cmd.p);frame.cy=float(cmd.y);frame.cr=float(cmd.r);
-        frame.ox=-3000*axes.f.x+600*axes.u.x;
-        frame.oy=-3000*axes.f.y+600*axes.u.y;
-        frame.oz=-3000*axes.f.z+600*axes.u.z;
+        frame.cp=float(sample.pov[3]);frame.cy=float(sample.pov[4]);frame.cr=float(sample.pov[5]);
+        frame.ox=float(sample.pov[0]-sample.actor[0]);
+        frame.oy=float(sample.pov[1]-sample.actor[1]);
+        frame.oz=float(sample.pov[2]-sample.actor[2]);
         // Keep the original pose timestamp: camera-only ticks cannot freshen stale aim.
         publish_hud_frame(frame);
     }

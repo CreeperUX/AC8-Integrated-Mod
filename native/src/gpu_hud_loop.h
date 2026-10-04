@@ -20,7 +20,7 @@ bool run_gpu_hud(){
     while(running.load()){
         MSG message{};while(PeekMessageW(&message,nullptr,0,0,PM_REMOVE)){TranslateMessage(&message);DispatchMessageW(&message);}
         if(!game_window||!IsWindow(game_window)||GetTickCount64()-window_check>1000){if(HWND found=locate_game_window())game_window=found;window_check=GetTickCount64();}
-        auto now=GetTickCount64();bool wanted=game_window&&foreground_is_game()&&!IsIconic(game_window)&&active.load()&&enabled.load()&&hud_enabled.load()&&!game_paused.load()&&!gaze_active.load()&&now-pose_tick.load()<250;
+        auto now=GetTickCount64();bool wanted=game_window&&foreground_is_game()&&!IsIconic(game_window)&&active.load()&&enabled.load()&&hud_enabled.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load()&&now-pose_tick.load()<250;
         if(!wanted){cache.reset();last_sequence=0;last_draw=0;}
         HudFrame received{};bool read=read_hud_frame(received);if(wanted){cache.observe(read,received);if(!read)++misses;}
         now=GetTickCount64();bool show=wanted&&cache.fresh(aircraft.load(),now);
@@ -48,6 +48,8 @@ bool run_gpu_hud(){
                     if(mode_notice_pending.exchange(false))mode_notice_until=now+2500;
                     auto notice_end=mode_notice_until.load();
                     if(now<notice_end){frame.mode_notice=control_mode.load();frame.notice_alpha=std::min(1.f,float(notice_end-now)/400.f);}
+                    auto camera_end=camera_notice_until.load();
+                    if(now<camera_end){frame.camera_notice=camera_view_mode.load();frame.notice_alpha=std::min(1.f,float(camera_end-now)/400.f);}
                     frame.target=project(flight::basis(f.tp,f.ty,0).f,frame.target_point);frame.nose=project(flight::basis(f.p,f.y,f.r).f,frame.nose_point);
                     auto tick=perf_clock();float dt=last_draw?float(perf_us(tick-last_draw))/1e6f:1.f/120;
                     hr=renderer->draw(frame,dt);if(SUCCEEDED(hr))hr=renderer->present();

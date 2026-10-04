@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.5 camera preview2 — local candidate
+
+- Adds native-game/far-follow camera selection using F3 in game; defaults far-follow to36m/6m with configurable distance/height.
+- Publishes HUD from actual final camera position in both modes; preserves game FOV.
+- Adds mission/cinematic ownership gating and one-shot recenter after stable control return; preserves target across C free-look and view switches.
+- Inherits launcher audit and three install scopes, with the2.3.2 flight policy unchanged. Real-flight acceptance pending.
+
 ## 2.3.4 GUI preview3 — local release audit
 
 - Unifies SHA256 and host/module loading across console, GUI and cleanup.

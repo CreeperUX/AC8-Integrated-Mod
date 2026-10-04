@@ -13,6 +13,10 @@ local perf_native = assert(package.loadlib(directory .. "ac8_mouse_aim_010.dll",
 local shadow_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_observe"))
 local control_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_control_observe"))
 local observation = dofile(directory .. "observation.lua")
+local context_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_context"))
+local view_context=dofile(directory..'view_context.lua').new()
+local manual_look_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_manual_look"))
+local previous_camera_mode=nil
 local shadow_next=0
 local shadow_sim_seconds=0
 local shadow_retry=0
@@ -122,6 +126,14 @@ RegisterKeyBind(Key.F5, function() perf_native() end)
 
 assert(start_native(1729,0.125)==30,'AC8 direct bridge unavailable; control disabled (check native log).')
 
+RegisterInitGameStatePreHook(function(context)
+    local ok,name=pcall(function()local object=context:get();if object and object:IsValid()then return object:GetFullName()end end)
+    if ok and type(name)=='string' and name:find('/Game/Maps/Ingame/',1,true)then
+        view_context:reset('mission-initialize');gaze.reset();aim_camera.restore();startup_time=0
+        pcall(context_native,1,0)
+    end
+end)
+
 if EngineTickAvailable == false or type(LoopInGameThreadAfterFrames) ~= "function" then
     notice("Disabled: required game-thread callback unavailable.")
 else
@@ -134,6 +146,7 @@ else
             if not pawn then
                 gaze_probe.end_mission()
                 startup_address=nil; startup_time=0
+                view_context:reset("no-player")
                 aim_camera.restore()
                 if current_address then
                     release_native()
@@ -178,7 +191,8 @@ else
             end
             local manager=controller.PlayerCameraManager
             assert(manager and manager:IsValid(),'Camera manager unavailable')
-            local gazing=gaze.update(pawn,pause_gameplay:GetRealTimeSeconds(pawn))
+            local frame_time=pause_gameplay:GetRealTimeSeconds(pawn)
+            local gazing,automatic_view,manual_view=gaze.update(pawn,frame_time,manual_look_native()==1)
             local camera = camera_rotation(manager, rotation)
             local camera_pitch = rotation_component(camera, "Pitch") or pitch
             local camera_yaw = rotation_component(camera, "Yaw") or yaw
@@ -193,6 +207,22 @@ else
             local oy=assert(rotation_component(view_position,"Y"))-assert(rotation_component(position,"Y"))
             local oz=assert(rotation_component(view_position,"Z"))-assert(rotation_component(position,"Z"))
             local paused=pause_gameplay:IsGamePaused(pawn)
+            local target=controller:GetViewTarget()
+            local owned=target and target:IsValid() and target:GetAddress()==address
+            local cinematic=view_context:optional_bool(controller,'bCinematicMode',false)==true
+            local input_blocked=view_context:optional_bool(controller,'IsMoveInputIgnored',true)==true
+                or view_context:optional_bool(pawn,'bEnableWingInput',false)==false
+                or view_context:optional_bool(pawn,'bEnableMovmentInput',false)==false
+            local eligible=not paused and not automatic_view and not cinematic
+                and (manual_view or (owned and not input_blocked))
+            local ready,center=view_context:update(address,controller:GetAddress(),eligible,dt,frame_time)
+            if center then
+                aim_camera.restore()
+                print('[ViewContext] RECENTER reason='..tostring(view_context.reason)..' pawn='..tostring(address)..'\n')
+            end
+            local accepted,camera_mode=context_native(ready and 0 or 1,center and 1 or 0)
+            assert(accepted==1,'Native view context rejected')
+            if previous_camera_mode~=camera_mode then aim_camera.restore();previous_camera_mode=camera_mode end
             local on,target_pitch,target_yaw=frame_native(address,pitch,yaw,roll,
                 camera_pitch,camera_yaw,camera_roll,fov,ox,oy,oz,paused and 1 or 0,gazing and 1 or 0)
             assert(on~=nil,'Native frame rejected')
@@ -243,7 +273,7 @@ else
                 aim_camera.seed(camera,rotation_component)
             else
                 desired_camera=aim_camera.update(pawn,controller,rotation,rotation_component,
-                    on,target_pitch,target_yaw,dt)
+                    on,target_pitch,target_yaw,dt,owned)
             end
             if desired_camera then
                 assert(camera_native(manager:GetAddress(),address,

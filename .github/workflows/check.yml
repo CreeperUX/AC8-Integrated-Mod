@@ -18,6 +18,7 @@ jobs:
       - run: python -X utf8 tests/test_integration.py
       - run: python -X utf8 tests/test_missile_modes.py
       - run: python -X utf8 tests/test_observation.py
+      - run: python -X utf8 tests/test_view_context.py
       - run: .\tests\Test-Features.ps1
         shell: powershell
       - run: .\tests\Test-Setup.ps1

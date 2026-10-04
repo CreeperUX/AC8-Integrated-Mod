@@ -29,14 +29,17 @@ function M.seed(rotation,component)
     up={X=neutral_up.X*math.cos(r)+right.X*math.sin(r),
         Y=neutral_up.Y*math.cos(r)+right.Y*math.sin(r),Z=neutral_up.Z*math.cos(r)+right.Z*math.sin(r)}
 end
-function M.update(pawn,controller,rotation,component,on,p,y,dt)
+function M.update(pawn,controller,rotation,component,on,p,y,dt,view_owned)
     local address=pawn:GetAddress()
     if owner~=address then M.restore(); owner=address end
     -- Same-frame values returned by native bridge; no disk snapshots, polling
     -- or stale file replay. Native pose/camera timeout guards remain in place.
     if on~=1 or type(p)~='number' or type(y)~='number' then forward=nil; return nil end
-    local target=controller:GetViewTarget()
-    if not target or not target:IsValid() or target:GetAddress()~=address then forward=nil; return nil end
+    if view_owned==nil then
+        local target=controller:GetViewTarget()
+        view_owned=target and target:IsValid() and target:GetAddress()==address
+    end
+    if not view_owned then forward=nil; return nil end
     if not forward then
         forward=direction(assert(component(rotation,'Pitch')),assert(component(rotation,'Yaw')))
         up={X=0,Y=0,Z=1}

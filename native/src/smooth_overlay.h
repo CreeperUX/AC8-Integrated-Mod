@@ -117,7 +117,7 @@ void legacy_overlay_loop() {
             if(HWND found=locate_game_window())game_window=found;window_check=GetTickCount64();}
         auto now=GetTickCount64();
         const bool wants_visible=game_window && foreground_is_game() && !IsIconic(game_window) && active.load() && enabled.load()
-            && hud_enabled.load() && !game_paused.load() && !gaze_active.load() && now-pose_tick.load()<250;
+            && hud_enabled.load() && !game_paused.load() && !gaze_active.load() && !context_suspended.load() && now-pose_tick.load()<250;
         if(!wants_visible){cache.reset();previous_sequence=0;previous_pawn=0;}
         HudFrame incoming{};
         const bool received=read_hud_frame(incoming);
