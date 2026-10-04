@@ -129,7 +129,7 @@ RegisterInitGameStatePreHook(function(context)
     local ok,name=pcall(function()local object=context:get();if object and object:IsValid()then return object:GetFullName()end end)
     if ok and type(name)=='string' and name:find('/Game/Maps/Ingame/',1,true)then
         view_context:reset('mission-initialize');gaze.reset();aim_camera.restore();startup_time=0
-        pcall(context_native,1,0)
+        pcall(context_native,1,0,0)
     end
 end)
 
@@ -192,6 +192,9 @@ else
             assert(manager and manager:IsValid(),'Camera manager unavailable')
             local frame_time=pause_gameplay:GetRealTimeSeconds(pawn)
             local gazing,automatic_view,manual_view=gaze.update(pawn,frame_time,manual_look_native()==1)
+            -- Manual C always uses the mod orbit; only automatic/scripted
+            -- camera ownership yields to the game camera implementation.
+            gazing=automatic_view or (gazing and not manual_view)
             local camera = camera_rotation(manager, rotation)
             local camera_pitch = rotation_component(camera, "Pitch") or pitch
             local camera_yaw = rotation_component(camera, "Yaw") or yaw
@@ -219,7 +222,7 @@ else
                 aim_camera.restore()
                 print('[ViewContext] RECENTER reason='..tostring(view_context.reason)..' pawn='..tostring(address)..'\n')
             end
-            local accepted=context_native(ready and 0 or 1,center and 1 or 0)
+            local accepted=context_native(ready and 0 or 1,center and 1 or 0,manual_view and 1 or 0)
             assert(accepted==1,'Native view context rejected')
             local on,target_pitch,target_yaw=frame_native(address,pitch,yaw,roll,
                 camera_pitch,camera_yaw,camera_roll,fov,ox,oy,oz,paused and 1 or 0,gazing and 1 or 0)
@@ -241,7 +244,7 @@ else
                     local v=pawn:GetVelocity()
                     local vx,vy,vz=rotation_component(v,'X'),rotation_component(v,'Y'),rotation_component(v,'Z')
                     local brake=unwrap_number(pawn.InputBrake)or -999
-                    local environment=(pawn.bIsInCloud==true or pawn.bIsInSand==true or pawn.bIsInIce==true)and 1 or 0
+                    local environment=(manual_view or pawn.bIsInCloud==true or pawn.bIsInSand==true or pawn.bIsInIce==true)and 1 or 0
                     local status=control_native(address,vx,vy,vz,brake,control_identity or -1,environment)
                     assert(status==1,'essential metadata rejected status='..tostring(status))
                     if report_time>=shadow_retry then
@@ -271,7 +274,7 @@ else
                 aim_camera.seed(camera,rotation_component)
             else
                 desired_camera=aim_camera.update(pawn,controller,rotation,rotation_component,
-                    on,target_pitch,target_yaw,dt,owned)
+                    on,target_pitch,target_yaw,dt,owned or manual_view)
             end
             if desired_camera then
                 assert(camera_native(manager:GetAddress(),address,

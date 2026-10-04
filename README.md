@@ -1,4 +1,4 @@
-> 当前本地候选为 **2.3.5-camera-preview.3**：两种视角、F3临时切换及任务/过场自动回中，详见 [视角说明](docs/CAMERA-CONTEXT.md)。未公开发布，飞控算法沿用2.3.2。
+> 当前本地候选为 **2.3.5-camera-preview.4**：两种视角、F3临时切换及任务/过场自动回中，详见 [视角说明](docs/CAMERA-CONTEXT.md)。未公开发布，飞控算法沿用2.3.2。
 
 # AC8 Integrated Mod
 

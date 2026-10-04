@@ -3,6 +3,6 @@
   "candidateOnly": true,
   "releaseAccepted": false,
   "scope": "Distribution gate for the tested integrated modules; not a claim of complete in-game acceptance.",
-  "nativeControllerVersion": "2.2.1",
+  "nativeControllerVersion": "2.2.2",
   "gameBuild": "25201480"
 }

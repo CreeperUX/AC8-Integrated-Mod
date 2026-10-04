@@ -53,6 +53,12 @@ local object=setmetatable({},{__index=function()count=count+1;error('unsupported
 for i=1,50 do assert(view_context:optional_bool(object,'unknown',false)==nil)end
 assert(count==1)
 ''')
+# Execute the production manual-vs-scripted handoff expression.
+classification=next(line.strip() for line in main.splitlines() if line.strip().startswith('gazing=automatic_view'))
+lua.execute('gazing=true;automatic_view=false;manual_view=true')
+lua.execute(classification);lua.execute('assert(gazing==false)')
+lua.execute('gazing=true;automatic_view=true;manual_view=true')
+lua.execute(classification);lua.execute('assert(gazing==true)')
 gaze=LuaRuntime()
 gaze.execute('function print()end')
 gaze.globals().gaze=gaze.execute((scripts/'gaze.lua').read_text())

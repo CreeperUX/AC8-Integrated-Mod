@@ -113,6 +113,7 @@ std::atomic<bool> hud_enabled{true};
 std::atomic<bool> game_paused{false};
 std::atomic<bool> gaze_active{false};
 std::atomic<bool> context_suspended{true},transition_center_requested{false};
+std::atomic<bool> manual_camera_active{false},native_rig_reset_requested{true};
 std::atomic<int> camera_view_mode{1};
 std::atomic<float> camera_distance_cm{3600},camera_height_cm{600};
 std::atomic<bool> camera_toggle_requested{false};
@@ -738,7 +739,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
     }
     load_config();
     log_line("CAMERA_SETTINGS mode=%d distance_m=%.1f height_m=%.1f F3=toggle; mission/cinematic recenter enabled",camera_view_mode.load(),camera_distance_cm.load()/100,camera_height_cm.load()/100);
-    log_line("PROFILE 2.2.1 CAMERA-CONTEXT SWITCHABLE MODEL CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
+    log_line("PROFILE 2.2.2 CAMERA-ORBIT SWITCHABLE MODEL CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
     if (!prepare_hook()) return 0;
     install_native_camera();
     if (prepare_raw_input_capture()) {
@@ -792,11 +793,12 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_manual_look(lua_State* state){
 
 extern "C" __declspec(dllexport) int ac8_mouseaim_context(lua_State* state){
     if(!running.load()||!on_bridge_thread())return 0;
-    LuaView lua(state);double v[2]{};
-    if(!read_numbers(lua,v)||(v[0]!=0&&v[0]!=1)||(v[1]!=0&&v[1]!=1))return 0;
+    LuaView lua(state);double v[3]{};
+    if(!read_numbers(lua,v)||(v[0]!=0&&v[0]!=1)||(v[1]!=0&&v[1]!=1)||(v[2]!=0&&v[2]!=1))return 0;
+    bool manual_changed=manual_camera_active.exchange(v[2]!=0)!=(v[2]!=0);
     bool changed=context_suspended.exchange(v[0]!=0)!=(v[0]!=0);
-    if(v[1]!=0)transition_center_requested=true;
-    if(changed||v[1]!=0)log_line("VIEW_CONTEXT suspended=%d recenter=%d",int(v[0]),int(v[1]));
+    if(v[1]!=0){transition_center_requested=true;native_rig_reset_requested=true;}
+    if(changed||v[1]!=0||manual_changed)log_line("VIEW_CONTEXT suspended=%d recenter=%d manual_orbit=%d",int(v[0]),int(v[1]),int(v[2]));
     if(v[0]!=0){command_pitch=0;command_roll=0;command_yaw=0;mouse_delta.clear();}
     lua.set_number(1);lua.set_number(camera_view_mode.load());return 2;
 }

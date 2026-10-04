@@ -14,6 +14,8 @@ bool receive_camera(uintptr_t manager,uintptr_t pawn,double p,double y,double r)
     camera_command={manager,pawn,p,y,r,GetTickCount64()};
     return true;
 }
+struct NativeCameraRig {uintptr_t pawn=0;flight::V local{-3000,0,600};bool calibrated=false;};
+NativeCameraRig native_camera_rig;
 struct CameraSample {double actor[3]{},pov[6]{};};
 bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraSample& sample) {
     __try {
@@ -27,17 +29,26 @@ bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraS
         for(double n:sample.pov)if(!std::isfinite(n)||std::abs(n)>1e12)return false;
         for(double n:{cmd.p,cmd.y,cmd.r})if(!std::isfinite(n)||std::abs(n)>1e9)return false;
         if(mode!=0&&mode!=1)return false;
-        // Profiles select position only; both retain mouse-follow rotation.
-        if(mode==0){
-            const double rotation[3]={cmd.p,cmd.y,cmd.r};
-            memcpy(static_cast<unsigned char*>(manager)+0x14A0+3*sizeof(double),rotation,sizeof(rotation));
-            memcpy(sample.pov+3,rotation,sizeof(rotation));
-            return true;
+        if(native_rig_reset_requested.exchange(false)||native_camera_rig.pawn!=cmd.pawn){
+            native_camera_rig={};native_camera_rig.pawn=cmd.pawn;
+        }
+        // Sample the game's framing before our override. Keep this local rig
+        // fixed throughout C and its release grace period, so native focus/orbit
+        // animation cannot move the pivot or zoom while we are looking around.
+        if(!manual_camera_active.load()){
+            auto original_axes=flight::basis(float(sample.pov[3]),float(sample.pov[4]),float(sample.pov[5]));
+            flight::V delta{float(sample.pov[0]-sample.actor[0]),float(sample.pov[1]-sample.actor[1]),float(sample.pov[2]-sample.actor[2])};
+            flight::V local{flight::dot(delta,original_axes.f),flight::dot(delta,original_axes.r),flight::dot(delta,original_axes.u)};
+            if(local.x<-100&&flight::dot(local,local)<20000.f*20000.f){
+                if(!native_camera_rig.calibrated)log_line("NATIVE_CAMERA_RIG local_cm=(%.1f,%.1f,%.1f)",local.x,local.y,local.z);
+                native_camera_rig.local=local;native_camera_rig.calibrated=true;
+            }
         }
         auto axes=flight::basis(float(cmd.p),float(cmd.y),float(cmd.r));
         const float distance=camera_distance_cm.load(),height=camera_height_cm.load();
         if(!std::isfinite(distance)||!std::isfinite(height)||distance<1000||distance>10000||height<0||height>2000)return false;
-        auto offset=axes.f*(-distance)+axes.u*height;
+        auto local=mode==0?native_camera_rig.local:flight::V{-distance,0,height};
+        auto offset=axes.f*local.x+axes.r*local.y+axes.u*local.z;
         double result[6]={sample.actor[0]+offset.x,sample.actor[1]+offset.y,sample.actor[2]+offset.z,cmd.p,cmd.y,cmd.r};
         // Exactly location+rotation; preserve the game's FOV and post effects.
         memcpy(static_cast<unsigned char*>(manager)+0x14A0,result,sizeof(result));
