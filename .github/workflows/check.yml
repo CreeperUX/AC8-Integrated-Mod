@@ -23,3 +23,5 @@ jobs:
         shell: powershell
       - run: .\tests\Test-Package.ps1
         shell: powershell
+      - run: .\tests\Test-Cleanup.ps1
+        shell: powershell

@@ -92,6 +92,8 @@ F10 重载的是游戏目录中**本次运行副本**，并会恢复该副本的
 
 `Existing loader conflict` 表示已有加载器：先核实来源。属于旧包时使用那个旧包的 `Cleanup-Offline.cmd`，不要直接删除来源不明的 `ue4ss` 目录。
 
+如果旧清理命令提示 `No active candidate session` 但仍有残留，或因 `ue4ss` 已删除而无法清掉 DLL，请使用独立 [历史残留清理工具](CLEANUP.md)。完整解压到游戏目录之外，关闭游戏，运行 `Recover-Cleanup.cmd` 并输入游戏根目录；确认残留属于本整合包后输入 `RECOVER`。工具先备份并校验，再处理可确认归属的残留。未知文件或其他 Mod 会被保留并报错。旧 ZIP 不会自动获得新清理逻辑。
+
 ## 可选分析
 
 普通游玩不需要 Python。自动离线报告需要 Python 和 NumPy。缺少分析依赖时不会阻止游戏清理。`sessions` 中含日志、试飞数据和个人存档备份，**不要直接转发**。分享干净 Release ZIP 即可。

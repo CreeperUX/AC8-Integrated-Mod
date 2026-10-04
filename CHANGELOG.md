@@ -1,5 +1,13 @@
 # Changelog
 
+## Cleanup tool 1.0.0 — historical loader recovery
+
+- Adds a standalone cleaner for historical package-state loss and partial cleanup; no controller or missile changes.
+- Backs up and SHA-256 verifies all selected contents before removal, rejects unknown loaders and filesystem links, and reports residuals instead of false success.
+- Supports retrying partial removal and explicitly confirmed recovery without the old package session record.
+- Records intended deployment before copying files and retires completed session state before optional save/analysis diagnostics.
+- Adds Windows PowerShell cleanup regressions and Chinese recovery documentation. Existing release ZIPs remain unchanged; download the separate cleanup tool for historical leftovers.
+
 ## 2.3.2 — installation encoding and mission observation fixes
 
 - Removes the duplicate UTF-8 BOM in Setup.ps1 that turned its first assignment into a CommandNotFoundException.

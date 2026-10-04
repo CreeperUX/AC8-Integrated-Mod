@@ -6,6 +6,7 @@
 /.venv/
 **/sessions/
 **/active-session.json
+**/cleanup-backups/
 **/Steam-Launch-Option.txt
 *.dll
 *.exe

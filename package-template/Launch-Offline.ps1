@@ -1,4 +1,4 @@
-param([switch]$CleanupOnly,[switch]$CheckOnly)
+﻿param([switch]$CleanupOnly,[switch]$CheckOnly)
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
 if(!$CleanupOnly){& (Join-Path $root 'Check-Package.ps1') -PackageRoot $root}
@@ -7,6 +7,7 @@ if(!$gameRoot){throw 'Run Setup.cmd first.'}
 $w64=[IO.Path]::GetFullPath((Join-Path $gameRoot 'Game/Binaries/Win64'))
 $exe=Join-Path $w64 'AceCombat8.exe'
 $statePath=Join-Path $root 'active-session.json'
+. (Join-Path $root 'Cleanup-Core.ps1')
 $expectedHash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'
 function Get-SaveHashes {
  $save=Join-Path $env:LOCALAPPDATA 'BANDAI NAMCO Entertainment/ACE COMBAT 8/Saved/SaveGames'
@@ -15,46 +16,30 @@ function Get-SaveHashes {
  })
 }
 function Cleanup-Owned($state) {
- if(Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue){throw 'Close the game normally before cleanup.'}
- if($state.Win64 -ne $w64){throw 'Session game path changed; refusing cleanup.'}
- $ownedRoot=Join-Path $w64 'ue4ss'
- $marker=Join-Path $ownedRoot 'AC8SourceInit-owner.txt'
- if(!(Test-Path -LiteralPath $marker) -or (Get-Content -LiteralPath $marker -Raw).Trim() -ne $state.Id){throw 'Ownership marker missing or mismatched.'}
- $links=@(Get-Item -LiteralPath $ownedRoot; Get-ChildItem -LiteralPath $ownedRoot -Recurse -Force) | Where-Object {($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0}
- if($links){throw 'Unexpected filesystem link in staged directory. Leaving files for review.'}
- # Preserve all contents before removal, including anything added during this run.
- Copy-Item -LiteralPath $ownedRoot -Destination (Join-Path $state.Results 'runtime-copy') -Recurse -Force
- $log=Join-Path $ownedRoot 'UE4SS.log'
- if(Test-Path -LiteralPath $log){Copy-Item -LiteralPath $log -Destination (Join-Path $state.Results 'UE4SS.log')}
- $approvedFiles=@()
- foreach($file in $state.Files){
-  $target=[IO.Path]::GetFullPath((Join-Path $w64 $file.Name))
-  if($target -notin @((Join-Path $w64 'dwmapi.dll'),(Join-Path $w64 'steam_appid.txt'))){throw 'Unexpected owned file path.'}
-  if(Test-Path -LiteralPath $target){
-   if((Get-FileHash -LiteralPath $target).Hash -ne $file.SHA256){throw 'A staged file changed; preserved for review.'}
-   $approvedFiles+=$target
-  }
- }
- foreach($target in $approvedFiles){Remove-Item -LiteralPath $target -Force}
- $resolved=(Resolve-Path -LiteralPath $ownedRoot).Path
- if($resolved -ne (Join-Path $w64 'ue4ss')){throw 'Unexpected recursive cleanup path.'}
- Remove-Item -LiteralPath $resolved -Recurse -Force
- $after=Get-SaveHashes
- ConvertTo-Json -InputObject $after | Set-Content -LiteralPath (Join-Path $state.Results 'save-hashes-after.json') -Encoding UTF8
- Move-Item -LiteralPath $statePath -Destination (Join-Path $state.Results 'completed-session.json')
- Write-Host "Finished. Session log: $($state.Results)\UE4SS.log"
- # Analysis happens after owned loader cleanup. Failure never restores/replaces saves.
+ $archive=Invoke-AC8Cleanup -GameRoot $gameRoot -BackupRoot (Join-Path $root 'cleanup-backups') -State $state
+ if(!$archive){$archive=Join-Path $root ('cleanup-backups/completed-'+[guid]::NewGuid().ToString('N'));New-Item -ItemType Directory -Path $archive -Force | Out-Null}
+ Move-Item -LiteralPath $statePath -Destination (Join-Path $archive 'completed-session.json')
+ # Cleanup is complete before optional diagnostics. Missing saves cannot block recovery.
  try {
+  New-Item -ItemType Directory -Path $state.Results -Force | Out-Null
+  $runtime=Join-Path $archive 'ue4ss'
+  if(Test-Path -LiteralPath $runtime){
+   Copy-Item -LiteralPath $runtime -Destination (Join-Path $state.Results 'runtime-copy') -Recurse -Force
+   $log=Join-Path $runtime 'UE4SS.log'
+   if(Test-Path -LiteralPath $log){Copy-Item -LiteralPath $log -Destination (Join-Path $state.Results 'UE4SS.log') -Force}
+  }
+  $after=Get-SaveHashes
+  ConvertTo-Json -InputObject $after | Set-Content -LiteralPath (Join-Path $state.Results 'save-hashes-after.json') -Encoding UTF8
   if(Get-Command python.exe -ErrorAction SilentlyContinue){
    & python.exe -X utf8 (Join-Path $root 'tools/analyze_experiment.py') --session $state.Results
-   if($LASTEXITCODE -ne 0){Write-Host 'Shadow analysis failed; raw CSV retained. Use Analyze-Latest.cmd later.'}
-  }else{Write-Host 'Python unavailable; raw CSV retained. Analysis needs Python and NumPy.'}
- }catch{Write-Host ('Analysis skipped; raw data retained: '+$_.Exception.Message)}
-
+   if($LASTEXITCODE -ne 0){Write-Host 'Analysis failed; verified cleanup backup retained.'}
+  }
+ }catch{Write-Host ('Optional diagnostics skipped after successful cleanup: '+$_.Exception.Message)}
 }
+
 if($CleanupOnly){
- if(!(Test-Path -LiteralPath $statePath)){Write-Host 'No active candidate session.';exit 0}
- Cleanup-Owned (Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json)
+ if(!(Test-Path -LiteralPath $statePath)){$null=Invoke-AC8Cleanup -GameRoot $gameRoot -BackupRoot (Join-Path $root 'cleanup-backups');exit 0}
+ Cleanup-Owned (Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json)
  exit 0
 }
 $validation=Get-Content -LiteralPath (Join-Path $root 'validation-status.json') -Raw | ConvertFrom-Json
@@ -93,26 +78,28 @@ $features=Read-FeatureSettings (Join-Path $root 'features.ini')
 $readinessPattern=Get-FeatureReadinessPattern $features
 $features | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $results 'feature-selection.json') -Encoding UTF8
 $payload=Join-Path $root 'payload/Game/Binaries/Win64'
-$state=[pscustomobject]@{Id=$id;Win64=$w64;Results=$results;Files=@();PID=$null}
-$state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $statePath -Encoding UTF8
+# Record intended deployment before copying files, so interruption cannot orphan a DLL.
+$sha=[Security.Cryptography.SHA256]::Create()
+try{$appidHash=[BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::ASCII.GetBytes("2288340`r`n"))).Replace('-','')}finally{$sha.Dispose()}
+$planned=@([pscustomobject]@{Name='dwmapi.dll';SHA256=(Get-FileHash -LiteralPath (Join-Path $payload 'dwmapi.dll')).Hash},[pscustomobject]@{Name='steam_appid.txt';SHA256=$appidHash})
+$state=[pscustomobject]@{Id=$id;Win64=$w64;Results=$results;Files=$planned;PID=$null}
+Write-AC8Json $state $statePath
 try {
  New-Item -ItemType Directory -Path (Join-Path $w64 'ue4ss') | Out-Null
  Set-Content -LiteralPath (Join-Path $w64 'ue4ss/AC8SourceInit-owner.txt') -Value $id -Encoding ASCII
  Install-SelectedUE4SS (Join-Path $payload 'ue4ss') (Join-Path $w64 'ue4ss') $features
  Apply-MouseSettings $mouseSettings (Join-Path $w64 'ue4ss/Mods/AC8MouseAim')
  Copy-Item -LiteralPath (Join-Path $payload 'dwmapi.dll') -Destination $w64
- $state.Files+= [pscustomobject]@{Name='dwmapi.dll';SHA256=(Get-FileHash -LiteralPath (Join-Path $w64 'dwmapi.dll')).Hash}
- $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $statePath -Encoding UTF8
+ Write-AC8Json $state $statePath
  Set-Content -LiteralPath (Join-Path $w64 'steam_appid.txt') -Value '2288340' -Encoding ASCII
- $state.Files+= [pscustomobject]@{Name='steam_appid.txt';SHA256=(Get-FileHash -LiteralPath (Join-Path $w64 'steam_appid.txt')).Hash}
- $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $statePath -Encoding UTF8
+ Write-AC8Json $state $statePath
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
  Write-Host 'AC8 2.3.2 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
  Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F10 reload mouse settings; hold C for free look.'
  if($features.MissileEnhancement){Write-Host 'FEATURES: mouse flight + missile enhancement/cosmetics.'}else{Write-Host 'FEATURES: mouse flight only. Missile module is not installed.'}
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru
  $state.PID=$game.Id
- $state | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $statePath -Encoding UTF8
+ Write-AC8Json $state $statePath
  # Observe this process and its log only; no game memory/object polling.
  $ready=$false
  $deadline=[DateTime]::UtcNow.AddSeconds(45)
@@ -135,7 +122,7 @@ try {
  $game.WaitForExit()
 } finally {
  if(!(Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue)){
-  Cleanup-Owned (Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json)
+  Cleanup-Owned (Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json)
  }else{Write-Host 'Game still active; staged files retained. Close normally, then run Cleanup-Offline.cmd.'}
 }
 
