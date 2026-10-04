@@ -1,6 +1,6 @@
 {
-  "version": "2.3.3",
-  "status": "prerelease",
+  "version": "2.3.4",
+  "status": "local-candidate",
   "game_build": "25201480",
   "game_sha256": "51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F",
   "steam_app_id": 2288340,

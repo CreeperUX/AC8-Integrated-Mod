@@ -28,7 +28,7 @@ local function applyAt(reason)
   log('SOURCE_FAILED reason='..reason..' '..tostring(result.error)..' rollbackErrors='..tostring(#(result.rollbackErrors or{})))
   return
  end
- log('SOURCE_APPLIED reason='..reason..' verified='..result.verified..' written='..result.written)
+ log('SOURCE_APPLIED mode='..(config.missile_mode or 'full')..' reason='..reason..' verified='..result.verified..' written='..result.written)
  if visuals then
   local ok,err=pcall(visuals.prepare)
   if not ok then print('[AC8MSLVisual] PREPARE_FAILED '..tostring(err)..'\n')end

@@ -1,6 +1,6 @@
 -- Initialization-only source override candidate. No UObject references survive apply().
 local core=require('patch_core')
-local spec=require('source_spec')
+local spec=require('selected_spec')
 local retention=require('source_retention')
 local M={}
 local function valid(o)return o~=nil and o:IsValid()end
