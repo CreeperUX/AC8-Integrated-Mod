@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.3.3 — installation and startup experience
+## 2.3.3 — unreleased draft; installation and startup experience
 
 - Accepts the game root, Win64 folder or AceCombat8.exe path with Chinese/space/quoted paths and retryable input.
 - Adds Chinese console guidance, local diagnostic logs and retained nonzero failure codes across CMD entrypoints.

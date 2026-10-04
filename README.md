@@ -1,14 +1,14 @@
 # AC8 Integrated Mod
 
-> **v2.3.3 安装体验更新：** 自动识别根目录 / Win64 / EXE 路径，中文提示与重试，流程内历史残留恢复，写入权限检查，启动错误优先显示，缺少 NumPy 时安静跳过可选分析。保留 v2.3.2 飞控与导弹内容。[安装与排错](docs/INSTALL.md#常见报错与处理)
+> **v2.3.3 已撤回为草稿，功能仍在完善，暂不提供公开安装包。** 当前公开整合包为 v2.3.2。[待发布功能说明](docs/INSTALL-PREVIEW.md)
 
 > **旧版清理后仍报加载器冲突？** 已发布独立 [历史残留清理工具 v1.0.0](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/cleanup-v1.0.0)，用于旧包会话记录丢失、只剩 DLL 或清理中断等问题。先备份校验再处理可确认归属的残留；[使用步骤与限制](docs/CLEANUP.md)。旧版整合包不会自动更新，工具不改变飞控版本。
 
 为 **ACE COMBAT 8 Steam 版**提供鼠标飞控、在线响应模型学习和可选的导弹强化模块。
 
-> **如何选择安装？** 使用 **v2.3.3 整合安装包**：运行 `Setup.cmd`，在功能菜单输入 **`2` 并回车＝仅鼠标飞控**，输入 **`1` 并回车＝完整安装（飞控＋导弹强化）**。已经安装过的用户，退出游戏并等待清理完成后运行 `Choose-Features.cmd`，同样输入 `1` 或 `2`，下次启动生效。[详细步骤](docs/INSTALL.md#选择仅鼠标飞控或完整安装)
+> **如何选择安装？** 使用 **v2.3.2 整合安装包**：运行 `Setup.cmd`，在功能菜单输入 **`2` 并回车＝仅鼠标飞控**，输入 **`1` 并回车＝完整安装（飞控＋导弹强化）**。已经安装过的用户，退出游戏并等待清理完成后运行 `Choose-Features.cmd`，同样输入 `1` 或 `2`，下次启动生效。[详细步骤](docs/INSTALL.md#选择仅鼠标飞控或完整安装)
 >
-> **版本提示：** v2.0.0 等旧安装包没有这个菜单。请在 [v2.3.3 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.3) 下载 `AC8-Integrated-v2.3.3-share.zip`。GitHub 的 Code → Download ZIP 是源码，安装脚本位于 `package-template/`，源码本身不含运行 DLL。
+> **版本提示：** v2.0.0 等旧安装包没有这个菜单。请在 [v2.3.2 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.2) 下载 `AC8-Integrated-v2.3.2-share.zip`。GitHub 的 Code → Download ZIP 是源码，安装脚本位于 `package-template/`，源码本身不含运行 DLL。
 
 ## 项目基础与致谢
 
@@ -18,7 +18,7 @@
 
 鼠标指定世界方向，飞机自动追随；按住 C 自由观察，F4 在稳健与积极两档飞控间切换。**不需要导弹改动时，可以只安装鼠标飞控。**
 
-当前版本：**v2.3.3 预发布**。本版修复 Setup 安装脚本的重复 UTF-8 编码标记，并修复任务 15 特殊 A-6E 的模型数据入口；沿用 v2.3.1 控制律。[更新说明](docs/V232-OBSERVATION.md)。适配游戏 Build **25201480**、Windows x64。启动器校验游戏文件和固定 UE4SS 运行库；其他游戏构建尚未适配。仅用于离线单人任务，Steam 客户端可保持在线进行云同步。
+当前版本：**v2.3.2 预发布**。本版修复 Setup 安装脚本的重复 UTF-8 编码标记，并修复任务 15 特殊 A-6E 的模型数据入口；沿用 v2.3.1 控制律。[更新说明](docs/V232-OBSERVATION.md)。适配游戏 Build **25201480**、Windows x64。启动器校验游戏文件和固定 UE4SS 运行库；其他游戏构建尚未适配。仅用于离线单人任务，Steam 客户端可保持在线进行云同步。
 
 [安装包发布页](https://github.com/CreeperUX/AC8-Integrated-Mod/releases) · [完整安装说明](docs/INSTALL.md) · [控制原理](docs/CONTROL.md) · [开发与构建](docs/DEVELOPMENT.md) · [已知限制](docs/LIMITATIONS.md)
 
@@ -42,7 +42,7 @@
 
 ## 快速开始
 
-1. 从 [v2.3.3 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.3) 下载整合安装包，完整解压到**游戏目录之外**。GitHub 的 Source code ZIP 是源码，不是可运行安装包。
+1. 从 [v2.3.2 Release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.2) 下载整合安装包，完整解压到**游戏目录之外**。GitHub 的 Source code ZIP 是源码，不是可运行安装包。
 2. 正常退出游戏；使用过旧包时，先等待旧控制台完成清理。
 3. 运行 `Setup.cmd`，输入 Steam「管理 → 浏览本地文件」打开的游戏根目录；功能菜单输入 **`2` 仅鼠标飞控**，或 **`1` 完整安装**，按回车确认。
 4. 将生成的 `Steam-Launch-Option.txt` 整行复制到 Steam 的游戏启动选项。
@@ -99,4 +99,3 @@ LAAM 的 4 发待发是配置目标，全部机型的实际槽位尚未确认。
 This project is developed from [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim). Special thanks to FletcherMiya and the upstream contributors for their work and for sharing the original project. This is an independently maintained community derivative; upstream attribution and license notices are preserved.
 
 Mouse-directed flight control with per-aircraft online response identification, runtime Classic/Agile switching, free look and an **optional** missile enhancement module. Windows x64 / Steam build 25201480 / offline single-player only. Download a release package, run `Setup.cmd`, choose features, and paste the generated Steam launch option. F4 selects the control policy; F8 toggles mouse assistance. See the linked documentation for limitations and source builds.
-
