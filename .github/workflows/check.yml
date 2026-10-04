@@ -1,0 +1,20 @@
+name: Checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python scripts/validate-source.py
+      - run: native\test.cmd
+        shell: cmd
+      - run: python -X utf8 tests/test_visuals.py
+      - run: python -X utf8 tests/test_integration.py
+      - run: .\tests\Test-Features.ps1
+        shell: powershell

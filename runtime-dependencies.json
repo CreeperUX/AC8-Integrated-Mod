@@ -1,0 +1,16 @@
+{
+  "version": "UE4SS3.0.1-1152-ge3ba1016",
+  "license": "MIT; see package-template/payload/Game/Binaries/Win64/ue4ss/LICENSE",
+  "files": [
+    {
+      "path": "Game/Binaries/Win64/dwmapi.dll",
+      "sha256": "cf440b9eb8643bb7c434acfda696aee57fd981d185dca5e57fb8dbb18f8fc1cd",
+      "bytes": 279552
+    },
+    {
+      "path": "Game/Binaries/Win64/ue4ss/UE4SS.dll",
+      "sha256": "680a026890abb4d0df2211251f8defc1681a584275f1521dcc0fe30af480006f",
+      "bytes": 20605440
+    }
+  ]
+}

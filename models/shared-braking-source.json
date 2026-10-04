@@ -1,0 +1,62 @@
+{
+  "pitch": {
+    "family": "linear_speed",
+    "speed_bounds": [
+      118.68332709142257,
+      687.0656471013061
+    ],
+    "speed_center": 455.74031711461157,
+    "speed_scale": 177.86516935347177,
+    "tau_s": 1.012877564329484,
+    "delay_s": 0.18,
+    "gain_coefficients": [
+      50.31217347805228,
+      3.0063227470453406
+    ],
+    "bias_deg_s": 3.1319674414436394,
+    "training_mse": 3.8381784211178887,
+    "training_pairs": 6580,
+    "delay_at_upper_bound": false,
+    "tau_at_upper_bound": false
+  },
+  "yaw": {
+    "family": "linear_speed",
+    "speed_bounds": [
+      118.68332709142257,
+      687.0656471013061
+    ],
+    "speed_center": 455.74031711461157,
+    "speed_scale": 177.86516935347177,
+    "tau_s": 0.720809379616255,
+    "delay_s": 0.0,
+    "gain_coefficients": [
+      8.578774676906063,
+      -1.361684188766625
+    ],
+    "bias_deg_s": 0.21530334289793557,
+    "training_mse": 0.02213944782160479,
+    "training_pairs": 6580,
+    "delay_at_upper_bound": false,
+    "tau_at_upper_bound": false
+  },
+  "roll": {
+    "family": "linear_speed",
+    "speed_bounds": [
+      118.68332709142257,
+      687.0656471013061
+    ],
+    "speed_center": 455.74031711461157,
+    "speed_scale": 177.86516935347177,
+    "tau_s": 1.012877564329484,
+    "delay_s": 0.06,
+    "gain_coefficients": [
+      191.6273715965053,
+      -14.594544913614975
+    ],
+    "bias_deg_s": 0.8569312546991943,
+    "training_mse": 12.920129067644273,
+    "training_pairs": 6580,
+    "delay_at_upper_bound": false,
+    "tau_at_upper_bound": false
+  }
+}

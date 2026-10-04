@@ -1,0 +1,14 @@
+MinHook v1.3.4
+Copyright (C) 2009-2017 Tsuda Kageyu.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted under the conditions in
+src/vendor/minhook/LICENSE.txt.
+
+RE-UE4SS
+The native module also uses a LuaMadeSimple header snapshot from RE-UE4SS
+and its exported C++ interface. Header changes: explicit standard includes
+and fmt::format replaced with std::format. See UE4SS-LICENSE.txt.
+Copyright 2022 Narknon and contributors. MIT License. The loader binaries in
+the distribution retain their upstream license. Version:
+UE4SS_v3.0.1-1152-ge3ba1016 (experimental-latest), downloaded from the official
+UE4SS-RE/RE-UE4SS GitHub release.

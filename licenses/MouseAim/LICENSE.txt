@@ -1,0 +1,7 @@
+AC8 Mouse Aim original code is dedicated to the public domain under CC0 1.0.
+
+The bundled MinHook source retains its BSD 2-Clause license; see
+THIRD_PARTY_NOTICES.txt and the vendored LICENSE.txt.
+
+UE4SS is distributed under the MIT License. No ACE COMBAT 8 game assets or
+executables are included.
