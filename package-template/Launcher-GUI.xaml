@@ -1,50 +1,68 @@
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="AC8 · 玩家工具（本地预览）" Width="1000" Height="780" MinWidth="860" MinHeight="680" WindowStartupLocation="CenterScreen" Background="#F3F5F8" FontFamily="Microsoft YaHei UI, Segoe UI" FontSize="14" Foreground="#182434">
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="AC8 · CreeperUX 玩家工具（本地预览）" Width="1040" Height="780" MinWidth="880" MinHeight="700" WindowStartupLocation="CenterScreen" Background="{DynamicResource CxBg}" Foreground="{DynamicResource CxText}" FontFamily="{DynamicResource CxSans}" FontSize="13" UseLayoutRounding="True">
  <Window.Resources>
   <Style TargetType="Button">
-   <Setter Property="Padding" Value="18,10"/><Setter Property="MinHeight" Value="40"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#D5DDE7"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Foreground" Value="#25354A"/>
-   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.82"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.42"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#1764CB"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+   <Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="12,5"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="{DynamicResource CxText}"/><Setter Property="BorderBrush" Value="{DynamicResource CxBoundary}"/><Setter Property="BorderThickness" Value="1"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="Surface" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/></Border><ControlTemplate.Triggers>
+    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource CxHover}"/></Trigger>
+    <MultiTrigger><MultiTrigger.Conditions><Condition Property="Tag" Value="primary"/><Condition Property="IsMouseOver" Value="True"/></MultiTrigger.Conditions><Setter TargetName="Surface" Property="Background" Value="{DynamicResource CxAccentHi}"/></MultiTrigger>
+    <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value="0.82"/></Trigger>
+    <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value="0.45"/></Trigger>
+    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource CxFocus}"/><Setter TargetName="Surface" Property="BorderThickness" Value="2"/></Trigger>
+   </ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+   <Style.Triggers><Trigger Property="Tag" Value="primary"><Setter Property="Background" Value="{DynamicResource CxAccent}"/><Setter Property="Foreground" Value="{DynamicResource CxOnAccent}"/><Setter Property="BorderBrush" Value="{DynamicResource CxAccent}"/><Setter Property="FontWeight" Value="SemiBold"/></Trigger></Style.Triggers>
   </Style>
-  <Style TargetType="TextBox"><Setter Property="Padding" Value="12,10"/><Setter Property="BorderBrush" Value="#D5DDE7"/><Setter Property="BorderThickness" Value="1"/><Setter Property="VerticalContentAlignment" Value="Center"/></Style>
-  <Style TargetType="RadioButton"><Setter Property="FontSize" Value="14"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Margin" Value="0,0,24,0"/></Style>
+  <Style TargetType="TextBox">
+   <Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="10,4"/><Setter Property="Background" Value="{DynamicResource CxDeep}"/><Setter Property="Foreground" Value="{DynamicResource CxText}"/><Setter Property="CaretBrush" Value="{DynamicResource CxText}"/><Setter Property="BorderBrush" Value="{DynamicResource CxBoundary}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="SelectionBrush" Value="{DynamicResource CxAccentSoft}"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TextBox"><Border x:Name="Edge" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="5"><ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/></Border><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="Edge" Property="BorderBrush" Value="{DynamicResource CxFocus}"/><Setter TargetName="Edge" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Edge" Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType="RadioButton">
+   <Setter Property="Padding" Value="12"/><Setter Property="Foreground" Value="{DynamicResource CxText}"/><Setter Property="Background" Value="{DynamicResource CxDeep}"/><Setter Property="BorderBrush" Value="{DynamicResource CxBoundary}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Cursor" Value="Hand"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton"><Border x:Name="Choice" CornerRadius="5" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"><ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True"/></Border><ControlTemplate.Triggers>
+    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Choice" Property="Background" Value="{DynamicResource CxHover}"/></Trigger>
+    <Trigger Property="IsChecked" Value="True"><Setter TargetName="Choice" Property="Background" Value="{DynamicResource CxAccentSoft}"/><Setter TargetName="Choice" Property="BorderBrush" Value="{DynamicResource CxAccentMark}"/><Setter Property="Foreground" Value="{DynamicResource CxAccentText}"/></Trigger>
+    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Choice" Property="BorderBrush" Value="{DynamicResource CxFocus}"/><Setter TargetName="Choice" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Choice" Property="Opacity" Value="0.45"/></Trigger>
+   </ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType="ToolTip"><Setter Property="Background" Value="{DynamicResource CxRaised}"/><Setter Property="Foreground" Value="{DynamicResource CxText}"/><Setter Property="BorderBrush" Value="{DynamicResource CxBoundary}"/></Style>
+  <Style x:Key="Panel" TargetType="Border"><Setter Property="Background" Value="{DynamicResource CxPanel}"/><Setter Property="BorderBrush" Value="{DynamicResource CxLine}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="6"/><Setter Property="Padding" Value="20"/></Style>
+  <Style x:Key="Caption" TargetType="TextBlock"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource CxMuted}"/><Setter Property="Margin" Value="0,0,0,6"/></Style>
  </Window.Resources>
- <Grid x:Name="PreviewRoot" Margin="30">
+ <Grid x:Name="PreviewRoot" Margin="24" Background="{DynamicResource CxBg}">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-  <Grid Margin="0,0,0,22">
-   <StackPanel><TextBlock Text="AC8 / PLAYER TOOLS" FontSize="12" FontWeight="SemiBold" Foreground="#687A91"/><TextBlock Text="准备起飞" FontSize="30" FontWeight="SemiBold" Margin="0,5,0,5"/><TextBlock Text="选择游戏、保存设置，然后从 Steam 启动。" Foreground="#65758A"/></StackPanel>
-   <Border HorizontalAlignment="Right" VerticalAlignment="Top" Background="#E4EAF3" CornerRadius="12" Padding="12,5"><TextBlock Text="本地预览 · 未发布" FontSize="12" Foreground="#4C617E"/></Border>
-  </Grid>
+  <Border BorderBrush="{DynamicResource CxLine}" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,20">
+   <Grid><StackPanel>
+    <StackPanel Orientation="Horizontal"><Border Width="3" Background="{DynamicResource CxAccentMark}" Margin="0,0,10,0"/><TextBlock Text="CREEPERUX / AC8" FontFamily="{DynamicResource CxDisplay}" FontSize="17" Foreground="{DynamicResource CxText}"/></StackPanel>
+    <TextBlock Text="游戏安装与维护" FontSize="22" FontWeight="SemiBold" Margin="0,10,0,6"/>
+    <TextBlock Text="选择安装内容，连接 Steam，管理加载器。" Foreground="{DynamicResource CxMuted}"/>
+   </StackPanel><StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"><Border Background="{DynamicResource CxRaised}" BorderBrush="{DynamicResource CxLine}" BorderThickness="1" CornerRadius="4" Padding="8,5" Margin="0,0,8,0"><TextBlock Text="本地预览" FontSize="12" Foreground="{DynamicResource CxMuted}"/></Border><Button x:Name="ThemeToggle" Content="切换浅色" AutomationProperties.Name="切换深色或浅色主题"/></StackPanel></Grid>
+  </Border>
   <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-   <Grid>
-    <Grid.ColumnDefinitions><ColumnDefinition Width="1.25*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-    <Border Grid.Column="0" VerticalAlignment="Top" Background="White" CornerRadius="10" Padding="20" BorderBrush="#E1E6EE" BorderThickness="1" Margin="0,0,16,0">
-     <StackPanel>
-      <TextBlock Text="01  游戏与安装内容" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,18"/>
-      <TextBlock Text="游戏位置" Margin="0,0,0,7"/>
-      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="GamePath" AutomationProperties.Name="游戏路径" ToolTip="支持游戏根目录、Win64 目录或 AceCombat8.exe 路径"/><Button x:Name="BrowseGame" Grid.Column="1" Content="选择文件夹…" Margin="10,0,0,0"/></Grid>
-      <TextBlock Text="支持根目录、Win64 或 EXE 路径，自动识别。" Foreground="#7B889B" FontSize="12" Margin="0,6,0,14"/>
-      <TextBlock Text="Steam 程序" Margin="0,0,0,7"/>
-      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SteamPath" AutomationProperties.Name="Steam 程序路径"/><Button x:Name="BrowseSteam" Grid.Column="1" Content="选择程序…" Margin="10,0,0,0"/></Grid>
-      <TextBlock Text="安装内容" Margin="0,18,0,12"/>
-      <WrapPanel><RadioButton x:Name="MouseOnly" GroupName="Features" Content="仅鼠标飞控"/><RadioButton x:Name="FullInstall" GroupName="Features" Content="鼠标飞控 + 导弹强化" IsChecked="True"/></WrapPanel>
-      <WrapPanel Margin="0,16,0,0"><Button x:Name="Check" Content="检查环境" Margin="0,0,10,0"/><Button x:Name="Save" Content="保存设置" Background="#175AC1" Foreground="White" BorderBrush="#175AC1"/></WrapPanel>
-     </StackPanel>
-    </Border>
-    <Border Grid.Column="1" VerticalAlignment="Top" Background="White" CornerRadius="10" Padding="20" BorderBrush="#E1E6EE" BorderThickness="1">
-     <StackPanel>
-      <TextBlock Text="02  连接 Steam" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,10"/>
-      <TextBlock Text="首次保存后，复制下面的启动选项，粘贴到 Steam → AC8 → 属性 → 通用。" TextWrapping="Wrap" Foreground="#65758A" Margin="0,0,0,12"/>
-      <TextBox x:Name="LaunchOption" IsReadOnly="True" Background="#F6F8FB" AutomationProperties.Name="Steam 启动选项" Text="保存设置后显示启动选项" FontSize="12"/>
-      <WrapPanel Margin="0,14,0,0"><Button x:Name="CopyOption" Content="复制启动选项" IsEnabled="False" Margin="0,0,10,0"/><Button x:Name="Start" Content="从 Steam 启动" Background="#175AC1" Foreground="White" BorderBrush="#175AC1"/></WrapPanel>
-     </StackPanel>
-    </Border>
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="1.25*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+    <Border Style="{StaticResource Panel}" Margin="0,0,16,0" VerticalAlignment="Top"><StackPanel>
+     <TextBlock Text="01 / INSTALLATION" FontFamily="{DynamicResource CxMono}" FontSize="12" Foreground="{DynamicResource CxQuiet}"/><TextBlock Text="游戏与安装内容" FontSize="17" FontWeight="SemiBold" Margin="0,6,0,20"/>
+     <TextBlock Text="游戏位置" Style="{StaticResource Caption}"/>
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="GamePath" AutomationProperties.Name="游戏路径"/><Button x:Name="BrowseGame" Grid.Column="1" Content="浏览…" Margin="8,0,0,0"/></Grid>
+     <TextBlock Text="可选择根目录、Win64，或粘贴 EXE 路径。" FontSize="11" Foreground="{DynamicResource CxQuiet}" Margin="0,6,0,16"/>
+     <TextBlock Text="Steam 程序" Style="{StaticResource Caption}"/>
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SteamPath" AutomationProperties.Name="Steam 程序路径"/><Button x:Name="BrowseSteam" Grid.Column="1" Content="浏览…" Margin="8,0,0,0"/></Grid>
+     <TextBlock Text="安装内容" Style="{StaticResource Caption}" Margin="0,20,0,8"/>
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <RadioButton x:Name="MouseOnly" GroupName="Features" Margin="0,0,8,0" AutomationProperties.Name="仅鼠标飞控"><StackPanel><TextBlock Text="仅鼠标飞控" FontWeight="SemiBold"/><TextBlock Text="保留原版导弹" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
+      <RadioButton x:Name="FullInstall" Grid.Column="1" GroupName="Features" IsChecked="True" AutomationProperties.Name="鼠标飞控和导弹强化"><StackPanel><TextBlock Text="飞控 + 导弹强化" FontWeight="SemiBold"/><TextBlock Text="完整安装" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
+     </Grid>
+     <WrapPanel Margin="0,20,0,0"><Button x:Name="Check" Content="检查环境" Margin="0,0,8,0"/><Button x:Name="Save" Content="保存设置" Tag="primary"/></WrapPanel>
+    </StackPanel></Border>
+    <StackPanel Grid.Column="1">
+     <Border Style="{StaticResource Panel}"><StackPanel><TextBlock Text="02 / STEAM" FontFamily="{DynamicResource CxMono}" FontSize="12" Foreground="{DynamicResource CxQuiet}"/><TextBlock Text="连接并启动" FontSize="17" FontWeight="SemiBold" Margin="0,6,0,14"/>
+      <TextBlock Text="保存后复制启动选项，粘贴到 Steam → AC8 → 属性 → 通用。" TextWrapping="Wrap" Foreground="{DynamicResource CxMuted}" LineHeight="20" Margin="0,0,0,12"/>
+      <TextBox x:Name="LaunchOption" IsReadOnly="True" Text="保存设置后显示启动选项" AutomationProperties.Name="Steam 启动选项" FontSize="12" FontFamily="{DynamicResource CxMono}" TextWrapping="Wrap"/>
+      <WrapPanel Margin="0,16,0,0"><Button x:Name="CopyOption" Content="复制启动选项" IsEnabled="False" Margin="0,0,8,0"/><Button x:Name="Start" Content="从 Steam 启动" Tag="primary"/></WrapPanel>
+     </StackPanel></Border>
+     <Border Style="{StaticResource Panel}" Margin="0,16,0,0"><StackPanel><TextBlock Text="维护与恢复" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/><TextBlock Text="遇到历史残留时，确认归属后先备份再清理。" Foreground="{DynamicResource CxMuted}" TextWrapping="Wrap" LineHeight="20"/><WrapPanel Margin="0,14,0,0"><Button x:Name="Recover" Content="备份并清理" Margin="0,0,8,0"/><Button x:Name="OpenLogs" Content="诊断文件夹"/></WrapPanel></StackPanel></Border>
+    </StackPanel>
    </Grid>
   </ScrollViewer>
-  <StackPanel Grid.Row="2" Margin="0,12,0,0">
-    <Border x:Name="StatusCard" Background="#EAF0F8" CornerRadius="10" Padding="20" Margin="0,0,0,14">
-     <StackPanel><TextBlock x:Name="StatusTitle" Text="先选择游戏位置" FontWeight="SemiBold" Margin="0,0,0,7"/><TextBlock x:Name="StatusMessage" Text="检查与清理结果会显示在这里。普通游玩不需要 Python 或 NumPy。" TextWrapping="Wrap" Foreground="#536881" LineHeight="22"/><ProgressBar x:Name="BusyBar" Height="3" Margin="0,12,0,0" IsIndeterminate="True" Visibility="Collapsed"/></StackPanel>
-    </Border>
-    <WrapPanel Margin="0,0,0,6"><Button x:Name="Recover" Content="备份并清理" Margin="0,0,10,0"/><Button x:Name="OpenLogs" Content="打开诊断文件夹"/></WrapPanel>
-  </StackPanel>
-  <TextBlock Grid.Row="3" Text="游戏运行时保留启动控制台，退出后等待自动清理。" FontSize="12" Foreground="#7B889B" Margin="0,16,0,0"/>
+  <Border x:Name="StatusCard" Grid.Row="2" Style="{StaticResource Panel}" Margin="0,16,0,0" Padding="16"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="3"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Border x:Name="StatusMark" Background="{DynamicResource CxInfo}"/><StackPanel Grid.Column="1" Margin="12,0,0,0"><TextBlock x:Name="StatusTitle" Text="先选择游戏位置" FontWeight="SemiBold" Margin="0,0,0,6"/><TextBlock x:Name="StatusMessage" Text="检查与清理结果会显示在这里。普通游玩不需要 Python 或 NumPy。" Foreground="{DynamicResource CxMuted}" TextWrapping="Wrap" LineHeight="20"/><ProgressBar x:Name="BusyBar" Height="2" Background="{DynamicResource CxFaint}" Foreground="{DynamicResource CxAccent}" Margin="0,10,0,0" IsIndeterminate="True" Visibility="Collapsed"/></StackPanel></Grid></Border>
+  <Grid Grid.Row="3" Margin="0,12,0,0"><TextBlock Text="游戏运行时保留启动控制台，退出后等待自动清理。" FontSize="11" Foreground="{DynamicResource CxQuiet}"/><TextBlock Text="CREEPERUX" HorizontalAlignment="Right" FontFamily="{DynamicResource CxMono}" FontSize="11" Foreground="{DynamicResource CxQuiet}"/></Grid>
  </Grid>
 </Window>

@@ -1,20 +1,25 @@
-﻿param([switch]$RenderPreview,[string]$PreviewPath,[switch]$SmokeTest)
+﻿param([switch]$RenderPreview,[string]$PreviewPath,[switch]$SmokeTest,[ValidateSet('dark','light')][string]$Theme='dark')
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System.Windows.Forms
 . (Join-Path $PSScriptRoot 'Gui-Core.ps1')
+. (Join-Path $PSScriptRoot 'CreeperUX-Theme.ps1')
 $reader=New-Object System.Xml.XmlNodeReader ([xml](Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Launcher-GUI.xaml') -Raw -Encoding UTF8))
 $window=[Windows.Markup.XamlReader]::Load($reader)
+$script:themeMode=$Theme
+Set-CreeperUXTheme $window $script:themeMode
 $script:controls=@{}
-foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot'){$script:controls[$name]=$window.FindName($name)}
+foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark'){$script:controls[$name]=$window.FindName($name)}
 $script:worker=$null;$script:async=$null;$script:option=''
 function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
  $script:controls.StatusTitle.Text=$Title
  $script:controls.StatusMessage.Text=$Message
- $color=if($Success){'#EAF0F8'}else{'#FFF0EC'}
- $script:controls.StatusCard.Background=[Windows.Media.BrushConverter]::new().ConvertFromString($color)
+ $key=if($Success){'CxInfo'}else{'CxBad'}
+ $script:controls.StatusMark.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,$key)
 }
 function Set-AC8GuiBusy([bool]$Busy){
  foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','MouseOnly','FullInstall','Check','Save','Start','Recover'){$script:controls[$name].IsEnabled=!$Busy}
+ $script:controls.BusyBar.IsIndeterminate=[Windows.SystemParameters]::ClientAreaAnimation
+ $script:controls.BusyBar.Value=50
  $script:controls.BusyBar.Visibility=if($Busy){'Visible'}else{'Collapsed'}
 }
 function Start-AC8GuiWork([string]$Action,[bool]$Confirm=$false){
@@ -49,6 +54,12 @@ $timer.Add_Tick({
   if($SmokeTest -and $script:smokeFrame){$script:smokeFrame.Continue=$false}
  }
 })
+$script:controls.ThemeToggle.Content=if($Theme -eq 'dark'){'切换浅色'}else{'切换深色'}
+$script:controls.ThemeToggle.Add_Click({
+ $script:themeMode=if($script:themeMode -eq 'dark'){'light'}else{'dark'}
+ Set-CreeperUXTheme $window $script:themeMode
+ $script:controls.ThemeToggle.Content=if($script:themeMode -eq 'dark'){'切换浅色'}else{'切换深色'}
+})
 $script:controls.BrowseGame.Add_Click({
  $dialog=New-Object System.Windows.Forms.FolderBrowserDialog
  $dialog.Description='选择 AC8 游戏文件夹（根目录或 Win64 均可）';$dialog.ShowNewFolderButton=$false
@@ -64,7 +75,7 @@ $script:controls.Save.Add_Click({Start-AC8GuiWork 'Save'})
 $script:controls.Start.Add_Click({Start-AC8GuiWork 'Start'})
 $script:controls.Recover.Add_Click({
  $message="将检查当前游戏路径中的加载器，先备份校验再清理。`n`n请确认这些残留属于 AC8 Integrated。若安装过其他 Mod 或不清楚来源，请取消。`n`n游戏路径："+$script:controls.GamePath.Text
- if([Windows.MessageBox]::Show($window,$message,'确认残留归属',[Windows.MessageBoxButton]::OKCancel,[Windows.MessageBoxImage]::Question,[Windows.MessageBoxResult]::Cancel) -eq [Windows.MessageBoxResult]::OK){Start-AC8GuiWork 'Recover' $true}
+ if(Show-CreeperUXConfirmation $window $message){Start-AC8GuiWork 'Recover' $true}
 })
 $script:controls.CopyOption.Add_Click({
  try{[Windows.Clipboard]::SetText($script:option);Set-AC8GuiStatus '已复制启动选项' '请在 Steam → AC8 → 属性 → 通用 → 启动选项中粘贴。'}catch{Set-AC8GuiStatus '复制未完成' '剪贴板暂不可用，可直接选中上方文字复制。' $false}
@@ -80,6 +91,20 @@ $window.Add_Closing({param($sender,$event)
  if($script:worker){$event.Cancel=$true;Set-AC8GuiStatus '请等待当前操作完成' '检查或清理仍在进行，完成后即可关闭窗口。'}
 })
 if($SmokeTest){
+ # Verify the token adapter and actual theme button before the background-action smoke.
+ $before=$script:themeMode
+ $script:controls.ThemeToggle.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent))
+ if($script:themeMode -eq $before){throw 'Theme toggle did not change mode'}
+ if(![Windows.SystemParameters]::HighContrast){
+  $expected=if($script:themeMode -eq 'light'){'#FFEFEBE5'}else{'#FF0D1114'}
+  if($window.Resources['CxBg'].Color.ToString() -ne $expected){throw 'Theme background differs from kit token'}
+ }
+ $script:controls.ThemeToggle.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent))
+ foreach($key in 'CxDisplay','CxMono'){
+  $typeface=[Windows.Media.Typeface]::new($window.Resources[$key],[Windows.FontStyles]::Normal,[Windows.FontWeights]::Normal,[Windows.FontStretches]::Normal)
+  $glyph=$null
+  if(!$typeface.TryGetGlyphTypeface([ref]$glyph) -or $glyph.FontUri.LocalPath -notmatch 'ui[/\\]creeperux[/\\]fonts'){throw "Bundled font did not load: $key"}
+ }
  # Exercise the real button, dispatcher timer and asynchronous worker without showing a window.
  $script:controls.GamePath.Text=Join-Path $PSScriptRoot '__missing_game_for_ui_test__'
  $script:smokeFrame=New-Object Windows.Threading.DispatcherFrame
@@ -98,19 +123,19 @@ if($SmokeTest){
 }
 if($RenderPreview){
  if(!$PreviewPath){throw 'RenderPreview requires PreviewPath'}
- $script:controls.GamePath.Text='D:\SteamLibrary\steamapps\common\ACE COMBAT 8'
- $script:controls.SteamPath.Text='C:\Program Files (x86)\Steam\steam.exe'
+ $script:controls.GamePath.Text='D:\Games\ACE COMBAT 8'
+ $script:controls.SteamPath.Text='C:\Steam\steam.exe'
  $script:controls.MouseOnly.IsChecked=$true
  $script:controls.LaunchOption.Text='"D:\Mods\AC8-Integrated\Start-AC8-From-Steam.cmd" %command%'
  $script:controls.CopyOption.IsEnabled=$true
- Set-AC8GuiStatus '本地界面预览' '这里展示示例路径；尚未检查、保存设置或操作游戏文件。'
+ Set-AC8GuiStatus '界面预览 · 尚未执行检查' '示例路径仅用于展示。选择实际游戏位置后，可检查环境并保存设置。'
  $content=$script:controls.PreviewRoot
  $content.Width=940;$content.Height=720
  $content.Measure([Windows.Size]::new(1000,780));$content.Arrange([Windows.Rect]::new(0,0,1000,780));$content.UpdateLayout()
  $bitmap=New-Object Windows.Media.Imaging.RenderTargetBitmap 1000,780,96,96,([Windows.Media.PixelFormats]::Pbgra32)
  $background=New-Object Windows.Media.DrawingVisual
  $drawing=$background.RenderOpen()
- $drawing.DrawRectangle([Windows.Media.BrushConverter]::new().ConvertFromString('#F3F5F8'),$null,[Windows.Rect]::new(0,0,1000,780));$drawing.Close()
+ $drawing.DrawRectangle($window.Resources['CxBg'],$null,[Windows.Rect]::new(0,0,1000,780));$drawing.Close()
  $bitmap.Render($background)
  $bitmap.Render($content)
  $encoder=New-Object Windows.Media.Imaging.PngBitmapEncoder

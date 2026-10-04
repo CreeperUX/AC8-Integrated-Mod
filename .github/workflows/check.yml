@@ -29,3 +29,5 @@ jobs:
         shell: powershell
       - run: .\tests\Test-GUI.ps1
         shell: powershell
+      - run: .\tests\Test-CreeperUXTheme.ps1
+        shell: powershell

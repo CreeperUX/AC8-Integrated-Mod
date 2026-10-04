@@ -21,3 +21,13 @@ Windows 自带的 Windows PowerShell 5.1 与 WPF 即可运行界面；普通使�
 ## 验证范围
 
 已用隔离目录验证检查、配置保存及失败回滚、未保存配置阻止启动、运行中保护、清理确认、后台错误返回和 Steam 桥接调用。界面使用真实 WPF 渲染检查。测试没有启动真实游戏，也没有修改真实 Steam 设置；真实游戏启动与高 DPI/多显示器体验仍待玩家验收。
+
+## CreeperUX UI Kit 设计来源
+
+本地预览 2 使用 GitHub 仓库 `CreeperUX/CreeperUX-UI-Kit` 的 **2.4.0**，固定提交 `586e23784d8f51cbe8713e583bcf0d92c473f2d0`（已核对远端 main）。适配来源为 `tokens/tokens.json` 与 `kit/ui/ui.css`。
+
+这是 WPF 原生控件适配：配色、表面层级、5/6px 控件与面板圆角、字号、控件边界、选中与键盘焦点状态来自 Kit；操作逻辑仍使用本项目的安装、启动与清理核心。默认深色，可点击右上角切换浅色。清理确认框也使用同一主题；文件选择器与系统窗口边框遵循 Windows。
+
+`ui/creeperux/SOURCE.json` 记录来源及令牌哈希；令牌快照随包保存。Chakra Petch SemiBold 和 Share Tech Mono 从 Kit 的 WOFF2 无损解码为 WPF 可加载的 TTF，保留字体名称、字形及 SIL OFL 许可；中文使用系统字体回退。包内不需要安装字体。
+
+高对比度模式使用 Windows 系统颜色；减少动画时不使用不确定进度动画。真实游戏运行与多显示器 DPI 体验仍待玩家验收。此版本仅为本地预览，未推送或发布到 GitHub。

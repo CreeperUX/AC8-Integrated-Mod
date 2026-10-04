@@ -1,0 +1,10 @@
+{
+  "name": "CreeperUX UI Kit",
+  "version": "2.4.0",
+  "repository": "https://github.com/CreeperUX/CreeperUX-UI-Kit",
+  "commit": "586e23784d8f51cbe8713e583bcf0d92c473f2d0",
+  "token_source": "tokens/tokens.json",
+  "tokens_sha256": "99080c8704df2b879cc995949b3fb8f04291db4d00e071f25a70006869537b8c",
+  "adapter": "WPF native controls using kit tokens, fonts and component state conventions",
+  "fonts": "Original glyphs/names preserved; WOFF2 decoded to TTF for WPF. SIL OFL licenses included."
+}

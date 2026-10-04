@@ -22,3 +22,9 @@ The missile work originated from research around the user-provided **AC8-PropNav
 No ACE COMBAT game executable, mesh, texture, audio, extracted asset package, decryption key, raw save or raw personal flight recording is included. Asset paths, field names, numeric settings and derived response parameters are used to reference the user's own installed game.
 
 The root license does not replace the individual third-party licenses. Preserve this file and all applicable license files in redistributed packages. This is an unofficial community project and is not affiliated with the game publisher or the upstream projects.
+
+## CreeperUX UI Kit native visual adaptation (local GUI preview)
+
+Design tokens and component conventions: CreeperUX/CreeperUX-UI-Kit 2.4.0, commit 586e23784d8f51cbe8713e583bcf0d92c473f2d0. The GUI is a WPF adaptation. Provenance is in package-template/ui/creeperux/SOURCE.json.
+
+Bundled Chakra Petch SemiBold and Share Tech Mono retain their original names and glyphs. WOFF2 sources from the Kit were decoded to TTF for native rendering. Both are distributed under SIL Open Font License 1.1; see the font-specific OFL files next to the fonts in ui/creeperux/fonts (package-template/ui/creeperux/fonts in source).
