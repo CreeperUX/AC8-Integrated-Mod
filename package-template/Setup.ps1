@@ -1,4 +1,4 @@
-﻿﻿$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 if(Get-Process AceCombat8 -ErrorAction SilentlyContinue){throw 'Close AC8 before setup.'}
 $root=$PSScriptRoot
 $gameRoot=(Read-Host 'Paste AC8 folder from Steam > Manage > Browse local files').Trim().Trim('"')

@@ -9,6 +9,8 @@ for name in sorted(names):
  assert p.resolve().is_relative_to(root.resolve()),f'Path escapes source: {name}'
  assert p.suffix.lower()not in blocked,f'Generated/private binary in source: {name}'
  raw=p.read_bytes()
+ if p.suffix.lower()=='.ps1':
+  assert not raw.startswith(b'\xef\xbb\xbf\xef\xbb\xbf'),f'Duplicate UTF-8 BOM in {name}'
  for text in (raw.decode('utf-8',errors='ignore'),raw.decode('utf-16le',errors='ignore')):
   assert not re.search(r'(?i)[a-z]:[/\\]+users[/\\]+[^/\\\r\n]+',text),f'User directory in {name}'
   assert not re.search(r'gh[pousr]_[A-Za-z0-9]{25,}|github_pat_[A-Za-z0-9_]{30,}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----',text),f'Credential-like content in {name}'
