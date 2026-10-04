@@ -76,3 +76,5 @@ $output=@(& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $
 if($LASTEXITCODE -ne 1 -or $output -match 'CategoryInfo|FullyQualifiedErrorId'){throw 'Session failure not propagated'}
 Pass 'session failure preserves nonzero status through console entrypoint'
 Write-Host "PASS $count installer UX scenarios. No real game or Steam settings changed."
+# The last child is expected to exit 1; do not leak that status to CI's -Command host.
+exit 0
