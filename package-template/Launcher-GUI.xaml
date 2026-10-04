@@ -45,11 +45,13 @@
      <TextBlock Text="可选择根目录、Win64，或粘贴 EXE 路径。" FontSize="11" Foreground="{DynamicResource CxQuiet}" Margin="0,6,0,16"/>
      <TextBlock Text="Steam 程序" Style="{StaticResource Caption}"/>
      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SteamPath" AutomationProperties.Name="Steam 程序路径"/><Button x:Name="BrowseSteam" Grid.Column="1" Content="浏览…" Margin="8,0,0,0"/></Grid>
-     <TextBlock Text="安装内容" Style="{StaticResource Caption}" Margin="0,20,0,8"/>
-     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-      <RadioButton x:Name="MouseOnly" GroupName="Features" Margin="0,0,8,0" AutomationProperties.Name="仅鼠标飞控"><StackPanel><TextBlock Text="仅鼠标飞控" FontWeight="SemiBold"/><TextBlock Text="保留原版导弹" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
-      <RadioButton x:Name="FullInstall" Grid.Column="1" GroupName="Features" IsChecked="True" AutomationProperties.Name="鼠标飞控和导弹强化"><StackPanel><TextBlock Text="飞控 + 导弹强化" FontWeight="SemiBold"/><TextBlock Text="完整安装" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
+     <TextBlock Text="安装范围 · 三种均包含鼠标飞控" Style="{StaticResource Caption}" Margin="0,20,0,8"/>
+     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <RadioButton x:Name="GuidanceOnly" GroupName="Features" Margin="0,0,8,0" Padding="10" AutomationProperties.Name="飞控加仅比例引导"><StackPanel><TextBlock Text="仅比例引导" FontWeight="SemiBold"/><TextBlock Text="原版性能与外观" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
+      <RadioButton x:Name="FullInstall" Grid.Column="1" GroupName="Features" Margin="0,0,8,0" Padding="10" IsChecked="True" AutomationProperties.Name="飞控加完整导弹强化"><StackPanel><TextBlock Text="完整导弹强化" FontWeight="SemiBold"/><TextBlock Text="启用全部强化" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
+      <RadioButton x:Name="MouseOnly" Grid.Column="2" GroupName="Features" Padding="10" AutomationProperties.Name="仅鼠标飞控"><StackPanel><TextBlock Text="仅鼠标飞控" FontWeight="SemiBold"/><TextBlock Text="原版导弹" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
      </Grid>
+     <TextBlock x:Name="ModeDescription" Text="启用比例引导、性能强化、近炸设置与外观替换。" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource CxMuted}" Margin="0,8,0,0"/>
      <WrapPanel Margin="0,20,0,0"><Button x:Name="Check" Content="检查环境" Margin="0,0,8,0"/><Button x:Name="Save" Content="保存设置" Tag="primary"/></WrapPanel>
     </StackPanel></Border>
     <StackPanel Grid.Column="1">

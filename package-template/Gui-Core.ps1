@@ -13,12 +13,12 @@ function Find-AC8GuiSteam {
  if(${env:ProgramFiles(x86)}){$candidates+=Join-Path ${env:ProgramFiles(x86)} 'Steam/steam.exe'}
  return @($candidates | Where-Object {$_ -and (Test-Path -LiteralPath $_ -PathType Leaf)}) | Select-Object -First 1
 }
-function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[bool]$Missiles){
+function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[ValidateSet('guidance','full','none')][string]$MissileMode){
  $option='"'+(Join-Path $Root 'Start-AC8-From-Steam.cmd')+'" %command%'
  $values=[ordered]@{
   'game-path.txt'=$GameRoot
   'steam-path.txt'=$Steam
-  'features.ini'=('missile_enhancement='+[int]$Missiles)
+  'features.ini'=('missile_mode='+$MissileMode)
   'Steam-Launch-Option.txt'=$option
  }
  $original=@{};$temporary=@{}
@@ -42,7 +42,7 @@ function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[boo
  return $option
 }
 function Invoke-AC8GuiAction {
- param([ValidateSet('Check','Save','Start','Recover')][string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[bool]$Missiles,[bool]$ConfirmRecovery=$false)
+ param([ValidateSet('Check','Save','Start','Recover')][string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[ValidateSet('guidance','full','none')][string]$MissileMode,[bool]$ConfirmRecovery=$false)
  $game=Resolve-AC8GameRoot $GamePath
  Assert-AC8PackageLocation $Root $game
  if($Action -eq 'Recover'){
@@ -75,12 +75,27 @@ function Invoke-AC8GuiAction {
  if($Action -eq 'Save'){
   Assert-AC8WriteAccess $Root
   Assert-AC8WriteAccess (Join-Path $game 'Game/Binaries/Win64')
-  $option=Save-AC8GuiSettings $Root $game $steam $Missiles
-  return [pscustomobject]@{Success=$true;Title='设置已保存';Message='点击“复制启动选项”，粘贴到 Steam → AC8 → 属性 → 通用 → 启动选项。随后可从 Steam 启动。';GameRoot=$game;Option=$option}
+  $option=Save-AC8GuiSettings $Root $game $steam $MissileMode
+  return [pscustomobject]@{Success=$true;Title='设置已保存';Message=('已保存：'+(Get-AC8GuiModeLabel $MissileMode)+'。下次启动生效。首次设置或移动整合包后，请复制启动选项到 Steam。');GameRoot=$game;Option=$option}
  }
  $savedGame=Get-AC8GuiSavedPath $Root 'game-path.txt';$savedSteam=Get-AC8GuiSavedPath $Root 'steam-path.txt'
  $savedFeatures=Read-FeatureSettings (Join-Path $Root 'features.ini')
- if($savedGame -ne $game -or $savedSteam -ne $steam -or $savedFeatures.MissileEnhancement -ne $Missiles){Stop-AC8Problem 'UNSAVED' '当前选择尚未保存。' '先点击“保存设置”，再启动游戏。'}
+ if($savedGame -ne $game -or $savedSteam -ne $steam -or $savedFeatures.MissileMode -ne $MissileMode){Stop-AC8Problem 'UNSAVED' '当前选择尚未保存。' '先点击“保存设置”，再启动游戏。'}
  & (Join-Path $Root 'Launch-AC8-via-Steam.ps1')
  return [pscustomobject]@{Success=$true;Title='已发送启动请求';Message='Steam 将执行云同步并启动游戏。是否成功进入游戏，请以 Steam 和游戏窗口为准；保留启动控制台以便退出后清理。';GameRoot=$game;Option=$null}
+}
+
+function Get-AC8GuiModeLabel([ValidateSet('guidance','full','none')][string]$Mode){
+ switch($Mode){'guidance'{return '飞控 + 仅比例引导'} 'full'{return '飞控 + 完整导弹强化'} 'none'{return '仅鼠标飞控'}}
+}
+function Get-AC8GuiSelectedMode($Controls){
+ if($Controls.GuidanceOnly.IsChecked){return 'guidance'}
+ if($Controls.FullInstall.IsChecked){return 'full'}
+ if($Controls.MouseOnly.IsChecked){return 'none'}
+ Stop-AC8Problem 'MODE_REQUIRED' '请选择一种安装范围。' '三种范围均包含鼠标飞控，请选择其中一项。'
+}
+function Set-AC8GuiSelectedMode($Controls,[ValidateSet('guidance','full','none')][string]$Mode){
+ $Controls.GuidanceOnly.IsChecked=($Mode -eq 'guidance')
+ $Controls.FullInstall.IsChecked=($Mode -eq 'full')
+ $Controls.MouseOnly.IsChecked=($Mode -eq 'none')
 }

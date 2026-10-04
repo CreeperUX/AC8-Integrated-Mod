@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.3.4-gui-preview.1 — local three-mode GUI integration
+
+- Connects the CreeperUX UI to guidance-only, full missile and flight-only selection.
+- Persists canonical missile_mode values, restores legacy choices and blocks unsaved guidance/full changes.
+- Verifies GUI-to-staging round trips for every mode; retains cleanup, themes and the v2.3.2 native flight controller.
+- Local preview only; no GitHub publication.
+
+## 2.3.4 — three installation scopes (local candidate)
+
+- Adds independently selectable mouse+guidance, mouse+full-missiles, and mouse-only scopes.
+- Guidance writes only32HomingForesightAmount fields, with original performance/fuse/visuals retained.
+- Legacy1/0 settings migrate tofull/none; new settings useguidance/full/none names.
+- Flight-control binary remains the v2.3.2 baseline; no2.4 experimental control changes.
+
 ## 2.3.3 — unreleased draft; installation and startup experience
 
 - Accepts the game root, Win64 folder or AceCombat8.exe path with Chinese/space/quoted paths and retryable input.

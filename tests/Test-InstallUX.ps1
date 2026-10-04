@@ -31,7 +31,7 @@ $package=Join-Path $root '整合包';Copy-Item -LiteralPath $template -Destinati
 $fakeSteam=Join-Path $root 'steam.exe';Set-Content -LiteralPath $fakeSteam -Value 'fixture'
 & {
  $global:AC8UXAnswers=New-Object 'System.Collections.Generic.Queue[string]'
- foreach($answer in @((Join-Path $root 'missing'),$w64,'bad','2')){$global:AC8UXAnswers.Enqueue($answer)}
+ foreach($answer in @((Join-Path $root 'missing'),$w64,'bad','3')){$global:AC8UXAnswers.Enqueue($answer)}
  function Read-Host {param($Prompt) if(!$global:AC8UXAnswers.Count){throw 'Unexpected prompt'};return $global:AC8UXAnswers.Dequeue()}
  function Get-Process {param($Name,$ErrorAction) if($Name -eq 'steam'){return [pscustomobject]@{Path=$fakeSteam}}}
  function Get-ItemProperty {throw 'No registry access in fixture'}
@@ -43,7 +43,7 @@ $fakeSteam=Join-Path $root 'steam.exe';Set-Content -LiteralPath $fakeSteam -Valu
  if($global:AC8UXAnswers.Count){throw 'Setup did not consume expected correction inputs'}
 }
 if((Get-Content -LiteralPath (Join-Path $package 'game-path.txt') -Raw -Encoding UTF8).Trim() -ne $game){throw 'Setup persisted wrong root'}
-if((Get-Content -LiteralPath (Join-Path $package 'features.ini') -Raw) -notmatch 'missile_enhancement=0'){throw 'Feature retry failed'}
+if((Get-Content -LiteralPath (Join-Path $package 'features.ini') -Raw) -notmatch 'missile_mode=none'){throw 'Feature retry failed'}
 Pass 'actual Setup retries wrong path and menu choice, then saves normalized configuration'
 $ue=Join-Path $w64 'ue4ss';New-Item -ItemType Directory -Path $ue | Out-Null
 Set-Content -LiteralPath (Join-Path $ue 'AC8SourceInit-owner.txt') -Value ([guid]::NewGuid().ToString())

@@ -8,7 +8,7 @@ $window=[Windows.Markup.XamlReader]::Load($reader)
 $script:themeMode=$Theme
 Set-CreeperUXTheme $window $script:themeMode
 $script:controls=@{}
-foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark'){$script:controls[$name]=$window.FindName($name)}
+foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark','ModeDescription'){$script:controls[$name]=$window.FindName($name)}
 $script:worker=$null;$script:async=$null;$script:option=''
 function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
  $script:controls.StatusTitle.Text=$Title
@@ -17,7 +17,7 @@ function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
  $script:controls.StatusMark.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,$key)
 }
 function Set-AC8GuiBusy([bool]$Busy){
- foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','MouseOnly','FullInstall','Check','Save','Start','Recover'){$script:controls[$name].IsEnabled=!$Busy}
+ foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','Recover'){$script:controls[$name].IsEnabled=!$Busy}
  $script:controls.BusyBar.IsIndeterminate=[Windows.SystemParameters]::ClientAreaAnimation
  $script:controls.BusyBar.Value=50
  $script:controls.BusyBar.Visibility=if($Busy){'Visible'}else{'Collapsed'}
@@ -28,7 +28,7 @@ function Start-AC8GuiWork([string]$Action,[bool]$Confirm=$false){
  Set-AC8GuiStatus '正在处理…' '请稍候，完成后会在这里显示结果。'
  try {
   $script:worker=[PowerShell]::Create()
-  [void]$script:worker.AddCommand((Join-Path $PSScriptRoot 'Gui-Worker.ps1')).AddParameter('Action',$Action).AddParameter('Root',$PSScriptRoot).AddParameter('GamePath',$script:controls.GamePath.Text).AddParameter('SteamPath',$script:controls.SteamPath.Text).AddParameter('Missiles',[bool]$script:controls.FullInstall.IsChecked).AddParameter('ConfirmRecovery',$Confirm)
+  [void]$script:worker.AddCommand((Join-Path $PSScriptRoot 'Gui-Worker.ps1')).AddParameter('Action',$Action).AddParameter('Root',$PSScriptRoot).AddParameter('GamePath',$script:controls.GamePath.Text).AddParameter('SteamPath',$script:controls.SteamPath.Text).AddParameter('MissileMode',(Get-AC8GuiSelectedMode $script:controls)).AddParameter('ConfirmRecovery',$Confirm)
   $script:async=$script:worker.BeginInvoke()
   $timer.Start()
  }catch{
@@ -54,6 +54,15 @@ $timer.Add_Tick({
   if($SmokeTest -and $script:smokeFrame){$script:smokeFrame.Continue=$false}
  }
 })
+function Update-AC8GuiModeDescription {
+ $mode=Get-AC8GuiSelectedMode $script:controls
+ $script:controls.ModeDescription.Text=switch($mode){
+  'guidance'{'仅调整比例引导，保留原版性能、近炸设置与外观。'}
+  'full'{'启用比例引导、性能强化、近炸设置与外观替换。'}
+  'none'{'仅安装鼠标飞控，所有导弹保持原版。'}
+ }
+}
+foreach($name in 'GuidanceOnly','FullInstall','MouseOnly'){$script:controls[$name].Add_Checked({Update-AC8GuiModeDescription})}
 $script:controls.ThemeToggle.Content=if($Theme -eq 'dark'){'切换浅色'}else{'切换深色'}
 $script:controls.ThemeToggle.Add_Click({
  $script:themeMode=if($script:themeMode -eq 'dark'){'light'}else{'dark'}
@@ -91,6 +100,14 @@ $window.Add_Closing({param($sender,$event)
  if($script:worker){$event.Cancel=$true;Set-AC8GuiStatus '请等待当前操作完成' '检查或清理仍在进行，完成后即可关闭窗口。'}
 })
 if($SmokeTest){
+ # Exercise all three actual mutually-exclusive radio controls and legacy configuration migration.
+ foreach($mode in 'guidance','full','none'){
+  Set-AC8GuiSelectedMode $script:controls $mode
+  if((Get-AC8GuiSelectedMode $script:controls) -ne $mode){throw 'GUI installation mode mapping failed'}
+  $checked=@('GuidanceOnly','FullInstall','MouseOnly' | Where-Object {$script:controls[$_].IsChecked})
+  if($checked.Count -ne 1 -or !$script:controls.ModeDescription.Text){throw 'GUI mode selection is not exclusive or lacks description'}
+ }
+ Set-AC8GuiSelectedMode $script:controls (Read-FeatureSettings (Join-Path $PSScriptRoot 'features.ini')).MissileMode
  # Verify the token adapter and actual theme button before the background-action smoke.
  $before=$script:themeMode
  $script:controls.ThemeToggle.RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Button]::ClickEvent))
@@ -125,7 +142,8 @@ if($RenderPreview){
  if(!$PreviewPath){throw 'RenderPreview requires PreviewPath'}
  $script:controls.GamePath.Text='D:\Games\ACE COMBAT 8'
  $script:controls.SteamPath.Text='C:\Steam\steam.exe'
- $script:controls.MouseOnly.IsChecked=$true
+ Set-AC8GuiSelectedMode $script:controls 'guidance'
+ Update-AC8GuiModeDescription
  $script:controls.LaunchOption.Text='"D:\Mods\AC8-Integrated\Start-AC8-From-Steam.cmd" %command%'
  $script:controls.CopyOption.IsEnabled=$true
  Set-AC8GuiStatus '界面预览 · 尚未执行检查' '示例路径仅用于展示。选择实际游戏位置后，可检查环境并保存设置。'
@@ -148,8 +166,8 @@ try{
  $script:controls.GamePath.Text=Get-AC8GuiSavedPath $PSScriptRoot 'game-path.txt'
  $script:controls.SteamPath.Text=Get-AC8GuiSavedPath $PSScriptRoot 'steam-path.txt'
  if(!$script:controls.SteamPath.Text){$script:controls.SteamPath.Text=[string](Find-AC8GuiSteam)}
- $script:controls.FullInstall.IsChecked=(Read-FeatureSettings (Join-Path $PSScriptRoot 'features.ini')).MissileEnhancement
- $script:controls.MouseOnly.IsChecked=!$script:controls.FullInstall.IsChecked
+ Set-AC8GuiSelectedMode $script:controls (Read-FeatureSettings (Join-Path $PSScriptRoot 'features.ini')).MissileMode
+ Update-AC8GuiModeDescription
  $script:option=Get-AC8GuiSavedPath $PSScriptRoot 'Steam-Launch-Option.txt'
  if($script:option){$script:controls.LaunchOption.Text=$script:option;$script:controls.CopyOption.IsEnabled=$true}
 }catch{Set-AC8GuiStatus '读取设置未完成' $_.Exception.Message $false}

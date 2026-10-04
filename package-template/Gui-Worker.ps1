@@ -1,7 +1,7 @@
-﻿param([string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[bool]$Missiles,[bool]$ConfirmRecovery=$false)
+﻿param([string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[ValidateSet('guidance','full','none')][string]$MissileMode,[bool]$ConfirmRecovery=$false)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Gui-Core.ps1')
-try{Invoke-AC8GuiAction -Action $Action -Root $Root -GamePath $GamePath -SteamPath $SteamPath -Missiles $Missiles -ConfirmRecovery $ConfirmRecovery}
+try{Invoke-AC8GuiAction -Action $Action -Root $Root -GamePath $GamePath -SteamPath $SteamPath -MissileMode $MissileMode -ConfirmRecovery $ConfirmRecovery}
 catch{
  $failure=$_
  Show-AC8Problem $failure $Root $Action

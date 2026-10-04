@@ -39,7 +39,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests/Test-Features.ps1
 python scripts/build-package.py --runtime-root "D:\Mods\AC8-Integrated-v2.3.2-share\payload"
 ```
 
-产物在 `dist/`，包含运行DLL、源码、许可证、文档和两种安装选择。`--native-dll` 可指定你构建的原生DLL，`--output` 可指定一个尚不存在的输出目录。这个引导依赖已经发布的运行库包；脚本不会自动寻找或下载未知来源DLL。若需要从上游重建UE4SS，需要维持本项目所用ABI及明确更新运行库哈希，不能直接替换成最新DLL。
+产物在 `dist/`，包含运行DLL、源码、许可证、文档和三种安装范围。`--native-dll` 可指定你构建的原生DLL，`--output` 可指定一个尚不存在的输出目录。这个引导依赖已经发布的运行库包；脚本不会自动寻找或下载未知来源DLL。若需要从上游重建UE4SS，需要维持本项目所用ABI及明确更新运行库哈希，不能直接替换成最新DLL。
 
 打包过程生成 `payload-manifest.json`、`FILES.sha256` 和 ZIP SHA256。运行时特性选择只影响暂存到游戏目录的模块，原始完整payload保持可校验。
 
@@ -49,3 +49,5 @@ python scripts/build-package.py --runtime-root "D:\Mods\AC8-Integrated-v2.3.2-sh
 
 不要将分析报告中的“字段已写入”当成命中、锁定、近炸、齐射或外观的实机证明。新增行为应区分代码测试与游戏内验证。
 
+
+导弹模式由 Feature-Settings.ps1 写入运行副本的 installation_mode.lua。selected_spec.lua 对 guidance 严格只选 HomingForesightAmount（32字段）；full沿用原375字段；none不部署SourceInit。新增字段需同时更新隔离测试与就绪计数。
