@@ -8,7 +8,7 @@ $window=[Windows.Markup.XamlReader]::Load($reader)
 $script:themeMode=$Theme
 Set-CreeperUXTheme $window $script:themeMode
 $script:controls=@{}
-foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark','ModeDescription'){$script:controls[$name]=$window.FindName($name)}
+foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark','ModeDescription','Detect','GameCandidates','SteamCandidates'){$script:controls[$name]=$window.FindName($name)}
 $script:worker=$null;$script:async=$null;$script:option=''
 function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
  $script:controls.StatusTitle.Text=$Title
@@ -17,7 +17,7 @@ function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
  $script:controls.StatusMark.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,$key)
 }
 function Set-AC8GuiBusy([bool]$Busy){
- foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','Recover'){$script:controls[$name].IsEnabled=!$Busy}
+ foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Detect','Save','Start','Recover','GameCandidates','SteamCandidates'){$script:controls[$name].IsEnabled=!$Busy}
  $script:controls.BusyBar.IsIndeterminate=[Windows.SystemParameters]::ClientAreaAnimation
  $script:controls.BusyBar.Value=50
  $script:controls.BusyBar.Visibility=if($Busy){'Visible'}else{'Collapsed'}
@@ -47,6 +47,15 @@ $timer.Add_Tick({
   $result=$results[-1]
   Set-AC8GuiStatus $result.Title $result.Message ([bool]$result.Success)
   if($result.GameRoot){$script:controls.GamePath.Text=$result.GameRoot}
+  if($result.SteamPath){$script:controls.SteamPath.Text=$result.SteamPath}
+  if($result.PSObject.Properties['GameCandidates']){
+   foreach($name in 'GameCandidates','SteamCandidates'){
+    $items=@($result.$name)
+    $script:controls[$name].ItemsSource=$items
+    $script:controls[$name].SelectedIndex=-1
+    $script:controls[$name].Visibility=if($items.Count -gt 1){'Visible'}else{'Collapsed'}
+   }
+  }
   if($result.Option){$script:option=$result.Option;$script:controls.LaunchOption.Text=$script:option;$script:controls.CopyOption.IsEnabled=$true}
  }catch{Set-AC8GuiStatus '操作未完成' $_.Exception.Message $false}
  finally{
@@ -80,6 +89,19 @@ $script:controls.BrowseSteam.Add_Click({
  if($dialog.ShowDialog($window)){$script:controls.SteamPath.Text=$dialog.FileName}
 })
 $script:controls.Check.Add_Click({Start-AC8GuiWork 'Check'})
+$script:controls.Detect.Add_Click({Start-AC8GuiWork 'Discover'})
+$script:controls.GameCandidates.Add_SelectionChanged({
+ if(!$script:worker -and $script:controls.GameCandidates.SelectedItem){
+  $script:controls.GamePath.Text=[string]$script:controls.GameCandidates.SelectedItem
+  Start-AC8GuiWork 'Discover'
+ }
+})
+$script:controls.SteamCandidates.Add_SelectionChanged({
+ if(!$script:worker -and $script:controls.SteamCandidates.SelectedItem){
+  $script:controls.SteamPath.Text=[string]$script:controls.SteamCandidates.SelectedItem
+  Start-AC8GuiWork 'Discover'
+ }
+})
 $script:controls.Save.Add_Click({Start-AC8GuiWork 'Save'})
 $script:controls.Start.Add_Click({Start-AC8GuiWork 'Start'})
 $script:controls.Recover.Add_Click({
@@ -165,7 +187,6 @@ if($RenderPreview){
 try{
  $script:controls.GamePath.Text=Get-AC8GuiSavedPath $PSScriptRoot 'game-path.txt'
  $script:controls.SteamPath.Text=Get-AC8GuiSavedPath $PSScriptRoot 'steam-path.txt'
- if(!$script:controls.SteamPath.Text){$script:controls.SteamPath.Text=[string](Find-AC8GuiSteam)}
  Set-AC8GuiSelectedMode $script:controls (Read-FeatureSettings (Join-Path $PSScriptRoot 'features.ini')).MissileMode
  Update-AC8GuiModeDescription
  $script:option=Get-AC8GuiSavedPath $PSScriptRoot 'Steam-Launch-Option.txt'
@@ -176,4 +197,6 @@ $sha=[Security.Cryptography.SHA256]::Create()
 try{$key=[BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($PSScriptRoot.ToLowerInvariant()))).Replace('-','')}finally{$sha.Dispose()}
 $created=$false;$mutex=New-Object Threading.Mutex($true,('Local\AC8Gui-'+$key),[ref]$created)
 if(!$created){[void][Windows.MessageBox]::Show('此整合包的玩家工具已经打开。','AC8');$mutex.Dispose();exit 0}
+$script:autoDiscoveryStarted=$false
+$window.Add_ContentRendered({if(!$script:autoDiscoveryStarted){$script:autoDiscoveryStarted=$true;Start-AC8GuiWork 'Discover'}})
 try{[void]$window.ShowDialog()}finally{$timer.Stop();$mutex.ReleaseMutex();$mutex.Dispose()}

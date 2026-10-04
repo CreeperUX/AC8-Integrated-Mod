@@ -23,6 +23,15 @@
     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Choice" Property="BorderBrush" Value="{DynamicResource CxFocus}"/><Setter TargetName="Choice" Property="BorderThickness" Value="2"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Choice" Property="Opacity" Value="0.45"/></Trigger>
    </ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
   </Style>
+  <Style TargetType="ComboBox">
+   <Setter Property="Foreground" Value="{DynamicResource CxText}"/><Setter Property="Background" Value="{DynamicResource CxDeep}"/><Setter Property="BorderBrush" Value="{DynamicResource CxBoundary}"/><Setter Property="MinHeight" Value="28"/><Setter Property="FontSize" Value="11"/>
+   <Setter Property="ItemContainerStyle"><Setter.Value><Style TargetType="ComboBoxItem"><Setter Property="Padding" Value="8"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem"><Border x:Name="Item" Padding="{TemplateBinding Padding}" Background="Transparent"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Item" Property="Background" Value="{DynamicResource CxAccentSoft}"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></Setter.Value></Setter>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox"><Grid>
+    <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen,RelativeSource={RelativeSource TemplatedParent},Mode=TwoWay}"><ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="{DynamicResource CxDeep}" BorderBrush="{DynamicResource CxBoundary}" BorderThickness="1" CornerRadius="5"><TextBlock Text="▾" HorizontalAlignment="Right" Margin="0,4,8,4" Foreground="{DynamicResource CxMuted}"/></Border></ControlTemplate></ToggleButton.Template></ToggleButton>
+    <TextBlock x:Name="ChoiceHint" Text="检测到多个位置，请选择…" Visibility="Collapsed" IsHitTestVisible="False" Foreground="{DynamicResource CxMuted}" Margin="8,5,24,5"/><ContentPresenter IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" Margin="8,5,24,5"/>
+    <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"><Border Background="{DynamicResource CxRaised}" BorderBrush="{DynamicResource CxBoundary}" BorderThickness="1" CornerRadius="5" MinWidth="300"><ScrollViewer MaxHeight="180"><ItemsPresenter/></ScrollViewer></Border></Popup>
+   </Grid><ControlTemplate.Triggers><Trigger Property="SelectedIndex" Value="-1"><Setter TargetName="ChoiceHint" Property="Visibility" Value="Visible"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+  </Style>
   <Style TargetType="ToolTip"><Setter Property="Background" Value="{DynamicResource CxRaised}"/><Setter Property="Foreground" Value="{DynamicResource CxText}"/><Setter Property="BorderBrush" Value="{DynamicResource CxBoundary}"/></Style>
   <Style x:Key="Panel" TargetType="Border"><Setter Property="Background" Value="{DynamicResource CxPanel}"/><Setter Property="BorderBrush" Value="{DynamicResource CxLine}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="6"/><Setter Property="Padding" Value="20"/></Style>
   <Style x:Key="Caption" TargetType="TextBlock"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource CxMuted}"/><Setter Property="Margin" Value="0,0,0,6"/></Style>
@@ -42,9 +51,11 @@
      <TextBlock Text="01 / INSTALLATION" FontFamily="{DynamicResource CxMono}" FontSize="12" Foreground="{DynamicResource CxQuiet}"/><TextBlock Text="游戏与安装内容" FontSize="17" FontWeight="SemiBold" Margin="0,6,0,20"/>
      <TextBlock Text="游戏位置" Style="{StaticResource Caption}"/>
      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="GamePath" AutomationProperties.Name="游戏路径"/><Button x:Name="BrowseGame" Grid.Column="1" Content="浏览…" Margin="8,0,0,0"/></Grid>
+     <ComboBox x:Name="GameCandidates" Visibility="Collapsed" Margin="0,6,0,0" IsSynchronizedWithCurrentItem="False" AutomationProperties.Name="检测到多个游戏位置，请选择" ToolTip="检测到多个游戏位置，请展开选择；也可直接修改上方路径。"/>
      <TextBlock Text="可选择根目录、Win64，或粘贴 EXE 路径。" FontSize="11" Foreground="{DynamicResource CxQuiet}" Margin="0,6,0,16"/>
      <TextBlock Text="Steam 程序" Style="{StaticResource Caption}"/>
      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="SteamPath" AutomationProperties.Name="Steam 程序路径"/><Button x:Name="BrowseSteam" Grid.Column="1" Content="浏览…" Margin="8,0,0,0"/></Grid>
+     <ComboBox x:Name="SteamCandidates" Visibility="Collapsed" Margin="0,6,0,0" IsSynchronizedWithCurrentItem="False" AutomationProperties.Name="检测到多个 Steam 位置，请选择" ToolTip="检测到多个 Steam 位置，请展开选择。"/>
      <TextBlock Text="安装范围 · 三种均包含鼠标飞控" Style="{StaticResource Caption}" Margin="0,20,0,8"/>
      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <RadioButton x:Name="GuidanceOnly" GroupName="Features" Margin="0,0,8,0" Padding="10" AutomationProperties.Name="飞控加仅比例引导"><StackPanel><TextBlock Text="仅比例引导" FontWeight="SemiBold"/><TextBlock Text="原版性能与外观" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
@@ -52,7 +63,7 @@
       <RadioButton x:Name="MouseOnly" Grid.Column="2" GroupName="Features" Padding="10" AutomationProperties.Name="仅鼠标飞控"><StackPanel><TextBlock Text="仅鼠标飞控" FontWeight="SemiBold"/><TextBlock Text="原版导弹" FontSize="11" Margin="0,4,0,0"/></StackPanel></RadioButton>
      </Grid>
      <TextBlock x:Name="ModeDescription" Text="启用比例引导、性能强化、近炸设置与外观替换。" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource CxMuted}" Margin="0,8,0,0"/>
-     <WrapPanel Margin="0,20,0,0"><Button x:Name="Check" Content="检查环境" Margin="0,0,8,0"/><Button x:Name="Save" Content="保存设置" Tag="primary"/></WrapPanel>
+     <WrapPanel Margin="0,20,0,0"><Button x:Name="Detect" Content="自动定位" Margin="0,0,8,0"/><Button x:Name="Check" Content="检查环境" Margin="0,0,8,0"/><Button x:Name="Save" Content="保存设置" Tag="primary"/></WrapPanel>
     </StackPanel></Border>
     <StackPanel Grid.Column="1">
      <Border Style="{StaticResource Panel}"><StackPanel><TextBlock Text="02 / STEAM" FontFamily="{DynamicResource CxMono}" FontSize="12" Foreground="{DynamicResource CxQuiet}"/><TextBlock Text="连接并启动" FontSize="17" FontWeight="SemiBold" Margin="0,6,0,14"/>

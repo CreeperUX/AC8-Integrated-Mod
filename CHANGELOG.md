@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.4-gui-preview.2 / GUI-Test2 — local automatic discovery
+
+- Reads Steam registration and default/multiple-library app manifests to locate AC8 on startup.
+- Checks the environment in the background once paths are known; ambiguous results expose candidate lists.
+- Preserves saved/manual inputs and all browse controls. Discovery does not save settings or modify the game.
+- Adds parser, multi-library, manual override and read-only regression coverage. Personal test package only.
+
 ## 2.3.4-gui-preview.1 — local three-mode GUI integration
 
 - Connects the CreeperUX UI to guidance-only, full missile and flight-only selection.

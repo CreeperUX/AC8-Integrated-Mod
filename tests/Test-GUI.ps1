@@ -27,6 +27,16 @@ $before=@(Get-ChildItem -LiteralPath $game -Recurse -Force).Count
 $result=Invoke-AC8GuiAction Check $package $w64 $steam 'none'
 if(!$result.Success -or $result.GameRoot -ne $game -or @(Get-ChildItem -LiteralPath $game -Recurse -Force).Count -ne $before){throw 'GUI check wrote to game or failed normalization'}
 Pass 'read-only environment check and root normalization'
+& {
+ $fixtureDiscovery=[pscustomobject]@{GamePath=$game;SteamPath=$steam;GameCandidates=@($game);SteamCandidates=@($steam);Warnings=@()}
+ function Find-AC8Installations {param($GamePath,$SteamPath) return $fixtureDiscovery}
+ $beforeSettings=Get-Content -LiteralPath (Join-Path $package 'features.ini') -Raw
+ $result=Invoke-AC8GuiAction Discover $package '' '' 'full'
+ if(!$result.Success -or $result.Title -ne '环境检查完成' -or $result.GameRoot -ne $fixtureDiscovery.GamePath -or $result.SteamPath -ne $fixtureDiscovery.SteamPath){throw 'Automatic discovery did not run environment checks'}
+ if((Get-Content -LiteralPath (Join-Path $package 'features.ini') -Raw) -ne $beforeSettings){throw 'Automatic check saved settings'}
+}
+Pass 'automatic discovery feeds the existing read-only environment check'
+
 foreach($mode in 'guidance','full','none'){
  $result=Invoke-AC8GuiAction Save $package $game $steam $mode
  $selection=Read-FeatureSettings (Join-Path $package 'features.ini')

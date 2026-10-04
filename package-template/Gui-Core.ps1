@@ -1,17 +1,11 @@
 ﻿. (Join-Path $PSScriptRoot 'Install-Common.ps1')
 . (Join-Path $PSScriptRoot 'Cleanup-Core.ps1')
 . (Join-Path $PSScriptRoot 'Feature-Settings.ps1')
+. (Join-Path $PSScriptRoot 'Discover-Installations.ps1')
 function Get-AC8GuiSavedPath([string]$Root,[string]$Name){
  $path=Join-Path $Root $Name
  if(Test-Path -LiteralPath $path -PathType Leaf){$text=Get-Content -LiteralPath $path -Raw -Encoding UTF8;if($null -ne $text){return $text.Trim()}}
  return ''
-}
-function Find-AC8GuiSteam {
- $candidates=@()
- try{$path=(Get-ItemProperty 'HKCU:\Software\Valve\Steam' -ErrorAction Stop).SteamPath;if($path){$candidates+=Join-Path $path 'steam.exe'}}catch{}
- try{$candidates+=@(Get-Process steam -ErrorAction Stop | ForEach-Object {$_.Path})}catch{}
- if(${env:ProgramFiles(x86)}){$candidates+=Join-Path ${env:ProgramFiles(x86)} 'Steam/steam.exe'}
- return @($candidates | Where-Object {$_ -and (Test-Path -LiteralPath $_ -PathType Leaf)}) | Select-Object -First 1
 }
 function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[ValidateSet('guidance','full','none')][string]$MissileMode){
  $option='"'+(Join-Path $Root 'Start-AC8-From-Steam.cmd')+'" %command%'
@@ -42,7 +36,22 @@ function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[Val
  return $option
 }
 function Invoke-AC8GuiAction {
- param([ValidateSet('Check','Save','Start','Recover')][string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[ValidateSet('guidance','full','none')][string]$MissileMode,[bool]$ConfirmRecovery=$false)
+ param([ValidateSet('Discover','Check','Save','Start','Recover')][string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[ValidateSet('guidance','full','none')][string]$MissileMode,[bool]$ConfirmRecovery=$false)
+ if($Action -eq 'Discover'){
+  $found=Find-AC8Installations -GamePath $GamePath -SteamPath $SteamPath
+  $result=[pscustomobject]@{Success=$true;Title='自动定位完成';Message='未能唯一确定位置。请选择下方候选，或使用浏览按钮手动选择。';GameRoot=$found.GamePath;SteamPath=$found.SteamPath;GameCandidates=@($found.GameCandidates);SteamCandidates=@($found.SteamCandidates);Option=$null}
+  if($found.GamePath -and $found.SteamPath){
+   try{
+    $checked=Invoke-AC8GuiAction Check $Root $found.GamePath $found.SteamPath $MissileMode
+    $result.Title='环境检查完成';$result.Message=$checked.Message;$result.GameRoot=$checked.GameRoot
+   }catch{
+    $result.Success=$false;$result.Title='定位完成，环境检查未通过'
+    $result.Message=$_.Exception.Message+' '+[string]$_.Exception.Data['AC8Hint']
+   }
+  }
+  if($found.Warnings.Count){$result.Message+=' '+($found.Warnings -join ' ')}
+  return $result
+ }
  $game=Resolve-AC8GameRoot $GamePath
  Assert-AC8PackageLocation $Root $game
  if($Action -eq 'Recover'){
