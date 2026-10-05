@@ -19,9 +19,7 @@
 
 ## 安装界面
 
-![CreeperUX 安装界面：自动定位、三种安装范围、游戏内功能和备份清理](docs/assets/installer-gui-v236.png)
-
-当前版本的真实 WPF 界面渲染，使用示例路径展示；不是游戏画面。采用 CreeperUX UI Kit 2.4.0 的原生样式适配，支持深浅主题。主界面没有滚动条，窗口较小时整体缩放。
+![安装界面：自动定位、三种安装范围、游戏内功能和备份清理](docs/assets/installer-gui-v236.png)
 
 界面提供 Steam／游戏自动定位、手动路径选择、环境检查、安装范围选择、启动选项复制、Steam 启动，以及专用的备份清理入口。多个安装位置会提供候选列表；已有手动路径不会被擅自覆盖。
 
@@ -138,7 +136,7 @@ F2 开关鼠标优先选目标，**每次启动默认关闭**。开启后，使�
 
 v2.3.6 包含任务退出生命周期修复：减少外观巡检、延迟回调及 HMD 采样中的旧对象查找，并保留检查点外观恢复。[修复说明](docs/LIFECYCLE-FIX.md)
 
-已执行原生飞控／相机／HMD、Lua 生命周期与三模式、PowerShell 安装与清理、WPF 界面和完整包校验。用户已确认可以公开发布；这些结果不代表所有电脑、任务、机型、显示驱动和模组组合都已覆盖。本版现已转为正式推荐版本；上述覆盖范围与已知限制仍如实保留。
+飞控、相机、HMD、安装与清理流程已通过相关自动化检查，但不代表所有电脑、任务、机型、显示驱动和模组组合都已覆盖。具体兼容性与使用边界请参阅已知限制。
 
 特别是退出任务、回机库、检查点重生以及曾出现 HUD 残影的设备仍需持续收集反馈。模拟测试不能保证所有 UE4SS 原生崩溃均已消除，也不保证每架飞机都获得相同改善。[完整限制](docs/LIMITATIONS.md)
 
@@ -148,7 +146,7 @@ v2.3.6 包含任务退出生命周期修复：减少外观巡检、延迟回调�
 
 本项目基于 [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim) 发展，感谢原作者 FletcherMiya 及其贡献者的工作与分享。本项目是独立维护的社区衍生版本，不代表上游对改动的背书。
 
-使用 MouseFlight、MinHook、RE-UE4SS 的相关代码及 CreeperUX UI Kit 的视觉规范，保留相应署名与许可证。[第三方许可](THIRD_PARTY_NOTICES.md) · [开发与构建](docs/DEVELOPMENT.md) · [更新记录](CHANGELOG.md)
+第三方代码、字体与设计资源的署名和许可证均予以保留。[第三方许可](THIRD_PARTY_NOTICES.md) · [开发与构建](docs/DEVELOPMENT.md) · [更新记录](CHANGELOG.md)
 
 ## English overview
 
