@@ -1,5 +1,9 @@
 # AC8 Integrated v2.3.6
 
+[简体中文](#简体中文) | [English](#english)
+
+## 简体中文
+
 **严禁用于线上或多人模式，仅限离线单人使用。**
 
 **正式推荐版本，建议新用户与旧版用户统一下载本页的完整安装包。**
@@ -8,11 +12,11 @@
 
 本次为已验证 v2.3.6 安装包的正式发布状态升级，安装包内容与 SHA-256 保持一致。包内个别“预发布”文字是原构建标识；当前发布状态以本页为准。
 
-## 下载与安装
+### 下载与安装
 
 下载 **AC8-Integrated-v2.3.6-share.zip**，完整解压到游戏目录之外，双击 **Start-GUI.cmd**。核对自动定位的 Steam 和游戏位置，选择安装范围并保存，再把生成的启动选项粘贴到 Steam。游戏操纵类型选择 Expert／专家，使用第三人称视角。请保留启动控制台，正常退出后等待清理。
 
-## 主要更新
+### 主要更新
 
 - 三种范围均包含飞控、摄像机与 HMD：仅比例引导、完整导弹强化、仅飞控。
 - 仅比例引导不改动原版性能、锁定、伤害、装填、近炸与模型；完整强化以接近《战争雷霆》表现为目标大幅调整性能，不是其仿真的完全复刻。
@@ -22,7 +26,7 @@
 - 安装界面支持自动定位 Steam 和游戏、手动选择路径、备份清理及查看诊断。
 - 首页增加当前 GUI 图片以及作者实际使用的飞行／视角键位参考，安装器不会改写键位。
 
-## 验证与限制
+### 验证与限制
 
 已完成原生、Lua、PowerShell、GUI 及完整包检查，用户已批准公开发布。本版已转为正式发布；不同设备、任务、机型、HUD 驱动与退出任务／回机库／检查点重生的组合未获全面覆盖。不能据模拟测试保证所有 UE4SS 原生崩溃均已消除。
 
@@ -34,3 +38,39 @@
 - 已知限制：https://github.com/CreeperUX/AC8-Integrated-Mod/blob/main/docs/LIMITATIONS.md
 
 基于 FletcherMiya/AC8-Mouse-Aim 发展，感谢原作者及贡献者；完整署名和许可随包保留。
+
+## English
+
+**Offline single-player only. Do not use in online or multiplayer modes.**
+
+v2.3.6 is the recommended formal release. Download **AC8-Integrated-v2.3.6-share.zip**, extract it outside the game directory and run **Start-GUI.cmd**. Set Expert controls and use a third-person view. Keep the launcher console open until cleanup finishes after exiting.
+
+The current application interface is primarily Chinese. English documentation and a [button-label guide](https://github.com/CreeperUX/AC8-Integrated-Mod/blob/main/docs/en/INSTALL.md) are available; the English software interface is in preparation.
+
+### Features
+
+- Mouse-directed flight control, F3 camera-position switching and C free look.
+- F2 cursor-prioritized HMD target selection, disabled at startup, with persistent reticle ticks and notifications. Normal weapon-lock conditions still apply.
+- Three modes: guidance only, full missile enhancements, or flight control with stock missiles. All include the camera and HMD features.
+- Guidance-only preserves stock missile performance, fuze settings and appearance. Full enhancements aim to approach War Thunder-like behavior within AC8's mechanics; they are not a complete reproduction of its simulation.
+- Automatic Steam/game discovery, manual path selection, verified backup cleanup and diagnostics.
+- Lifecycle fixes for mission-exit lookup risks while retaining checkpoint appearance recovery.
+
+### Installation and upgrades
+
+Save settings, copy the generated launch-options line, and paste it into Steam → AC8 → Properties → General → Launch Options. Launch through Steam. Use a new extraction directory for upgrades and update the launch option. The Source code ZIP is not the runtime package.
+
+The original v2.3.6 ZIP and SHA-256 are retained unchanged. Any prerelease wording inside that original build is a historical label; this release page is authoritative for its formal release status.
+
+### Validation and feedback
+
+Native, Lua, PowerShell, GUI and package checks have passed. Coverage is not exhaustive across devices, missions, aircraft, graphics drivers or lifecycle transitions. Simulated tests cannot guarantee elimination of all native UE4SS crashes.
+
+Report the game build, aircraft, selected mode, F2/F3/F4 states and reproduction steps. Share the original ZIP, not used package directories containing sessions or save backups.
+
+- English overview: https://github.com/CreeperUX/AC8-Integrated-Mod/blob/main/README.en.md
+- Flight/camera bindings: https://github.com/CreeperUX/AC8-Integrated-Mod/blob/main/docs/en/KEYBINDINGS.md
+- Cleanup: https://github.com/CreeperUX/AC8-Integrated-Mod/blob/main/docs/en/CLEANUP.md
+- Known limitations: https://github.com/CreeperUX/AC8-Integrated-Mod/blob/main/docs/en/LIMITATIONS.md
+
+Based on FletcherMiya/AC8-Mouse-Aim. Thanks to the original author and contributors; credits and licenses are retained.

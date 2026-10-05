@@ -24,6 +24,12 @@
 
 # Changelog
 
+## Documentation and English-interface preparation
+
+- Adds Chinese/English home-page navigation and English installation, keybinding, recovery and limitation guides.
+- Adds bilingual release notes and 76 paired UI/critical-message entries with key/placeholder/link validation.
+- Catalogs are preparation-only, not yet connected to the application. Existing v2.3.6 release assets are unchanged.
+
 ## 2.3.6 — recommended release
 
 - Promoted to the recommended release with owner approval. Existing release ZIP and checksum are retained unchanged.

@@ -1,5 +1,7 @@
 # 历史加载器残留修复工具
 
+**简体中文** | [English](en/CLEANUP.md)
+
 **用于处理旧版 AC8 Integrated 清理不完整导致的启动冲突。** 下载 [AC8-Cleanup-v1.0.0.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/cleanup-v1.0.0/AC8-Cleanup-v1.0.0.zip)，或打开 [清理工具发布页](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/cleanup-v1.0.0)。这是独立维护工具，不包含飞控、导弹模块或游戏运行库，不需要重新安装整合包或 Python。
 
 ## 哪些历史问题可以处理

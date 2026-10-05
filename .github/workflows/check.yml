@@ -12,6 +12,7 @@ jobs:
           python-version: '3.13'
       - run: python -m pip install -r requirements-dev.txt
       - run: python scripts/validate-source.py
+      - run: python -X utf8 tools/check-localization.py
       - run: native\test.cmd
         shell: cmd
       - run: python -X utf8 tests/test_helmet.py

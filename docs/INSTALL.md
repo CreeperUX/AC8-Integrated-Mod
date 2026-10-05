@@ -1,5 +1,7 @@
 # 安装、范围选择与退出
 
+**简体中文** | [English](en/INSTALL.md)
+
 **推荐所有新用户和旧版用户使用 [v2.3.6 正式版](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest)。**
 
 本文适用于 v2.3.6 完整安装包；旧 v2.3.2 的菜单不同。三种范围并列，任选其一即可。

@@ -1,6 +1,9 @@
 > [!WARNING]
 > **严禁将本 Mod 用于线上或多人模式。仅限离线单人模式使用。**
 > 安装、启动及测试前请确认所处模式。本项目不提供线上使用支持。
+> **Offline single-player only. Do not use this mod online or in multiplayer.**
+
+**简体中文** | [English](README.en.md)
 
 # AC8 Integrated Mod
 
@@ -148,8 +151,6 @@ v2.3.6 包含任务退出生命周期修复：减少外观巡检、延迟回调�
 
 第三方代码、字体与设计资源的署名和许可证均予以保留。[第三方许可](THIRD_PARTY_NOTICES.md) · [开发与构建](docs/DEVELOPMENT.md) · [更新记录](CHANGELOG.md)
 
-## English overview
+## English documentation
 
-**Offline single-player only. Do not use this mod in online or multiplayer modes.**
-
-Mouse-directed flight control, switchable camera positions, free look and cursor-prioritized target selection (HMD). Choose guidance-only missiles, the full missile enhancement package, or flight control with original missiles; all three include the camera and HMD features. Windows x64 / Steam build 25201480. Extract the full release ZIP outside the game folder and run `Start-GUI.cmd`. This is a community derivative of FletcherMiya/AC8-Mouse-Aim; see the credits and licenses above.
+完整英文介绍与使用指南见 [English README](README.en.md)。当前 v2.3.6 软件界面仍以中文为主；英语界面正在准备中。
