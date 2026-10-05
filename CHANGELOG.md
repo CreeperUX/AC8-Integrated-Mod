@@ -24,9 +24,9 @@
 
 # Changelog
 
-## 2.3.6 — public prerelease
+## 2.3.6 — recommended release
 
-- Publishes the reviewed RC1 functionality with owner approval; native/runtime gameplay files are unchanged.
+- Promoted to the recommended release with owner approval. Existing release ZIP and checksum are retained unchanged.
 - Rewrites the public overview with GUI-first installation, three modes, camera/HMD usage and known limits.
 - Adds the current flight/camera keyboard reference, extracted from named settings fields without distributing the save.
 - Includes the current no-scroll GUI image and accurate prerelease labels.

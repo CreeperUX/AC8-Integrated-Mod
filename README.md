@@ -6,8 +6,11 @@
 
 为 **ACE COMBAT 8 Steam 版**提供鼠标飞控、摄像机切换与头盔瞄准具（HMD）辅助选目标，并提供三种可选的导弹安装范围。
 
-**当前公开版本：v2.3.6（预发布）** · Windows x64 · 游戏 Build **25201480**
+**当前推荐正式版：v2.3.6** · Windows x64 · 游戏 Build **25201480**
 
+**首次安装和旧版升级均建议使用 v2.3.6。请从下方入口下载完整安装包，不要下载旧版或 Source code ZIP。**
+
+- 最新正式发布：[https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest)
 - 完整安装包：[AC8-Integrated-v2.3.6-share.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/v2.3.6/AC8-Integrated-v2.3.6-share.zip)
 - 发布页：[https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.6](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.6)
 - [安装与升级](docs/INSTALL.md) · [作者当前飞行／视角键位](docs/KEYBINDINGS.md) · [清理与恢复](docs/CLEANUP.md) · [已知限制](docs/LIMITATIONS.md)
@@ -135,7 +138,7 @@ F2 开关鼠标优先选目标，**每次启动默认关闭**。开启后，使�
 
 v2.3.6 包含任务退出生命周期修复：减少外观巡检、延迟回调及 HMD 采样中的旧对象查找，并保留检查点外观恢复。[修复说明](docs/LIFECYCLE-FIX.md)
 
-已执行原生飞控／相机／HMD、Lua 生命周期与三模式、PowerShell 安装与清理、WPF 界面和完整包校验。用户已确认可以公开发布；这些结果不代表所有电脑、任务、机型、显示驱动和模组组合都已覆盖。因此本版保留**预发布**标记，并记录已知限制。
+已执行原生飞控／相机／HMD、Lua 生命周期与三模式、PowerShell 安装与清理、WPF 界面和完整包校验。用户已确认可以公开发布；这些结果不代表所有电脑、任务、机型、显示驱动和模组组合都已覆盖。本版现已转为正式推荐版本；上述覆盖范围与已知限制仍如实保留。
 
 特别是退出任务、回机库、检查点重生以及曾出现 HUD 残影的设备仍需持续收集反馈。模拟测试不能保证所有 UE4SS 原生崩溃均已消除，也不保证每架飞机都获得相同改善。[完整限制](docs/LIMITATIONS.md)
 
