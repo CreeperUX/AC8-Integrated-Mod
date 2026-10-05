@@ -41,3 +41,5 @@ jobs:
         shell: powershell
       - run: .\tests\Test-SteamBridge.ps1
         shell: powershell
+      - run: .\tests\Test-GuiLayout.ps1
+        shell: powershell

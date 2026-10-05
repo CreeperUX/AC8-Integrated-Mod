@@ -8,6 +8,12 @@ Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System
 . (Join-Path $PSScriptRoot 'CreeperUX-Theme.ps1')
 $reader=New-Object System.Xml.XmlNodeReader ([xml](Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Launcher-GUI.xaml') -Raw -Encoding UTF8))
 $window=[Windows.Markup.XamlReader]::Load($reader)
+# Fit the initial window to the available desktop; the content scales down instead of scrolling.
+$workArea=[Windows.SystemParameters]::WorkArea
+$window.MinWidth=[Math]::Min($window.MinWidth,[Math]::Max(480,$workArea.Width-24))
+$window.MinHeight=[Math]::Min($window.MinHeight,[Math]::Max(360,$workArea.Height-24))
+$window.Width=[Math]::Min($window.Width,[Math]::Max($window.MinWidth,$workArea.Width-24))
+$window.Height=[Math]::Min($window.Height,[Math]::Max($window.MinHeight,$workArea.Height-24))
 $script:themeMode=$Theme
 Set-CreeperUXTheme $window $script:themeMode
 $script:controls=@{}
