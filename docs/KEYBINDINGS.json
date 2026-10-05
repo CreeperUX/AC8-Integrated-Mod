@@ -1,0 +1,110 @@
+{
+  "verified_date": "2026-10-05",
+  "scope": "author keyboard bindings: flight, camera and HMD-related target selection only",
+  "source": "read-only extraction of named key fields from local System.sav; no save or account data included",
+  "control_type": "Expert",
+  "bindings": [
+    {
+      "setting": "PitchDownKey",
+      "action_zh": "压低机头",
+      "primary": "W",
+      "secondary": "None"
+    },
+    {
+      "setting": "PitchUpKey",
+      "action_zh": "抬起机头",
+      "primary": "S",
+      "secondary": "None"
+    },
+    {
+      "setting": "RollLeftKey",
+      "action_zh": "向左滚转",
+      "primary": "A",
+      "secondary": "None"
+    },
+    {
+      "setting": "RollRightKey",
+      "action_zh": "向右滚转",
+      "primary": "D",
+      "secondary": "None"
+    },
+    {
+      "setting": "YawLeftKey",
+      "action_zh": "向左偏航",
+      "primary": "Q",
+      "secondary": "None"
+    },
+    {
+      "setting": "YawRightKey",
+      "action_zh": "向右偏航",
+      "primary": "E",
+      "secondary": "None"
+    },
+    {
+      "setting": "ThrottleUpKey",
+      "action_zh": "加速／增加油门",
+      "primary": "LeftShift",
+      "secondary": "None"
+    },
+    {
+      "setting": "ThrottleDownKey",
+      "action_zh": "减速／刹车",
+      "primary": "LeftControl",
+      "secondary": "None"
+    },
+    {
+      "setting": "AutoPilotKey",
+      "action_zh": "原生自动驾驶",
+      "primary": "Z",
+      "secondary": "None"
+    },
+    {
+      "setting": "GearDownUp",
+      "action_zh": "起落架收放",
+      "primary": "R",
+      "secondary": "None"
+    },
+    {
+      "setting": "CameraCtrlKey",
+      "action_zh": "原生视角控制",
+      "primary": "C",
+      "secondary": "LeftAlt"
+    },
+    {
+      "setting": "CameraUpKey",
+      "action_zh": "视角向上",
+      "primary": "Seven",
+      "secondary": "NumPadEight"
+    },
+    {
+      "setting": "CameraDownKey",
+      "action_zh": "视角向下",
+      "primary": "Eight",
+      "secondary": "NumPadTwo"
+    },
+    {
+      "setting": "CameraLeftKey",
+      "action_zh": "视角向左",
+      "primary": "Nine",
+      "secondary": "NumPadFour"
+    },
+    {
+      "setting": "CameraRightKey",
+      "action_zh": "视角向右",
+      "primary": "Zero",
+      "secondary": "NumPadSix"
+    },
+    {
+      "setting": "ChangeViewKey",
+      "action_zh": "原生视角切换",
+      "primary": "V",
+      "secondary": "None"
+    },
+    {
+      "setting": "SwitchTargetKey",
+      "action_zh": "切换目标（HMD 关联）",
+      "primary": "T",
+      "secondary": "RightMouseButton"
+    }
+  ]
+}

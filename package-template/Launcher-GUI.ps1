@@ -22,7 +22,7 @@ $script:worker=$null;$script:async=$null;$script:option=''
 $infoPath=Join-Path $PSScriptRoot 'package-info.json'
 if(Test-Path -LiteralPath $infoPath){
  $info=Get-Content -LiteralPath $infoPath -Raw -Encoding UTF8 | ConvertFrom-Json
- if($info.version){$script:controls.PackageVersion.Text=[string]$info.version+' · 候选'}
+ if($info.version){$label=switch($info.status){'prerelease'{'预发布'} 'release'{'正式版'} default{'候选'}};$script:controls.PackageVersion.Text=[string]$info.version+' · '+$label}
 }
 
 function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){

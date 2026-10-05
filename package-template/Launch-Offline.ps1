@@ -108,7 +108,7 @@ try {
  Write-AC8Json $state $statePath
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
  $packageInfo=Get-Content -LiteralPath (Join-Path $root 'package-info.json') -Raw -Encoding UTF8 | ConvertFrom-Json
- Write-Host ('AC8 '+$packageInfo.version+' - single-player candidate. Keep this console open for cleanup.')
+ Write-Host ('AC8 '+$packageInfo.version+' - offline single-player only. Keep this console open for cleanup.')
  Write-Host 'Mouse Aim: select Expert controls. F2 HMD (starts OFF); F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; hold C for free look.'
  Write-Host ('FEATURES: mouse flight; missile mode='+$features.MissileMode)
  $stage='启动游戏'

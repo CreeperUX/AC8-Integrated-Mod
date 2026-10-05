@@ -24,6 +24,13 @@
 
 # Changelog
 
+## 2.3.6 — public prerelease
+
+- Publishes the reviewed RC1 functionality with owner approval; native/runtime gameplay files are unchanged.
+- Rewrites the public overview with GUI-first installation, three modes, camera/HMD usage and known limits.
+- Adds the current flight/camera keyboard reference, extracted from named settings fields without distributing the save.
+- Includes the current no-scroll GUI image and accurate prerelease labels.
+
 ## 2.3.6-rc.1 — complete release candidate preparation
 
 - Freezes current hmd-preview.4 sources, including lifecycle fixes, and rebuilds the native DLL.
