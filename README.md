@@ -1,6 +1,12 @@
-> 当前本地候选为 **2.3.5-camera-preview.4**：两种视角、F3临时切换及任务/过场自动回中，详见 [视角说明](docs/CAMERA-CONTEXT.md)。未公开发布，飞控算法沿用2.3.2。
+> preview.4 修复任务退出期间的异步对象查找风险，保留检查点外观恢复；详见 [生命周期修复](docs/LIFECYCLE-FIX.md)。
+
+> 当前本地候选为 **2.3.6-hmd-preview.4**：F2 开关鼠标优先选目标，沿用 F3/F4 提示设计。默认关闭，尚待实飞验收，详见 [头盔瞄准说明](docs/HELMET-SELECTION.md)。
+
+> 已包含 **2.3.5-camera-preview.4** 的视角修复：两种视角、F3临时切换及任务/过场自动回中，详见 [视角说明](docs/CAMERA-CONTEXT.md)。未公开发布，飞控算法沿用2.3.2。
 
 # AC8 Integrated Mod
+
+> **当前打包：2.3.6-rc.1 发布候选。** 基于最新 hmd-preview.4 功能与生命周期修复，补齐图形安装器信息及模块完整性检查。尚未获准公开 Release；[发布准备与验收](docs/RELEASE-CANDIDATE.md)。
 
 > **三模式图形界面本地预览：** 本包接入 v2.3.4 的三种安装范围，双击 `Start-GUI.cmd` 使用 CreeperUX 界面。尚未发布；公开 v2.3.2 仍只有两种范围。[图形界面说明](docs/GUI-PREVIEW.md)。
 
@@ -18,7 +24,7 @@
 
 鼠标指定世界方向，飞机自动追随；按住 C 自由观察，F4 在稳健与积极两档飞控间切换。**不需要导弹改动时，可以只安装鼠标飞控。**
 
-当前候选包：**v2.3.4**。飞控沿用 v2.3.2 基线，M15 与 Setup 编码修复保留。适配 Build **25201480**、Windows x64，仅限离线单人游戏，禁止用于多人游戏。
+当前候选包：**v2.3.6-hmd-preview.4**。飞控沿用 v2.3.2 基线，M15 与 Setup 编码修复保留。适配 Build **25201480**、Windows x64，仅限离线单人游戏，禁止用于多人游戏。
 
 [安装包发布页](https://github.com/CreeperUX/AC8-Integrated-Mod/releases) · [完整安装说明](docs/INSTALL.md) · [控制原理](docs/CONTROL.md) · [开发与构建](docs/DEVELOPMENT.md) · [已知限制](docs/LIMITATIONS.md)
 
@@ -40,7 +46,7 @@
 
 ## 快速开始
 
-1. 完整解压 v2.3.4 候选安装包到游戏目录之外；Source code ZIP 不是运行包。
+1. 完整解压本候选安装包到游戏目录之外；Source code ZIP 不是运行包。
 2. 退出游戏并等待旧控制台清理完成。
 3. 运行 `Setup.cmd`，输入游戏目录并按名称选择任意一种安装范围。
 4. 将生成的 `Steam-Launch-Option.txt` 整行复制到 Steam 启动选项。
@@ -52,6 +58,7 @@
 | 按键 | 功能 |
 |---|---|
 | 鼠标 | 指定希望机头追随的世界方向 |
+| **F2** | 开关鼠标优先选目标（默认关闭）；切换目标仍用游戏原按键 |
 | **F3** | 游戏原生视角 ↔ 拉远跟随视角（本次运行） |
 | **F4** | `CLASSIC 2.0` ↔ `AGILE 2.1`；默认积极档 |
 | **F8** | 开关整个鼠标飞控，不卸载导弹模块 |

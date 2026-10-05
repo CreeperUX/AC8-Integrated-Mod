@@ -17,6 +17,7 @@ function M.acquire()
  end
  local added=0
  return {
+  engine=engine,
   hold=function(object)
    assert(valid(owner)and valid(object),'Invalid source owner/object')
    local address=object:GetAddress()

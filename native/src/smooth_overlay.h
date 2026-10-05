@@ -12,7 +12,7 @@ struct HudSurface {
     HWND window=nullptr,owner=nullptr; HDC dc=nullptr;
     HBITMAP bitmap=nullptr; HGDIOBJ previous=nullptr;
     uint32_t* pixels=nullptr; int width=0,height=0;
-    bool uploaded=false,shown=false;
+    bool uploaded=false,shown=false;int uploaded_kind=-1;
     bool create() {
         window=CreateWindowExW(WS_EX_LAYERED|WS_EX_TRANSPARENT|WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE,
             L"AC8SmoothHud",L"AC8 Mouse Aim",WS_POPUP,0,0,1,1,nullptr,nullptr,self_module,nullptr);
@@ -39,11 +39,12 @@ struct HudSurface {
         shown=ok && visible;return ok;
     }
     bool submit(HWND game,POINT centre,int kind,float scale,bool visible=true,HDWP* batch=nullptr) {
-        // kind 0 = target ring, 1 = aircraft nose, 2 = offscreen notice.
-        const int r=std::max(8,int(std::lround((kind==0?29:16)*scale)));
+        // kind 0 = target ring, 1 = aircraft nose, 2 = offscreen notice, 3 = HMD ring.
+        const int r=std::max(8,int(std::lround(((kind==0||kind==3)?29:16)*scale)));
         if(!resize(kind==2?230:2*r+1,kind==2?28:2*r+1))return false;
         // Shape and alpha are immutable at a fixed scale. Move the cached
         // surface rather than repainting and uploading it every frame.
+        if(uploaded_kind!=kind){uploaded=false;uploaded_kind=kind;}
         if(uploaded){
             if(owner!=game){SetWindowLongPtrW(window,GWLP_HWNDPARENT,reinterpret_cast<LONG_PTR>(game));owner=game;}
             return place(centre,visible,batch);
@@ -57,7 +58,10 @@ struct HudSurface {
             auto oldpen=SelectObject(dc,pen1);auto brush=SelectObject(dc,GetStockObject(HOLLOW_BRUSH));
             for(int pass=0;pass<2;++pass){
                 if(pass)SelectObject(dc,pen2);
-                if(kind==0){int n=int(std::lround(25*scale));Ellipse(dc,r-n,r-n,r+n,r+n);}
+                if(kind==0||kind==3){int n=int(std::lround(25*scale));Ellipse(dc,r-n,r-n,r+n,r+n);
+                    if(kind==3){int g=int(std::lround(17*scale));
+                        MoveToEx(dc,r-n,r,nullptr);LineTo(dc,r-g,r);MoveToEx(dc,r+g,r,nullptr);LineTo(dc,r+n,r);
+                        MoveToEx(dc,r,r-n,nullptr);LineTo(dc,r,r-g);MoveToEx(dc,r,r+g,nullptr);LineTo(dc,r,r+n);}}
                 else{int n=int(std::lround(12*scale)),g=int(std::lround(5*scale));
                     MoveToEx(dc,r-n,r,nullptr);LineTo(dc,r-g,r);MoveToEx(dc,r+g,r,nullptr);LineTo(dc,r+n,r);
                     MoveToEx(dc,r,r-n,nullptr);LineTo(dc,r,r-g);MoveToEx(dc,r,r+g,nullptr);LineTo(dc,r,r+n);}
@@ -146,7 +150,7 @@ void legacy_overlay_loop() {
             POINT pt{};float scale=std::max(0.75f,h/1080.0f);
             HDWP batch=BeginDeferWindowPos(3);bool submitted=batch!=nullptr;
             if(project(flight::basis(frame.tp,frame.ty,0).f,pt)){
-                submitted=ring.submit(game_window,pt,0,scale,true,&batch);notice.hide(&batch);
+                submitted=ring.submit(game_window,pt,helmet_enabled.load()?3:0,scale,true,&batch);notice.hide(&batch);
             }else{ring.hide(&batch);submitted=notice.submit(game_window,{origin.x+145,origin.y+70},2,scale,true,&batch);}
             nose.hide(&batch); // Use the game's native crosshair; no duplicate Mod cross.
             if(batch)submitted=(EndDeferWindowPos(batch)!=0)&&submitted;else submitted=false;

@@ -1,0 +1,91 @@
+{
+  "base_commit": "e7d19d4",
+  "snapshot_date": "2026-10-05",
+  "source_version": "2.3.6-hmd-preview.4",
+  "uncommitted_files": [
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "91641351219737787edc0155017282e52be5e31f446f56bdc78e9de8fe0c068e"
+    },
+    {
+      "path": "README.md",
+      "sha256": "203b7223568ec8e2c34ddd26bd975d531ce7d731a64f901ecd6e45dd18afba1f"
+    },
+    {
+      "path": "docs/HELMET-SELECTION.md",
+      "sha256": "81998e3b12c815ee14690511c948f174eb4bb3aec4d5d89aa06f8c7f09fed8b8"
+    },
+    {
+      "path": "docs/LIFECYCLE-FIX.md",
+      "sha256": "66312e6c2d07489b59eeb635dedcdc1744a1a6c4e56482a9f3466a52dcb74b95"
+    },
+    {
+      "path": "native/gpu_hud_test.cpp",
+      "sha256": "d5bccb44a23493472aa7bfc877553533fc392c16e484174437e781c2f34b7e34"
+    },
+    {
+      "path": "native/helmet_tests.cpp",
+      "sha256": "a5b064dd3e9b49261238db7a47f3c7a49ed6ca5262e7eb47801d5aae7aaf947e"
+    },
+    {
+      "path": "native/src/gpu_hud_loop.h",
+      "sha256": "e67dc50dfaeda4480d62447957559b09326e3bf81b82c4f6cdcbb1456e3d2fed"
+    },
+    {
+      "path": "native/src/gpu_hud_renderer.h",
+      "sha256": "49e92bf4053f75e2cf122a67576e0c502032eb263e1c005c55e7d7ddcd2c06f0"
+    },
+    {
+      "path": "native/src/helmet_selection.h",
+      "sha256": "ffa3f2c5bde9fcfb24e765a651bce61953cce91341d211db6cead7dc7a5ac5cc"
+    },
+    {
+      "path": "native/src/mouse_aim.cpp",
+      "sha256": "f7b6d5e94b22fdcfa1a5516867713146da07c77c38661a5c110612466eb5a7c6"
+    },
+    {
+      "path": "native/src/smooth_overlay.h",
+      "sha256": "4aa391ac4142e7f77e7f3ea2b32e20e0601487c1c3a3557ca7a6370de9af2162"
+    },
+    {
+      "path": "native/test.cmd",
+      "sha256": "d8833eb5b19e7fdc04a59e18efd28942d6ba9f00c0fbd59a2ab4e4b3f9362ded"
+    },
+    {
+      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8MouseAim/Scripts/helmet.lua",
+      "sha256": "2beca2e4f36435a5c26e52314063016b6b16770ff9aba31f365109bf44b0eebf"
+    },
+    {
+      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8MouseAim/Scripts/main.lua",
+      "sha256": "4c19a8db2c7be8f02840d2f5dc6f08ed6660b377f8130201695f2f569e59f0f9"
+    },
+    {
+      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8SourceInit/Scripts/acceptance_observer.lua",
+      "sha256": "e9d8dba619339327a93a388ced778ab0636350e6fd9ef361ddf9c3f5c1dbeab5"
+    },
+    {
+      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8SourceInit/Scripts/msl_visuals.lua",
+      "sha256": "213a45c73da8e0de7112b3927f2da3992a0e582d0b1e91f867ef6021b2593c4f"
+    },
+    {
+      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8SourceInit/Scripts/source_retention.lua",
+      "sha256": "c8a6fcb7cf97a36cfdff17c73c46816b268f8f6e41991d0b33a8ceb6c2198e6f"
+    },
+    {
+      "path": "package-template/\u5f00\u59cb\u4f7f\u7528.md",
+      "sha256": "ca27dec523c3c93083bd40d3a5aa8b2eb924e41c688f5a569ead5b26b1af9788"
+    },
+    {
+      "path": "tests/test_helmet.py",
+      "sha256": "5f6a7e58398ff4101c0a6bec9991a53b34946fbd856adada2d4a5a86f856947f"
+    },
+    {
+      "path": "tests/test_visuals.py",
+      "sha256": "1c4a2ff088472a9a88906f260ad7ddcbb7cf14a9d462a40e24844ddae3b02cec"
+    },
+    {
+      "path": "version.json",
+      "sha256": "a15262990540f035425b3f8988ca4f61f82857b5b67776d741cff3b044858791"
+    }
+  ]
+}

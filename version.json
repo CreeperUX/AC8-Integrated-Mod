@@ -1,8 +1,10 @@
 {
-  "version": "2.3.5-camera-preview.4",
-  "status": "local-camera-candidate",
+  "version": "2.3.6-rc.1",
+  "status": "release-candidate",
   "game_build": "25201480",
   "game_sha256": "51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F",
   "steam_app_id": 2288340,
-  "native_controller_version": "2.2.2"
+  "native_controller_version": "2.2.2",
+  "functional_baseline": "2.3.6-hmd-preview.4",
+  "release_approved": false
 }

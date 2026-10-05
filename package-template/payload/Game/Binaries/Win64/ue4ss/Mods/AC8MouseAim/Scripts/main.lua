@@ -16,6 +16,10 @@ local observation = dofile(directory .. "observation.lua")
 local context_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_context"))
 local view_context=dofile(directory..'view_context.lua').new()
 local manual_look_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_manual_look"))
+local helmet_state=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_helmet_state"))
+local helmet_submit=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_helmet_submit"))
+local helmet=dofile(directory..'helmet.lua').new(helmet_submit)
+local helmet_error_time=0
 local shadow_next=0
 local shadow_sim_seconds=0
 local shadow_retry=0
@@ -138,6 +142,7 @@ if EngineTickAvailable == false or type(LoopInGameThreadAfterFrames) ~= "functio
 else
     LoopInGameThreadAfterFrames(1, function()
         begin_native()
+        helmet_state() -- invalidate a disabled/suspended mode even without a pawn
         local ok, err = pcall(function()
             local now = os.time()
             if now < next_search then return end
@@ -227,6 +232,20 @@ else
             local on,target_pitch,target_yaw=frame_native(address,pitch,yaw,roll,
                 camera_pitch,camera_yaw,camera_roll,fov,ox,oy,oz,paused and 1 or 0,gazing and 1 or 0)
             assert(on~=nil,'Native frame rejected')
+            local hmd,aim_pitch,aim_yaw,aspect=helmet_state()
+            if hmd==1 and ready then
+                local helmet_ok,helmet_err=pcall(function()
+                    helmet:update(pawn,position,view_position,{camera_pitch,camera_yaw,camera_roll},
+                        {aim_pitch,aim_yaw},fov,aspect,frame_time,rotation_component)
+                end)
+                if not helmet_ok then
+                    helmet:clear();helmet_submit(-1,0,0,0)
+                    if frame_time>=helmet_error_time then
+                        helmet_error_time=frame_time+10
+                        print('[HMD] Stock selection retained: '..tostring(helmet_err)..'\n')
+                    end
+                end
+            else helmet:clear() end
             -- Essential metadata is refreshed every game frame, independently of
             -- the optional recorder and its position/simulation-time validation.
             if on==1 then

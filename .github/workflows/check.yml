@@ -14,6 +14,7 @@ jobs:
       - run: python scripts/validate-source.py
       - run: native\test.cmd
         shell: cmd
+      - run: python -X utf8 tests/test_helmet.py
       - run: python -X utf8 tests/test_visuals.py
       - run: python -X utf8 tests/test_integration.py
       - run: python -X utf8 tests/test_missile_modes.py

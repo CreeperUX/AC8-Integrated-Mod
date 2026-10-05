@@ -87,14 +87,8 @@ function M.start()
   local cls=read(function()return pawn:GetClass()end);if not valid(cls)then return end
   local leaf=read(function()return cls:GetFName():ToString()end)
   if type(leaf)~='string'or not leaf:match('^BP_PlayerPlane_')then return end
-  local path=full:match('^[^ ]+ (.+)$');if not path or pending[path]then return end
-  pending[path]=true;local generation=epoch
-  -- A single delayed callback, storing only the canonical path and generation.
-  ExecuteInGameThreadAfterFrames(2,function()
-   if generation~=epoch then return end
-   local current=read(function()return StaticFindObject(path)end)
-   equipment(current,'post-begin-play')
-  end)
+  -- Observe only the live event context; never schedule a path lookup across teardown.
+  equipment(pawn,'begin-play')
  end)
  hook('/Script/Live.LiveWeaponBase:OnImpact','impact')
  hook('/Script/Live.LiveWeaponBase:OnWeaponDestroyed','destroy')

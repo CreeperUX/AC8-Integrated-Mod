@@ -118,6 +118,9 @@ std::atomic<int> camera_view_mode{1};
 std::atomic<float> camera_distance_cm{3600},camera_height_cm{600};
 std::atomic<bool> camera_toggle_requested{false};
 std::atomic<uint64_t> camera_notice_until{0};
+std::atomic<bool> helmet_enabled{false};
+std::atomic<int> helmet_notice{-1};
+std::atomic<uint64_t> helmet_notice_until{0};
 std::atomic<bool> resume_center_requested{false};
 std::atomic<bool> active{false};
 std::atomic<bool> model_assist_enabled{true},assist_environment_unsafe{true};
@@ -378,6 +381,12 @@ void mouse_loop() {
         }
         f7_down=f7;
         bool plain=(GetAsyncKeyState(VK_MENU)&0x8000)==0&&(GetAsyncKeyState(VK_CONTROL)&0x8000)==0&&(GetAsyncKeyState(VK_SHIFT)&0x8000)==0;
+        static control_modes::KeyLatch helmet_key;
+        if(helmet_key.press((GetAsyncKeyState(VK_F2)&0x8000)!=0,plain&&foreground_is_game()&&enabled.load()&&active.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load())) {
+            helmet_enabled.store(!helmet_enabled.load());
+            helmet_notice.store(helmet_enabled.load()?1:0);helmet_notice_until=GetTickCount64()+2500;
+            log_line("HMD mode requested=%d",helmet_enabled.load()?1:0);
+        }
         static control_modes::KeyLatch camera_key;
         const bool f3=(GetAsyncKeyState(VK_F3)&0x8000)!=0;
         if(camera_key.press(f3,plain&&foreground_is_game()&&enabled.load()&&active.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load()))camera_toggle_requested=true;
@@ -719,6 +728,7 @@ bool bridge_verified=false;
 DWORD bridge_thread=0;
 std::atomic<bool> reload_requested{false};
 bool on_bridge_thread() { return bridge_thread && bridge_thread==GetCurrentThreadId(); }
+#include "helmet_selection.h"
 } // namespace
 
 extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
@@ -742,6 +752,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
     log_line("PROFILE 2.2.2 CAMERA-ORBIT SWITCHABLE MODEL CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
     if (!prepare_hook()) return 0;
     install_native_camera();
+    helmet::install();
     if (prepare_raw_input_capture()) {
         log_line("mouse capture attached to AC8 raw input");
     } else {
@@ -814,6 +825,29 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_frame(lua_State* state) {
     const bool on=enabled.load() && !game_paused.load() && !gaze_active.load() && !context_suspended.load() && foreground_is_game();
     lua.set_number(on?1:0); lua.set_number(look_pitch.load()); lua.set_number(look_yaw.load());
     return 3;
+}
+
+// Separate from frame(): that API returns the camera destination during C.
+extern "C" __declspec(dllexport) int ac8_mouseaim_helmet_state(lua_State* state) {
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);if(lua.get_stack_size()!=0)return 0;
+    if(helmet_enabled.load()&&!helmet::supported){helmet_enabled=false;helmet_notice=2;helmet_notice_until=GetTickCount64()+2500;}
+    const bool usable=helmet_enabled.load()&&helmet::supported&&enabled.load()&&active.load()&&
+        !game_paused.load()&&!gaze_active.load()&&!context_suspended.load()&&foreground_is_game();
+    RECT client{};if(game_window)GetClientRect(game_window,&client);
+    const double aspect=client.bottom>0?double(client.right)/client.bottom:0;
+    if(!usable)helmet::snapshot={};
+    lua.set_number(usable?1:0);lua.set_number(target_pitch.load());lua.set_number(target_yaw.load());lua.set_number(aspect);return 4;
+}
+extern "C" __declspec(dllexport) int ac8_mouseaim_helmet_submit(lua_State* state) {
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);double v[4]{};helmet::snapshot={};
+    if(!read_numbers(lua,v))return 0;
+    if(v[0]==-1){helmet_enabled=false;helmet_notice=2;helmet_notice_until=GetTickCount64()+2500;return 0;}
+    if(v[0]==0)return 0;
+    if(!helmet_enabled.load()||!helmet::supported||static_cast<uintptr_t>(v[0])!=aircraft.load())return 0;
+    for(double n:v)if(n!=0&&!live_pointer_number(n))return 0;
+    helmet::snapshot={uintptr_t(v[0]),uintptr_t(v[1]),uintptr_t(v[2]),uintptr_t(v[3]),GetTickCount64()};return 0;
 }
 
 extern "C" __declspec(dllexport) int ac8_mouseaim_camera(lua_State* state) {

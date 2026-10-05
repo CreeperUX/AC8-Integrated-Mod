@@ -1,4 +1,35 @@
+## 2.3.6-hmd-preview.4
+
+- Remove runtime global lookups from missile visual polling, deferred equipment callbacks and HMD sampling.
+- Invalidate visual callbacks on player EndPlay, LoadMap and world changes; preserve checkpoint mesh repair.
+- Observe equipment only in the current BeginPlay event. Real-game teardown acceptance remains pending.
+
+## 2.3.6-hmd-preview.3 — reticle A
+
+- Show four inward ticks on the mouse ring while HMD is enabled; preserve the original ring while disabled.
+- Keep the F2 transient notice and F3/F4 notice styling unchanged. Reticle state persists after the notice fades.
+- Mirror the mode shape in the legacy renderer and invalidate its shape cache on mode changes.
+
+## 2.3.6-hmd-preview.2 — local fix
+
+- Fix HMD UNAVAILABLE when MinHook cannot allocate a near executable page (MH_ERROR_MEMORY_ALLOC).
+- Add a version-checked absolute trampoline that relocates 21 complete position-independent prologue bytes; retain the original player-only dispatch guards.
+- Test the executable detour/trampoline roundtrip, not just ranking and dispatch policy.
+
+## 2.3.6-hmd-preview.1 — local candidate
+
+- F2 toggles cursor-priority target selection, off at process start. Original switch-target binding is retained.
+- Reuses the F3/F4 GPU notice style. Invalid/stale data falls back to stock selection.
+- Tested geometry, dispatch guards and renderer; actual mission selection remains pending.
+
 # Changelog
+
+## 2.3.6-rc.1 — complete release candidate preparation
+
+- Freezes current hmd-preview.4 sources, including lifecycle fixes, and rebuilds the native DLL.
+- Includes launcher/cleanup hardening, three installation scopes, automatic discovery, CreeperUX themes, F2 HMD and F3 cameras.
+- Makes GUI/console version labels data-driven, documents in-game controls and enforces required HMD/camera/runtime mode files.
+- Packaging and isolated validation do not replace real-game lifecycle acceptance; release approval remains pending.
 
 ## 2.3.5 camera preview2 — local candidate
 

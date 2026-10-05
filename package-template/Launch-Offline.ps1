@@ -107,8 +107,9 @@ try {
  Set-Content -LiteralPath (Join-Path $w64 'steam_appid.txt') -Value '2288340' -Encoding ASCII
  Write-AC8Json $state $statePath
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
- Write-Host 'AC8 2.3.5 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
- Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; hold C for free look.'
+ $packageInfo=Get-Content -LiteralPath (Join-Path $root 'package-info.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+ Write-Host ('AC8 '+$packageInfo.version+' - single-player candidate. Keep this console open for cleanup.')
+ Write-Host 'Mouse Aim: select Expert controls. F2 HMD (starts OFF); F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; hold C for free look.'
  Write-Host ('FEATURES: mouse flight; missile mode='+$features.MissileMode)
  $stage='启动游戏'
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru

@@ -44,12 +44,14 @@ bool run_gpu_hud(){
                     auto project=[&](flight::V v,hud_geometry::Point& p){v=v*50000-offset;float z=flight::dot(v,view.f);if(z<=.01f)return false;
                         float focal=width*.5f/std::tan(std::clamp(f.fov,30.f,150.f)*.5f*flight::rad);p={width*.5f+focal*flight::dot(v,view.r)/z,height*.5f-focal*flight::dot(v,view.u)/z};
                         return std::isfinite(p.x)&&std::isfinite(p.y)&&p.x>=0&&p.y>=0&&p.x<width&&p.y<height;};
-                    gpu_hud::Layout frame;frame.scale=std::max(.75f,height/1080.f);frame.opacity=hud_opacity.load();frame.connector=hud_connector.load();frame.always=hud_link_always.load();
+                    gpu_hud::Layout frame;frame.scale=std::max(.75f,height/1080.f);frame.opacity=hud_opacity.load();frame.connector=hud_connector.load();frame.always=hud_link_always.load();frame.helmet_active=helmet_enabled.load();
                     if(mode_notice_pending.exchange(false))mode_notice_until=now+2500;
                     auto notice_end=mode_notice_until.load();
                     if(now<notice_end){frame.mode_notice=control_mode.load();frame.notice_alpha=std::min(1.f,float(notice_end-now)/400.f);}
                     auto camera_end=camera_notice_until.load();
-                    if(now<camera_end){frame.camera_notice=camera_view_mode.load();frame.notice_alpha=std::min(1.f,float(camera_end-now)/400.f);}
+                    if(now<camera_end&&camera_end>=notice_end){frame.camera_notice=camera_view_mode.load();frame.notice_alpha=std::min(1.f,float(camera_end-now)/400.f);}
+                    auto helmet_end=helmet_notice_until.load();
+                    if(now<helmet_end&&helmet_end>=std::max(camera_end,notice_end)){frame.helmet_notice=helmet_notice.load();frame.notice_alpha=std::min(1.f,float(helmet_end-now)/400.f);}
                     frame.target=project(flight::basis(f.tp,f.ty,0).f,frame.target_point);frame.nose=project(flight::basis(f.p,f.y,f.r).f,frame.nose_point);
                     auto tick=perf_clock();float dt=last_draw?float(perf_us(tick-last_draw))/1e6f:1.f/120;
                     hr=renderer->draw(frame,dt);if(SUCCEEDED(hr))hr=renderer->present();

@@ -75,6 +75,17 @@ int main(){
             check(r.draw(f,1.f/120,true),"preview");
             char name[160];sprintf_s(name,"test-runtime/previews/gpu-preview-%d.bgra",i);dump(r,name,false);check(r.present(),"preview present");
         }
+        for(int state=0;state<3;++state){
+            assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);
+            f.mode_notice=-1;f.camera_notice=-1;f.helmet_notice=state;f.helmet_active=state==1;f.notice_alpha=1;
+            check(r.draw(f,1.f/120,true),"HMD notice");
+            char name[160];sprintf_s(name,"test-runtime/previews/hmd-%d.bgra",state);dump(r,name,false);check(r.present(),"HMD present");
+        }
+        assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);
+        f.helmet_active=true;f.helmet_notice=-1;f.camera_notice=-1;f.mode_notice=-1;
+        check(r.draw(f,1.f/120,true),"persistent HMD reticle after notice");
+        dump(r,"test-runtime/previews/hmd-persistent.bgra",false);
+        check(r.present(),"persistent HMD present");
     }
     DestroyWindow(w);UnregisterClassW(wc.lpszClassName,wc.hInstance);CoUninitialize();
     puts("PASS transparent premultiplied pixels; own-buffer preview; resource teardown");

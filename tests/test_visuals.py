@@ -25,9 +25,9 @@ for k,p in pairs(rules.models)do
 end
 foreignMesh=obj('foreign.mesh','StaticMesh',{StaticMaterials={{MaterialInterface=obj('foreign.mat','Material')}}})
 package.preload.msl_visual_rules=function()return rules end
-package.preload.source_retention=function()return {acquire=function()return {hold=function(o)retained[o:GetAddress()]=true end}end}end
+package.preload.source_retention=function()return {acquire=function()return {engine=engine,hold=function(o)retained[o:GetAddress()]=true end}end}end
 function LoadAsset(p)assert(objects[p],p);return objects[p]end
-function StaticFindObject(p)return objects[p]end
+function StaticFindObject(p)assert(not forbidFind,'runtime global lookup forbidden');return objects[p]end
 function RegisterLoadMapPreHook(fn)mapPre=fn end
 function RegisterBeginPlayPostHook(fn)beginPlay=fn end
 function RegisterHook(p,pre,post)hooks[p]={pre,post}end
@@ -50,6 +50,8 @@ controller=obj('controller','PlayerController')
 player=obj('localPlayer','LocalPlayer',{PlayerController=controller})
 instance=obj('gameInstance','GameInstance',{LocalPlayers={player}})
 world=obj('world','World',{OwningGameInstance=instance})
+viewport=obj('viewport','Viewport',{World=world})
+engine=obj('engine','GameEngine',{GameViewport=viewport})
 function aircraft(name,p)
  local a=obj(p or name,name,{GetWorld=function()return world end})
  a.WeaponMeshBase=obj((p or name)..'.weapons','SceneComponent',{AttachChildren={}})
@@ -65,7 +67,7 @@ end
 ''')
 lua.globals().visual=lua.execute((root/'msl_visuals.lua').read_text())
 lua.execute(r'''
-visual.start();visual.prepare()
+visual.start();visual.prepare();forbidFind=true
 local cases=0
 for name,rule in pairs(rules.planes)do
  local p=aircraft(name);controller.Pawn=p
@@ -140,14 +142,14 @@ hooks['/Game/Blueprints/Weapons/MSL/Player/Msl/BP_plwp_msl_a0.BP_plwp_msl_a0_C:R
 assert(bp.StaticMesh.StaticMesh==objects[rules.models.sasm]);jobs={}
 controller.Pawn=f
 beginPlay(ctx(f));beginPlay(ctx(f));assert(#jobs==4)
-local old=jobs[1];mapPre();visual.prepare();n=writes;old.fn();assert(writes==n)
+local old=jobs[1];mapPre();forbidFind=false;visual.prepare();forbidFind=true;n=writes;old.fn();assert(writes==n)
 beginPlay(ctx(f));local fresh=jobs[#jobs]
 objects[f:GetFullName():match('^[^ ]+ (.+)$')]=aircraft('BP_PlayerPlane_PP0025_f15e_C','test.f15')
 fresh.fn();assert(writes==n)
 ''')
 lua.execute(r'''
 -- Checkpoint regression: same local pawn, same components, no BeginPlay event.
-mapPre();visual.prepare();jobs={}
+mapPre();forbidFind=false;visual.prepare();forbidFind=true;jobs={}
 local p=aircraft('BP_PlayerPlane_PP0032_f18e_C','checkpoint.f18');controller.Pawn=p
 local c=meshComponent('checkpoint.msl',objects[rules.models.original])
 local sp=meshComponent('checkpoint.sp',foreignMesh)
@@ -181,6 +183,26 @@ mountedTick();assert(tyMesh.StaticMesh==objects[rules.models.sasm]);assert(c2.St
 -- Retain the original collision and actor-lifetime guards during repair.
 tyMesh.StaticMesh=objects[rules.models.original];tyMesh.collision=1;steady=writes
 mountedTick();mountedTick();assert(writes==steady and tyMesh.StaticMesh==objects[rules.models.original])
+-- EndPlay arrives before LoadMap: pending jobs and polling must stop immediately.
+beginPlay(ctx(ty2));local pendingJobs=jobs;jobs={}
+hooks['/Script/Engine.Actor:ReceiveEndPlay'][1](ctx(ty2))
+steady=writes
+mountedTick();for _,job in ipairs(pendingJobs)do job.fn()end
+visual.refresh(ty2,'after-endplay');beginPlay(ctx(ty2));mountedTick()
+assert(writes==steady and #jobs==0,'ended pawn must not rearm')
+-- Fresh local pawn in the same world may rearm from its live BeginPlay event.
+local freshPawn=aircraft('BP_PlayerPlane_PP0032_f18e_C','after-endplay');controller.Pawn=freshPawn
+local freshMesh=meshComponent('after-endplay.mesh',objects[rules.models.original])
+freshPawn.PlayerWeaponActivator.WeaponManager=obj('after-endplay.manager','LiveWeaponManager',{
+ WeaponMeshManager=obj('after-endplay.mm','LiveWeaponMeshManager',{WeaponMeshCache={freshMesh}})})
+beginPlay(ctx(freshPawn));assert(#jobs==4)
+for _,job in ipairs(jobs)do job.fn()end;assert(freshMesh.StaticMesh==objects[rules.models.qaam])
+-- World swap without LoadMap callback must fail closed and never global-search.
+viewport.World=obj('other-world','World',{OwningGameInstance=instance})
+freshMesh.StaticMesh=objects[rules.models.original];steady=writes
+mountedTick();assert(writes==steady)
+for _,job in ipairs(jobs)do job.fn()end;assert(writes==steady)
+viewport.World=world
 mapPre();steady=writes;mountedTick();assert(writes==steady)
 ''')
 source=(root/'msl_visuals.lua').read_text()
@@ -189,3 +211,8 @@ for forbidden in ('FindAllOf(', 'LoopAsync(', 'StaticConstructObject(', 'Registe
 print('PASS 36 aircraft rules; original-group exclusions; a1 already QAAM; pool reuse QAAM -> SASM -> original; local owner, unknown/SP/foreign/collision guards; material readback/rollback; fixed stale-safe callbacks; mounted-only tree; numeric performance unchanged. Real-game event coverage is not proven by mocks.')
 print('PASS checkpoint mesh overwrite, component replacement, manager replacement, new local pawn, same-address schedule rearm, 1000 unchanged guard ticks with zero writes; live checkpoint repair still needs verification.')
 
+
+assert source.count('StaticFindObject(')==1
+observer=(root/'acceptance_observer.lua').read_text()
+assert 'StaticFindObject(' not in observer and 'ExecuteInGameThreadAfterFrames(' not in observer
+print('PASS runtime global lookup forbidden; EndPlay-before-LoadMap invalidation, stale callback discard, fresh pawn rearm and world change without LoadMap')

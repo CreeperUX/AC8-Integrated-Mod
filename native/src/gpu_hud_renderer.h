@@ -2,7 +2,7 @@
 #include "hud_geometry.h"
 namespace gpu_hud {
 using Microsoft::WRL::ComPtr;
-struct Layout {bool target=false,nose=false;hud_geometry::Point target_point,nose_point;float scale=1,opacity=.65f,link_opacity=1;bool connector=true,always=false;int mode_notice=-1,camera_notice=-1;float notice_alpha=1;};
+struct Layout {bool target=false,nose=false;hud_geometry::Point target_point,nose_point;float scale=1,opacity=.65f,link_opacity=1;bool connector=true,always=false,helmet_active=false;int mode_notice=-1,camera_notice=-1,helmet_notice=-1;float notice_alpha=1;};
 struct Renderer {
     ComPtr<ID3D11Device> device;ComPtr<ID3D11DeviceContext> immediate;
     ComPtr<IDXGISwapChain1> swap;ComPtr<IDXGISwapChain2> swap2;
@@ -67,10 +67,17 @@ struct Renderer {
         if(frame.target){
             D2D1_ELLIPSE ring{point(frame.target_point),hud_geometry::ring_radius*scale,hud_geometry::ring_radius*scale};outline->SetOpacity(alpha*.40f);ink->SetOpacity(alpha);
             dc->DrawEllipse(ring,outline.Get(),3.2f*scale);dc->DrawEllipse(ring,ink.Get(),1.3f*scale);
+            if(frame.helmet_active){
+                // HMD mode A: four inward ticks, same ring and clear centre.
+                const auto c=frame.target_point;
+                for(const auto axis:{hud_geometry::Point{1,0},hud_geometry::Point{-1,0},hud_geometry::Point{0,1},hud_geometry::Point{0,-1}})
+                    line({c.x+axis.x*14*scale,c.y+axis.y*14*scale},
+                         {c.x+axis.x*21*scale,c.y+axis.y*21*scale},1.3f*scale,alpha);
+            }
         }
         // The game already renders its crosshair. Nose projection drives ticks only.
-        if((frame.mode_notice>=0||frame.camera_notice>=0)&&text_format){
-            const wchar_t* label=frame.camera_notice>=0?(frame.camera_notice?L"F3: FAR CAMERA":L"F3: NATIVE POSITION"):(frame.mode_notice?L"F4: AGILE 2.1":L"F4: CLASSIC 2.0");
+        if((frame.mode_notice>=0||frame.camera_notice>=0||frame.helmet_notice>=0)&&text_format){
+            const wchar_t* label=frame.helmet_notice>=0?(frame.helmet_notice==2?L"F2: HMD UNAVAILABLE":frame.helmet_notice?L"F2: HMD ON":L"F2: HMD OFF"):frame.camera_notice>=0?(frame.camera_notice?L"F3: FAR CAMERA":L"F3: NATIVE POSITION"):(frame.mode_notice?L"F4: AGILE 2.1":L"F4: CLASSIC 2.0");
             ink->SetOpacity(frame.notice_alpha);outline->SetOpacity(.6f*frame.notice_alpha);
             D2D1_RECT_F box=D2D1::RectF(width*.5f-130,height*.12f,width*.5f+130,height*.12f+32);
             dc->FillRoundedRectangle(D2D1::RoundedRect(box,5,5),outline.Get());

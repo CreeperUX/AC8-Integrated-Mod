@@ -1,5 +1,5 @@
 -- Player MSL cosmetics only. No class swaps, CDO changes, performance writes,
--- global actor enumeration or persistent UObject handles. A bounded reference
+-- global actor enumeration or persistent scene-actor handles. A bounded reference
 -- check watches only the local mounted MSL cache; unchanged meshes incur no writes.
 local rules=require('msl_visual_rules')
 local retention=require('source_retention')
@@ -10,6 +10,10 @@ local queuedCount,ownedCount=0,0
 local blueprintHook=false
 local defer
 local mountedWatch,repairSerial=nil,0
+local engine,staticClass
+local meshes={}
+local sceneWorld,blockedWorld,activePawn,activeController,endedPawn
+local teardown=true
 local prepared,queued,owned,reported={},{},{},{}
 local function read(fn)local ok,v=pcall(fn);if ok then return v end end
 local function valid(o)return o and read(function()return o:IsValid()end)==true end
@@ -41,13 +45,40 @@ local function localPawn(o)
  local pc=read(function()return ps[1].PlayerController end);if not valid(pc)then return end
  local p=read(function()return pc.Pawn end);if valid(p)then return p,pc end
 end
+-- Cache only the process-owned engine and GameInstance-retained asset objects.
+-- Scene actors are obtained afresh through the engine ownership graph each call.
+local function suspend()
+ epoch=epoch+1;teardown=true;mountedWatch=nil;queued={};queuedCount=0
+ activePawn=nil;activeController=nil
+end
+local function livePawn()
+ if teardown or not ready or not valid(engine)then return end
+ local viewport=engine.GameViewport;if not valid(viewport)then return end
+ local world=viewport.World;if not valid(world)then return end
+ if world:GetAddress()~=sceneWorld or world:GetAddress()==blockedWorld then suspend();return end
+ local gi=world.OwningGameInstance;if not valid(gi)then return end
+ local players=gi.LocalPlayers;if count(players,4)~=1 then return end
+ local pc=players[1].PlayerController;if not valid(pc)then return end
+ local pawn=pc.Pawn;if not valid(pawn)then return end
+ if not same(pawn:GetWorld(),world)then return end
+ activePawn=pawn:GetAddress();activeController=pc:GetAddress()
+ return pawn,pc
+end
 function M.prepare()
  ready=false
  local holder=retention.acquire();local nextPaths={}
+ engine=holder.engine
+ assert(valid(engine),'Visual engine unavailable')
+ local viewport=engine.GameViewport;assert(valid(viewport),'Visual viewport unavailable')
+ local world=viewport.World;assert(valid(world),'Visual world unavailable')
+ sceneWorld=world:GetAddress();blockedWorld=nil;endedPawn=nil;teardown=false
+ staticClass=StaticFindObject('/Script/Engine.StaticMeshComponent')
+ assert(valid(staticClass),'Visual component class unavailable');holder.hold(staticClass)
+ meshes={}
  for key,assetPath in pairs(rules.models)do
   local mesh=LoadAsset(assetPath)
   assert(valid(mesh)and leaf(mesh)=='StaticMesh','Visual asset unavailable: '..key)
-  holder.hold(mesh);nextPaths[key]=assert(path(mesh))
+  holder.hold(mesh);nextPaths[key]=assert(path(mesh));meshes[nextPaths[key]]=mesh
  end
  prepared=nextPaths;ready=true
  if not blueprintHook then
@@ -73,7 +104,7 @@ local function policy(pawn,weaponLeaf)
 end
 local function swap(component,model,reason,pawnName)
  if not valid(component)then return false end
- local cls=StaticFindObject('/Script/Engine.StaticMeshComponent')
+ local cls=staticClass
  if not valid(cls)or not component:IsA(cls)then return false end
  local cp=path(component);if not cp then return false end
  local address=component:GetAddress()
@@ -92,7 +123,7 @@ local function swap(component,model,reason,pawnName)
   return false
  end
  if not prior and ownedCount>=4096 then log('limit','SKIP visual ownership limit');return false end
- local mesh=StaticFindObject(desiredPath);if not valid(mesh)then return false end
+ local mesh=meshes[desiredPath];if not valid(mesh)then return false end
  -- Only visual components. A collidable mesh could alter collision geometry.
  if component:GetCollisionEnabled()~=0 then
   log('collision:'..cp,'SKIP collision-enabled component='..cp);return false
@@ -131,7 +162,8 @@ local function swap(component,model,reason,pawnName)
  return true
 end
 function M.weapon(o,reason)
- if not ready or not valid(o)then return end
+ if teardown or not ready or not valid(o)then return end
+ if not livePawn()then return end
  local wl=leaf(o)
  if wl~='BP_plwp_msl_a0_C'and wl~='BP_plwp_msl_a1_C'then return end
  log('weapon-seen:'..reason,'WEAPON_SEEN class='..wl..' event='..reason)
@@ -147,7 +179,8 @@ function M.weapon(o,reason)
  if valid(hidden)and not same(hidden,o.StaticMesh)then swap(hidden,model,reason..'-hidden',leaf(owner))end
 end
 function M.refresh(pawn,reason)
- if not ready or not valid(pawn)then return end
+ if teardown or not ready or not valid(pawn)then return end
+ if not same(pawn,livePawn())then return end
  local actual,controller=localPawn(pawn)
  if not same(pawn,actual)then return end
  local rule=rules.planes[leaf(pawn)];if not rule then return end
@@ -206,9 +239,9 @@ end
 function M.checkMounted()
  local watch=mountedWatch
  if not ready or not watch then return end
- local pc=StaticFindObject(watch.controllerPath)
+ local live,pc=livePawn()
  if not valid(pc)or pc:GetAddress()~=watch.controllerAddress then mountedWatch=nil;return end
- local pawn=read(function()return pc.Pawn end)
+ local pawn=live
  if not valid(pawn)then return end
  local why
  if pawn:GetAddress()~=watch.pawnAddress then why='pawn-changed'
@@ -241,6 +274,7 @@ local function safe(key,fn)
 end
 local function context(p)return read(function()return p:get()end)end
 defer=function(o,kind)
+ if teardown or not ready or not livePawn()then return end
  local p=path(o);if not p then return end
  local addr=o:GetAddress();local key=p..'@'..addr
  if queued[key]then return end
@@ -250,9 +284,25 @@ defer=function(o,kind)
  local schedule=kind=='plane'and{2,30,120,300}or{2,10}
  for _,frames in ipairs(schedule)do
   ExecuteInGameThreadAfterFrames(frames,function()
-   if generation~=epoch then return end
+   if generation~=epoch or teardown then return end
    if frames==schedule[#schedule]and queued[key]then queued[key]=nil;queuedCount=math.max(0,queuedCount-1)end
-   local current=StaticFindObject(p)
+   local pawn=livePawn();if not pawn then return end
+   local current
+   if kind=='plane' then current=pawn
+   else
+    local act=pawn.PlayerWeaponActivator
+    if valid(act)then
+     for _,field in ipairs({'SpawnedWeapons','ActiveWeapons'})do
+      local arr=read(function()return act[field]end);local n=count(arr,512)
+      if n then for i=1,n do
+       local candidate=arr[i]
+       if valid(candidate)and candidate:GetAddress()==addr and path(candidate)==p then current=candidate;break end
+      end end
+      if current then break end
+     end
+    end
+   end
+   if path(current)~=p then return end
    if not valid(current)or current:GetAddress()~=addr then return end
    safe('deferred-'..kind,function()
     if kind=='plane'then M.refresh(current,'equipment-ready')else M.weapon(current,'spawn-ready')end
@@ -263,13 +313,31 @@ end
 function M.start()
  if started then return end;started=true
  RegisterLoadMapPreHook(function()
-  epoch=epoch+1;budget=120;ready=false;prepared={};queued={};owned={};reported={};queuedCount=0;ownedCount=0
-  mountedWatch=nil;repairSerial=0
+  suspend();budget=120;ready=false;prepared={};queued={};owned={};reported={};queuedCount=0;ownedCount=0
+  mountedWatch=nil;repairSerial=0;meshes={};staticClass=nil
+ end)
+ -- Required teardown guard: no timers reacquire an actor after its EndPlay.
+ RegisterHook('/Script/Engine.Actor:ReceiveEndPlay',function(p)
+  local actor=context(p)
+  if valid(actor)then
+   local address=actor:GetAddress()
+   if address==activePawn or address==activeController then
+    endedPawn=activePawn;blockedWorld=sceneWorld;suspend()
+   end
+  end
  end)
  RegisterBeginPlayPostHook(function(p)
   local o=context(p);if not valid(o)then return end
   local name=leaf(o)
-  if rules.planes[name]then defer(o,'plane')
+  if rules.planes[name]then
+    if teardown and ready and valid(engine)then
+     local viewport=engine.GameViewport;local world=valid(viewport)and viewport.World
+     local pawn,pc=localPawn(o)
+     if valid(world)and same(o:GetWorld(),world)and same(o,pawn)and o:GetAddress()~=endedPawn then
+      sceneWorld=world:GetAddress();blockedWorld=nil;teardown=false
+     end
+    end
+    defer(o,'plane')
   elseif name=='BP_plwp_msl_a0_C'or name=='BP_plwp_msl_a1_C'then
    safe('begin-weapon',function()M.weapon(o,'begin-play')end);defer(o,'weapon')
   end

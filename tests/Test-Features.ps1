@@ -14,6 +14,7 @@ foreach($mode in @('none','guidance','full')){
  Set-Content -LiteralPath (Join-Path $dest 'AC8SourceInit-owner.txt') -Value 'test-owner'
  Install-SelectedUE4SS $source $dest $selection
  if(!(Test-Path (Join-Path $dest 'Mods/AC8MouseAim/Scripts/main.lua'))){throw 'Mouse module missing'}
+ foreach($scriptName in 'helmet.lua','view_context.lua','camera.lua'){if(!(Test-Path (Join-Path $dest ('Mods/AC8MouseAim/Scripts/'+$scriptName)))){throw "New flight module missing from $mode installation: $scriptName"}}
  if((Test-Path (Join-Path $dest 'Mods/AC8SourceInit')) -ne $enabled){throw 'Missile staging incorrect'}
  $mods=Get-Content (Join-Path $dest 'Mods/mods.txt') -Raw
  if(($mods -match 'AC8SourceInit : 1') -ne $enabled){throw 'Module list mismatch'}
