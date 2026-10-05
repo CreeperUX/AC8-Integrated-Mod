@@ -44,3 +44,20 @@ jobs:
         shell: powershell
       - run: .\tests\Test-GuiLayout.ps1
         shell: powershell
+
+      - name: Build and check the fixed English supplement
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $download = 'native/test-runtime/english-baseline'
+          New-Item -ItemType Directory -Path $download -Force | Out-Null
+          gh release download v2.3.6 --repo CreeperUX/AC8-Integrated-Mod --pattern AC8-Integrated-v2.3.6-share.zip --dir $download
+          if ($LASTEXITCODE) { throw 'Baseline download failed' }
+          $zip = Join-Path $download 'AC8-Integrated-v2.3.6-share.zip'
+          if ((Get-FileHash -LiteralPath $zip).Hash -ne 'BF1B23902D63B16F0219B109B0BE756E2161E0C0248E3D11F11FFB0E89A0DA51') { throw 'Released baseline changed' }
+          Expand-Archive -LiteralPath $zip -DestinationPath $download
+          python -X utf8 scripts/build-english-package.py --baseline "$download/AC8-Integrated-v2.3.6-share" --output native/test-runtime/AC8-English-CI
+          if ($LASTEXITCODE) { throw 'English build failed' }
+          & ./tests/Test-EnglishEdition.ps1 -PackageRoot native/test-runtime/AC8-English-CI
+          if ($LASTEXITCODE) { throw 'English validation failed' }

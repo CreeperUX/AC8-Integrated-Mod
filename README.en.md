@@ -13,14 +13,15 @@ Mouse-directed flight control, switchable camera positions and cursor-prioritize
 Use v2.3.6 for both new installations and upgrades. Download the complete release package rather than an older version or the source-code ZIP.
 
 - Latest release: [https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest)
-- Complete package: [AC8-Integrated-v2.3.6-share.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/v2.3.6/AC8-Integrated-v2.3.6-share.zip)
+- **English package:** [AC8-Integrated-v2.3.6-English.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/v2.3.6/AC8-Integrated-v2.3.6-English.zip)
+- Chinese package: [AC8-Integrated-v2.3.6-share.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/v2.3.6/AC8-Integrated-v2.3.6-share.zip)
 - [Installation and upgrades](docs/en/INSTALL.md) · [Flight and camera bindings](docs/en/KEYBINDINGS.md) · [Cleanup and recovery](docs/en/CLEANUP.md) · [Known limitations](docs/en/LIMITATIONS.md)
 
-**Language availability:** English documentation is available. The current v2.3.6 application interface is primarily Chinese; the English software interface is in preparation. The installation guide includes Chinese button labels so you can use the current package.
+**Language availability:** v2.3.6 has separate Chinese and English packages with the same gameplay files. The English edition has no in-app language switch. Chinese/English switching is planned for 2.3.7.
 
 ## Installation interface
 
-![Current installer with automatic discovery, installation modes and backup cleanup](docs/assets/installer-gui-v236.png)
+![Current installer with automatic discovery, installation modes and backup cleanup](docs/assets/installer-gui-v236-en.png)
 
 The installer can locate Steam and the game, accept manually selected paths, check the environment, save your installation mode, copy Steam launch options, start through Steam, and back up and clean up loader files. Multiple installations are offered as candidates; existing manual paths are not overwritten automatically.
 
@@ -36,13 +37,13 @@ Press F4 to switch between CLASSIC and AGILE during flight. Both start from a st
 
 F3 switches between the game's native relative camera position and a farther follow-camera position. Both retain mouse-follow orientation and aircraft-centered observation. Hold C for free look; releasing it preserves the original flight target direction.
 
-The default farther position is 36 m behind and 6 m above the aircraft. Edit `MouseAim-Settings.ini` while the game is closed to change the startup mode, distance or height. The controller includes a one-time recenter after mission initialization, scripted-camera handback and pause recovery. [Camera details (Chinese)](docs/CAMERA-CONTEXT.md)
+The default farther position is 36 m behind and 6 m above the aircraft. Edit `MouseAim-Settings.ini` while the game is closed to change the startup mode, distance or height. The controller includes a one-time recenter after mission initialization, scripted-camera handback and pause recovery. [Camera guide](docs/en/CAMERA.md)
 
 ### HMD target selection
 
 F2 toggles cursor-prioritized target selection. **It starts disabled each time the game is launched.** With HMD enabled, use the game's normal target-switch key to prefer a valid candidate close to the mouse aiming circle. Unsuitable or stale candidates fall back to native selection.
 
-Four inward ticks on the aiming circle show that HMD is enabled, alongside the existing ON / OFF / UNAVAILABLE notification. Selecting a target does not complete a weapon lock: range, lock angle and lock time remain subject to the game. [HMD details (Chinese)](docs/HELMET-SELECTION.md)
+Four inward ticks on the aiming circle show that HMD is enabled, alongside the existing ON / OFF / UNAVAILABLE notification. Selecting a target does not complete a weapon lock: range, lock angle and lock time remain subject to the game. [HMD guide](docs/en/HMD.md)
 
 ## Three installation modes
 
@@ -63,9 +64,9 @@ A fresh package defaults to **full missile enhancements**. Confirm your selectio
 1. Download the complete release ZIP and extract it **outside the game directory**, for example `D:\Mods\AC8-Integrated`. Do not run it inside the ZIP or manually copy `payload` into the game.
 2. Close the game normally and wait for any old launcher to finish cleanup.
 3. Run **`Start-GUI.cmd`**. Wait for automatic detection and checks, or browse to the game root, `Win64` folder or `AceCombat8.exe`.
-4. Check the Steam path, choose a mode, and click **保存设置 — Save settings**.
-5. Click **复制启动选项 — Copy launch options** and paste the entire line into Steam → AC8 → Properties → General → Launch Options. This step remains manual.
-6. Click **从 Steam 启动 — Launch through Steam**, or launch from Steam. Use Expert controls and a third-person view.
+4. Check the Steam path, choose a mode, and click **Save settings**.
+5. Click **Copy launch options** and paste the entire line into Steam → AC8 → Properties → General → Launch Options. This step remains manual.
+6. Click **Launch through Steam**, or launch from Steam. Use Expert controls and a third-person view.
 7. Keep the launcher console open while playing. After exiting, wait for archiving, cleanup and Steam Cloud synchronization to finish.
 
 Python and NumPy are not needed for normal play. They are used only for optional analysis, which is skipped when unavailable. The alternative console menu in `Setup.cmd` and `Choose-Features.cmd` uses 1 = guidance only, 2 = full enhancements, 3 = flight control only.
@@ -82,12 +83,12 @@ Verified from the author's saved AC8 configuration on **2026-10-05**. These are 
 | Accelerate / increase throttle | Left Shift | Unbound |
 | Decelerate / brake | Left Ctrl | Unbound |
 | Native autopilot | Z | Unbound |
-| Landing gear | R | Unbound |
+| Landing gear | G | Unbound |
 | Native camera control | C | Left Alt |
 | Look up / down | Number row 7 / 8 | Numpad 8 / 2 |
 | Look left / right | Number row 9 / 0 | Numpad 4 / 6 |
 | Native view switch | V | Unbound |
-| Switch target (used with HMD) | T | Right mouse button |
+| Switch target (used with HMD) | F | Right mouse button |
 
 ### Mod shortcuts
 
@@ -117,7 +118,7 @@ The installer does not modify your game bindings. See the [complete reference](d
 
 Extract upgrades into a new directory, save the new settings, and update Steam launch options. Do not overwrite a package with an unfinished session or run several packages concurrently.
 
-**备份并清理 — Back up and clean up** asks you to confirm ownership, verifies a backup, and then removes recognized package-owned `dwmapi.dll`, `ue4ss` and `steam_appid.txt` items. A running game, unknown loader, other mods or unsafe filesystem links can block cleanup. `Recover-Cleanup.cmd` can also handle historical leftovers. [Recovery guide](docs/en/CLEANUP.md)
+**Back up and clean up** asks you to confirm ownership, verifies a backup, and then removes recognized package-owned `dwmapi.dll`, `ue4ss` and `steam_appid.txt` items. A running game, unknown loader, other mods or unsafe filesystem links can block cleanup. `Recover-Cleanup.cmd` can also handle historical leftovers. [Recovery guide](docs/en/CLEANUP.md)
 
 To stop using the mod, exit normally, finish cleanup, and remove its Steam launch option. F8 only disables mouse flight control; it does not disable the entire mod.
 

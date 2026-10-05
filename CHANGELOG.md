@@ -24,6 +24,12 @@
 
 # Changelog
 
+## 2.3.6 English supplement
+
+- Adds a separate English-only installer package to the same release, retaining all 28 gameplay files and the existing Chinese ZIP.
+- Localizes application prompts, recovery confirmation, diagnostics and player instructions at build time. No language switch is added to 2.3.6.
+- Plans runtime Chinese/English switching for 2.3.7. Updates the author binding reference to G for gear and F/right mouse for target selection.
+
 ## Documentation and English-interface preparation
 
 - Adds Chinese/English home-page navigation and English installation, keybinding, recovery and limitation guides.

@@ -4,7 +4,7 @@
 
 **Offline single-player only. Never use this mod in online or multiplayer modes.**
 
-Use the [recommended v2.3.6 release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest), compatible with Windows x64 and Steam game build 25201480. The current application is primarily Chinese; the English interface is in preparation.
+Use the [recommended v2.3.6 release](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest), compatible with Windows x64 and Steam game build 25201480. Choose the English ZIP for a fixed English interface, or the separate Chinese ZIP. In-app language switching is planned for 2.3.7. Windows system dialogs may follow your Windows language.
 
 ## First installation
 
@@ -16,7 +16,7 @@ Use the [recommended v2.3.6 release](https://github.com/CreeperUX/AC8-Integrated
 6. Click **从 Steam 启动 — Launch through Steam**, or start the game from Steam. Select Expert controls and use a third-person view.
 7. Keep the launcher console open during play. After exiting, wait for cleanup and Steam Cloud synchronization.
 
-### Current interface labels
+### Button names in the two packages
 
 | Chinese label | Meaning |
 |---|---|

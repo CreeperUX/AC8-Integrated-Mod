@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "locale": "zh-CN",
-  "integration_status": "preparation-only",
+  "integration_status": "build-time",
   "messages": {
     "app.title": "AC8 玩家工具",
     "app.heading": "游戏安装与维护",

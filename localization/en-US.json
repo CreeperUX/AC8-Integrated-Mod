@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "locale": "en-US",
-  "integration_status": "preparation-only",
+  "integration_status": "build-time",
   "messages": {
     "app.title": "AC8 Player Tools",
     "app.heading": "Installation and Maintenance",

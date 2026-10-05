@@ -14,7 +14,8 @@
 **首次安装和旧版升级均建议使用 v2.3.6。请从下方入口下载完整安装包，不要下载旧版或 Source code ZIP。**
 
 - 最新正式发布：[https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/latest)
-- 完整安装包：[AC8-Integrated-v2.3.6-share.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/v2.3.6/AC8-Integrated-v2.3.6-share.zip)
+- 中文安装包：[AC8-Integrated-v2.3.6-share.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/v2.3.6/AC8-Integrated-v2.3.6-share.zip)
+- English 安装包：[AC8-Integrated-v2.3.6-English.zip](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/download/v2.3.6/AC8-Integrated-v2.3.6-English.zip)
 - 发布页：[https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.6](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.6)
 - [安装与升级](docs/INSTALL.md) · [作者当前飞行／视角键位](docs/KEYBINDINGS.md) · [清理与恢复](docs/CLEANUP.md) · [已知限制](docs/LIMITATIONS.md)
 
@@ -84,12 +85,12 @@ F2 开关鼠标优先选目标，**每次启动默认关闭**。开启后，使�
 | 加速／增加油门 | 左 Shift | 未绑定 |
 | 减速／刹车 | 左 Ctrl | 未绑定 |
 | 原生自动驾驶 | Z | 未绑定 |
-| 起落架收放 | R | 未绑定 |
+| 起落架收放 | G | 未绑定 |
 | 原生视角控制 | C | 左 Alt |
 | 视角向上／向下 | 主键区 7 / 8 | 数字小键盘 8 / 2 |
 | 视角向左／向右 | 主键区 9 / 0 | 数字小键盘 4 / 6 |
 | 原生视角切换 | V | 未绑定 |
-| 切换目标（HMD 关联） | T | 鼠标右键 |
+| 切换目标（HMD 关联） | F | 鼠标右键 |
 
 ### Mod 快捷键
 
@@ -153,4 +154,4 @@ v2.3.6 包含任务退出生命周期修复：减少外观巡检、延迟回调�
 
 ## English documentation
 
-完整英文介绍与使用指南见 [English README](README.en.md)。当前 v2.3.6 软件界面仍以中文为主；英语界面正在准备中。
+完整英文介绍与使用指南见 [English README](README.en.md)。v2.3.6 提供独立中文版与英语版安装包，功能相同，不含语言切换。2.3.7 计划加入软件内中英切换。

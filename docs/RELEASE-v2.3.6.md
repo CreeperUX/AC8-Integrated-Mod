@@ -4,6 +4,10 @@
 
 ## 简体中文
 
+**英语补充包已提供：** `AC8-Integrated-v2.3.6-English.zip`。它与中文包的 28 个游戏运行文件完全一致，仅安装器、提示和随包使用说明为英语。v2.3.6 不加入语言切换，2.3.7 再实现。原中文 ZIP 及校验值保留。
+
+当前作者按键参考已更新：起落架为 G，目标切换为 F（备用鼠标右键）。
+
 **严禁用于线上或多人模式，仅限离线单人使用。**
 
 **正式推荐版本，建议新用户与旧版用户统一下载本页的完整安装包。**
@@ -45,7 +49,9 @@
 
 v2.3.6 is the recommended formal release. Download **AC8-Integrated-v2.3.6-share.zip**, extract it outside the game directory and run **Start-GUI.cmd**. Set Expert controls and use a third-person view. Keep the launcher console open until cleanup finishes after exiting.
 
-The current application interface is primarily Chinese. English documentation and a [button-label guide](https://github.com/CreeperUX/AC8-Integrated-Mod/blob/main/docs/en/INSTALL.md) are available; the English software interface is in preparation.
+**English supplement:** download **AC8-Integrated-v2.3.6-English.zip** for the English-only installer, prompts and player guides. Its 28 gameplay files are byte-identical to the Chinese release. No language switch is included in 2.3.6; switching is planned for 2.3.7. The existing Chinese ZIP and checksum are retained. Windows system dialogs may follow the OS language.
+
+The author's current key reference has also been updated: G for landing gear and F / right mouse button for target switching.
 
 ### Features
 

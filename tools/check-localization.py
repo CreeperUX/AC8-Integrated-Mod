@@ -13,11 +13,13 @@ def unique_object(pairs):
         obj[key] = value
     return obj
 
+extra = json.loads((root / 'localization/en-US-literals.json').read_text(encoding='utf-8'), object_pairs_hook=unique_object)
+assert all(isinstance(v, str) and v.strip() for v in extra.values())
 catalogs = {}
 for locale in ('zh-CN', 'en-US'):
     data = json.loads((root / 'localization' / f'{locale}.json').read_text(encoding='utf-8'), object_pairs_hook=unique_object)
     assert data['schema_version'] == 1 and data['locale'] == locale
-    assert data['integration_status'] == 'preparation-only'
+    assert data['integration_status'] == 'build-time'
     messages = data['messages']
     assert all(isinstance(value, str) and value.strip() for value in messages.values())
     catalogs[locale] = messages
@@ -39,4 +41,4 @@ for name in pages:
         assert (page.parent / path).is_file(), f'Broken local link: {name} -> {target}'
 assert 'README.en.md' in (root / 'README.md').read_text(encoding='utf-8')
 assert 'README.md' in (root / 'README.en.md').read_text(encoding='utf-8')
-print(f'PASS {len(catalogs["en-US"])} paired preparation messages, placeholders, duplicate-key checks and {len(pages)} document link sets.')
+print(f'PASS {len(catalogs["en-US"])} paired base messages, placeholders, duplicate-key checks and {len(pages)} document link sets.')

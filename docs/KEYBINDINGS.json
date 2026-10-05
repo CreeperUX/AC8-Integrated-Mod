@@ -61,7 +61,7 @@
     {
       "setting": "GearDownUp",
       "action_zh": "起落架收放",
-      "primary": "R",
+      "primary": "G",
       "secondary": "None"
     },
     {
@@ -103,7 +103,7 @@
     {
       "setting": "SwitchTargetKey",
       "action_zh": "切换目标（HMD 关联）",
-      "primary": "T",
+      "primary": "F",
       "secondary": "RightMouseButton"
     }
   ]
