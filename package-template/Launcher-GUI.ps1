@@ -17,12 +17,12 @@ $window.Height=[Math]::Min($window.Height,[Math]::Max($window.MinHeight,$workAre
 $script:themeMode=$Theme
 Set-CreeperUXTheme $window $script:themeMode
 $script:controls=@{}
-foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark','ModeDescription','Detect','GameCandidates','SteamCandidates','PackageVersion'){$script:controls[$name]=$window.FindName($name)}
+foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark','ModeDescription','Detect','GameCandidates','SteamCandidates','PackageVersion','DisableMod','EnableMod'){$script:controls[$name]=$window.FindName($name)}
 $script:worker=$null;$script:async=$null;$script:option=''
 $infoPath=Join-Path $PSScriptRoot 'package-info.json'
 if(Test-Path -LiteralPath $infoPath){
  $info=Get-Content -LiteralPath $infoPath -Raw -Encoding UTF8 | ConvertFrom-Json
- if($info.version){$label=switch($info.status){'prerelease'{'预发布'} 'release'{'正式版'} default{'候选'}};$script:controls.PackageVersion.Text=[string]$info.version+' · '+$label}
+ if($info.version){$label=switch($info.status){'prerelease'{'预发布'} 'release'{'正式版'} 'beta'{'Beta 测试版'} default{'候选'}};$script:controls.PackageVersion.Text=[string]$info.version+' · '+$label}
 }
 
 function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
@@ -32,7 +32,7 @@ function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
  $script:controls.StatusMark.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,$key)
 }
 function Set-AC8GuiBusy([bool]$Busy){
- foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Detect','Save','Start','Recover','GameCandidates','SteamCandidates'){$script:controls[$name].IsEnabled=!$Busy}
+ foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Detect','Save','Start','Recover','GameCandidates','SteamCandidates','DisableMod','EnableMod'){$script:controls[$name].IsEnabled=!$Busy}
  $script:controls.BusyBar.IsIndeterminate=[Windows.SystemParameters]::ClientAreaAnimation
  $script:controls.BusyBar.Value=50
  $script:controls.BusyBar.Visibility=if($Busy){'Visible'}else{'Collapsed'}
@@ -117,6 +117,8 @@ $script:controls.SteamCandidates.Add_SelectionChanged({
   Start-AC8GuiWork 'Discover'
  }
 })
+$script:controls.DisableMod.Add_Click({Start-Process -FilePath (Join-Path $PSScriptRoot 'Disable-Mod.cmd') -WindowStyle Normal})
+$script:controls.EnableMod.Add_Click({Start-Process -FilePath (Join-Path $PSScriptRoot 'Enable-Mod.cmd') -WindowStyle Normal})
 $script:controls.Save.Add_Click({Start-AC8GuiWork 'Save'})
 $script:controls.Start.Add_Click({Start-AC8GuiWork 'Start'})
 $script:controls.Recover.Add_Click({

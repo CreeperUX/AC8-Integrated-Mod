@@ -1,0 +1,5 @@
+{
+  "void update_commands()": "f6f7363b4dde85af238d1dfb112a5c2f8beb0482c29a63ada569a835f4c9e07f",
+  "void target_input_tick()": "e947163d245e7f424e93c34b5eb9c0b62b3e0e9f90f4030717eaac9770ae5ecf",
+  "int ac8_mouseaim_helmet_state(lua_State* state)": "67959380304b4220bf7da06985e726a867dabde9080e21d759e4e7c593df2a19"
+}

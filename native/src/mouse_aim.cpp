@@ -22,6 +22,7 @@
 #include "flight_math.h"
 #include "free_look.h"
 #include "paired_mouse.h"
+#include "hud_timing.h"
 #include "lua_bridge.h"
 #include <memory>
 #include <wrl/client.h>
@@ -79,14 +80,26 @@ struct Pose {
 struct HudFrame {
     uintptr_t pawn=0; unsigned long long tick=0;
     float p=0,y=0,r=0,cp=0,cy=0,cr=0,tp=0,ty=0,fov=100,ox=0,oy=0,oz=0;
-    uint64_t sequence=0;
+    uint64_t sequence=0,pose_qpc=0,camera_qpc=0,camera_sequence=0,epoch=0;uintptr_t camera_manager=0;
 };
+inline uint64_t hud_qpc(){LARGE_INTEGER t{};QueryPerformanceCounter(&t);return uint64_t(t.QuadPart);}
+inline uint64_t hud_frequency(){static const uint64_t f=[](){LARGE_INTEGER v{};QueryPerformanceFrequency(&v);return uint64_t(v.QuadPart);}();return f;}
+HudTiming raw_gaps,target_gaps,pose_gaps,camera_gaps,submit_gaps,camera_ages,pose_ages;
+std::atomic<uint64_t> hud_epoch{1},camera_sequence{0};
 std::mutex hud_frame_mutex;
 HudFrame hud_frame,pending_hud_frame;
 std::atomic<uint64_t> hud_source_sequence{0};
+std::recursive_mutex target_mutex;
+std::atomic<bool> independent_mouse{false};
+std::atomic<float> input_reference_fov{62};
+std::atomic<uint64_t> input_goal_sequence{0},rate_input_poll{0},rate_input_move{0},rate_raw_move{0};
+flight::V control_last_goal{1,0,0};bool control_goal_seen=false;uint64_t control_last_sequence=0;
+void target_input_tick();
+std::atomic<uint64_t> rate_bridge{0},rate_stage_try{0},rate_stage_ok{0},rate_camera{0},rate_camera_ok{0},rate_publish_try{0},rate_publish_ok{0};
 void stage_hud_frame(const HudFrame& frame){
+    rate_stage_try.fetch_add(1,std::memory_order_relaxed);
     std::unique_lock<std::mutex> lock(hud_frame_mutex,std::try_to_lock);
-    if(lock.owns_lock()){pending_hud_frame=frame;pending_hud_frame.sequence=++hud_source_sequence;}
+    if(lock.owns_lock()){pending_hud_frame=frame;pending_hud_frame.pose_qpc=frame.pose_qpc?frame.pose_qpc:hud_qpc();pending_hud_frame.epoch=hud_epoch.load();pending_hud_frame.sequence=++hud_source_sequence;rate_stage_ok.fetch_add(1,std::memory_order_relaxed);}
 }
 bool read_pending_hud_frame(HudFrame& frame){
     std::unique_lock<std::mutex> lock(hud_frame_mutex,std::try_to_lock);
@@ -94,8 +107,9 @@ bool read_pending_hud_frame(HudFrame& frame){
     frame=pending_hud_frame;return frame.pawn!=0;
 }
 void publish_hud_frame(const HudFrame& frame){
+    rate_publish_try.fetch_add(1,std::memory_order_relaxed);
     std::unique_lock<std::mutex> lock(hud_frame_mutex,std::try_to_lock);
-    if(lock.owns_lock())hud_frame=frame;
+    if(lock.owns_lock()){hud_frame=frame;rate_publish_ok.fetch_add(1,std::memory_order_relaxed);}
 }
 bool read_hud_frame(HudFrame& frame){
     std::unique_lock<std::mutex> lock(hud_frame_mutex,std::try_to_lock);
@@ -114,8 +128,18 @@ std::atomic<bool> game_paused{false};
 std::atomic<bool> gaze_active{false};
 std::atomic<bool> context_suspended{true},transition_center_requested{false};
 std::atomic<bool> manual_camera_active{false},native_rig_reset_requested{true};
+std::atomic<float> free_look_zoom{1.75f},effective_camera_fov{0};
+std::atomic<float> configured_zoom{1.75f};
+std::atomic<uint64_t> zoom_notice_until{0};
+void zoom_keys(bool up,bool down,bool reset,bool allowed);
+std::atomic<uint64_t> effective_fov_tick{0};
+std::atomic<uintptr_t> effective_fov_manager{0};
 std::atomic<int> camera_view_mode{1};
 std::atomic<float> camera_distance_cm{3600},camera_height_cm{600};
+void sensitivity_keys(bool up,bool down,bool reset,bool allowed);
+std::atomic<float> live_sensitivity{.10f},configured_sensitivity{.10f};
+std::atomic<uint64_t> sensitivity_notice_until{0};
+std::atomic<bool> settings_panel{false},hud_prediction_requested{true};
 std::atomic<bool> camera_toggle_requested{false};
 std::atomic<uint64_t> camera_notice_until{0};
 std::atomic<bool> helmet_enabled{false};
@@ -219,16 +243,18 @@ void load_config() {
     camera_distance_cm.store(100*std::clamp(read_config_float(L"camera_distance_m",36),10.f,100.f));
     camera_height_cm.store(100*std::clamp(read_config_float(L"camera_height_m",6),0.f,20.f));
     hud_target_hz.store(std::clamp(read_config_int(L"hud_fps",120),60,240));
-    config.mouse_reference_fov=std::clamp(read_config_float(L"mouse_reference_fov",62),30.0f,150.0f);
+    free_look_zoom=std::clamp(read_config_float(L"free_look_zoom",1.75f),1.f,3.f);configured_zoom=free_look_zoom.load();
+    config.mouse_reference_fov=std::clamp(read_config_float(L"mouse_reference_fov",62),30.0f,150.0f);input_reference_fov=config.mouse_reference_fov;
     config.arrival_braking=std::clamp(read_config_float(L"arrival_braking",1.15f),1.0f,1.35f);
     model_assist_enabled.store(read_config_int(L"model_assist",1)!=0);
     control_mode.store(std::clamp(read_config_int(L"control_mode",1),0,1));mode_notice_pending=true;
     config.model_assist_strength=std::clamp(read_config_float(L"model_assist_strength",.20f),0.f,.35f);
-    hud_renderer.store(std::clamp(read_config_int(L"hud_renderer",1),0,1));
+    hud_renderer.store(std::clamp(read_config_int(L"hud_renderer",3),0,3));
     hud_connector.store(read_config_int(L"hud_connector",1)!=0);
     hud_link_always.store(read_config_int(L"hud_link_always",0)!=0);
     hud_opacity.store(std::clamp(read_config_float(L"hud_opacity",.65f),.15f,1.f));
     config.sensitivity = std::clamp(read_config_float(L"sensitivity", config.sensitivity), 0.01f, 1.0f);
+    live_sensitivity=config.sensitivity;configured_sensitivity=config.sensitivity;
     config.roll_gain = std::clamp(read_config_float(L"roll_gain", config.roll_gain), 0.001f, 0.2f);
     config.pitch_gain = std::clamp(read_config_float(L"pitch_gain", config.pitch_gain), 0.001f, 0.2f);
     config.yaw_gain = std::clamp(read_config_float(L"yaw_gain", config.yaw_gain), 0.0f, 0.2f);
@@ -305,7 +331,9 @@ UINT WINAPI capture_get_raw_input_data(HRAWINPUT input, UINT command, LPVOID dat
             !(raw->data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) &&
             foreground_is_game() && active.load() && enabled.load()) {
             if(!game_paused.load() && !gaze_active.load() && !context_suspended.load()) {
+                std::lock_guard<std::recursive_mutex> lock(target_mutex);
                 mouse_delta.add(raw->data.mouse.lLastX,raw->data.mouse.lLastY);
+                if(raw->data.mouse.lLastX||raw->data.mouse.lLastY){rate_raw_move.fetch_add(1,std::memory_order_relaxed);raw_gaps.event(hud_qpc(),hud_frequency());}
             }
         }
     }
@@ -356,23 +384,22 @@ bool prepare_mouse() {
 }
 
 void mouse_loop() {
+    HANDLE input_timer=CreateWaitableTimerExW(nullptr,nullptr,0x2,TIMER_ALL_ACCESS);
+    log_line("INPUT_SOURCE Raw Input preferred; independent target worker; DirectInput fallback only if raw hook unavailable");
     bool f8_down = false, f9_down = false;
     while (running.load()) {
-        if (!raw_input_hooked.load()) {
-            if (!mouse_device && !prepare_mouse()) {
-                Sleep(50);
-                continue;
-            }
-            DIMOUSESTATE2 state{};
-            HRESULT result = mouse_device->GetDeviceState(sizeof(state), &state);
-            if (FAILED(result)) {
-                mouse_device->Acquire();
-            } else if (foreground_is_game() && active.load()) {
-                if(!game_paused.load() && !gaze_active.load() && !context_suspended.load()) {
-                    mouse_delta.add(state.lX,state.lY);
-                }
-            }
+        // Independent consumption does not require replacing the proven capture source.
+        // Use exactly one producer: game Raw Input, or DirectInput only when the hook is unavailable.
+        independent_mouse=true;
+        if(!raw_input_hooked.load()&&(mouse_device||prepare_mouse())){
+            DIMOUSESTATE2 state{};HRESULT result=mouse_device->GetDeviceState(sizeof(state),&state);
+            if(SUCCEEDED(result)){
+                std::lock_guard<std::recursive_mutex> lock(target_mutex);
+                if(foreground_is_game()&&active.load()&&enabled.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load())mouse_delta.add(state.lX,state.lY);
+            }else mouse_device->Acquire();
         }
+        rate_input_poll.fetch_add(1,std::memory_order_relaxed);
+        target_input_tick();
         static bool f7_down=false;
         bool f7=(GetAsyncKeyState(VK_F7)&0x8000)!=0;
         if(f7 && !f7_down && foreground_is_game()) {
@@ -381,6 +408,26 @@ void mouse_loop() {
         }
         f7_down=f7;
         bool plain=(GetAsyncKeyState(VK_MENU)&0x8000)==0&&(GetAsyncKeyState(VK_CONTROL)&0x8000)==0&&(GetAsyncKeyState(VK_SHIFT)&0x8000)==0;
+        const bool sensitivity_allowed=(GetAsyncKeyState(VK_CONTROL)&0x8000)!=0 &&
+            (GetAsyncKeyState(VK_MENU)&0x8000)==0 && (GetAsyncKeyState(VK_SHIFT)&0x8000)==0 &&
+            foreground_is_game()&&enabled.load()&&active.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load();
+        sensitivity_keys((GetAsyncKeyState(VK_PRIOR)&0x8000)!=0,(GetAsyncKeyState(VK_NEXT)&0x8000)!=0,
+            (GetAsyncKeyState(VK_HOME)&0x8000)!=0,sensitivity_allowed);
+        const bool zoom_allowed=(GetAsyncKeyState(VK_MENU)&0x8000)!=0 &&
+            (GetAsyncKeyState(VK_CONTROL)&0x8000)==0 && (GetAsyncKeyState(VK_SHIFT)&0x8000)==0 &&
+            foreground_is_game()&&enabled.load()&&active.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load();
+        zoom_keys((GetAsyncKeyState(VK_PRIOR)&0x8000)!=0,(GetAsyncKeyState(VK_NEXT)&0x8000)!=0,
+            (GetAsyncKeyState(VK_HOME)&0x8000)!=0,zoom_allowed);
+        static control_modes::KeyLatch smoothing_key;
+        if(smoothing_key.press((GetAsyncKeyState(VK_END)&0x8000)!=0,sensitivity_allowed)){
+            hud_prediction_requested=!hud_prediction_requested.load();settings_panel=true;hud_enabled=true;
+            log_line("HUD_PREDICTION requested=%d display-only bounded camera prediction",hud_prediction_requested.load()?1:0);
+        }
+        static control_modes::KeyLatch panel_key;
+        if(panel_key.press((GetAsyncKeyState(VK_F1)&0x8000)!=0,plain&&foreground_is_game()&&enabled.load()&&active.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load())) {
+            settings_panel=!settings_panel.load();if(settings_panel.load())hud_enabled=true;
+            log_line("SETTINGS_PANEL visible=%d",settings_panel.load()?1:0);
+        }
         static control_modes::KeyLatch helmet_key;
         if(helmet_key.press((GetAsyncKeyState(VK_F2)&0x8000)!=0,plain&&foreground_is_game()&&enabled.load()&&active.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load())) {
             helmet_enabled.store(!helmet_enabled.load());
@@ -402,21 +449,63 @@ void mouse_loop() {
         if (f9 && !f9_down && foreground_is_game()) recenter_requested.store(true);
         f8_down = f8;
         f9_down = f9;
-        Sleep(4);
+        LARGE_INTEGER due{};due.QuadPart=-40000;
+        if(input_timer&&SetWaitableTimer(input_timer,&due,0,nullptr,nullptr,FALSE))WaitForSingleObject(input_timer,20);else Sleep(1);
     }
+    if(input_timer)CloseHandle(input_timer);
+}
+
+void sensitivity_keys(bool up,bool down,bool reset,bool allowed) {
+    static control_modes::KeyLatch up_key,down_key,reset_key;
+    const bool u=up_key.press(up,allowed),d=down_key.press(down,allowed),r=reset_key.press(reset,allowed);
+    if(!r && (u==d))return;
+    float next=r?configured_sensitivity.load():live_sensitivity.load()*(u?1.1f:1.f/1.1f);
+    next=std::clamp(std::round(next*100000.f)/100000.f,.01f,1.f);
+    live_sensitivity=next;sensitivity_notice_until=GetTickCount64()+2500;
+    log_line("SENSITIVITY session=%.5f configured=%.5f",next,configured_sensitivity.load());
+}
+
+void zoom_keys(bool up,bool down,bool reset,bool allowed){
+    static control_modes::KeyLatch uk,dk,rk;
+    const bool u=uk.press(up,allowed),d=dk.press(down,allowed),r=rk.press(reset,allowed);
+    if(!r&&(u==d))return;
+    free_look_zoom=r?configured_zoom.load():std::clamp(free_look_zoom.load()+(u?.25f:-.25f),1.f,3.f);
+    zoom_notice_until=GetTickCount64()+2500;
+    log_line("FREE_LOOK_ZOOM session=%.2f configured=%.2f",free_look_zoom.load(),configured_zoom.load());
+}
+
+void target_input_tick(){
+    if(!independent_mouse.load())return;
+    HudFrame frame;if(!read_hud_frame(frame))return;
+    std::lock_guard<std::recursive_mutex> lock(target_mutex);
+    if(!active.load()||!enabled.load()||game_paused.load()||gaze_active.load()||context_suspended.load()||
+       !foreground_is_game()||frame.pawn!=aircraft.load()||GetTickCount64()-frame.tick>=250||
+       recenter_requested.load()||resume_center_requested.load()||transition_center_requested.load()){
+        mouse_delta.clear();return;
+    }
+    const bool looking=(GetAsyncKeyState('C')&0x8000)!=0;
+    const auto delta=mouse_delta.take();
+    if(!delta.x&&!delta.y&&looking==free_look.held)return;
+    auto aim=flight::basis(target_pitch.load(),target_yaw.load(),0).f;
+    const auto view=flight::basis(frame.cp,frame.cy,frame.cr);const float sensitivity=live_sensitivity.load();
+    auto look=free_look.step(looking,aim,view,
+        delta.x*sensitivity,delta.y*sensitivity,frame.fov,input_reference_fov.load(),{frame.ox,frame.oy,frame.oz});
+    target_pitch=flight::pitch(aim);target_yaw=flight::yaw(aim);look_pitch=flight::pitch(look);look_yaw=flight::yaw(look);
+    if(delta.x||delta.y){target_gaps.event(hud_qpc(),hud_frequency());++input_goal_sequence;rate_input_move.fetch_add(1,std::memory_order_relaxed);}
 }
 
 void update_commands() {
+    std::lock_guard<std::recursive_mutex> lock(target_mutex);
     using namespace flight;
     if (!active.load() || !enabled.load() || game_paused.load() || gaze_active.load() || context_suspended.load()) {
-        free_look.reset();reset_model_assist();
+        free_look.reset();control_goal_seen=false;reset_model_assist();
         command_pitch.store(0); command_roll.store(0); command_yaw.store(0);
         if(game_paused.load() || gaze_active.load() || context_suspended.load()) { mouse_delta.clear(); }
         previous_pose_tick = 0;
         return;
     }
     if(transition_center_requested.exchange(false)){
-        recenter_requested=true;resume_center_requested=false;previous_pose_tick=0;
+        recenter_requested=true;resume_center_requested=false;previous_pose_tick=0;control_goal_seen=false;
         filtered_pitch_rate=filtered_yaw_rate=filtered_roll_rate=0;mouse_delta.clear();free_look.reset();
     }
     const auto now = GetTickCount64();
@@ -435,12 +524,13 @@ void update_commands() {
     V aim=basis(target_pitch.load(),target_yaw.load(),0).f;
     const bool manual = !foreground_is_game();
     if (recenter_requested.exchange(false) || manual) {
-        aim=b.f;
+        aim=b.f;control_goal_seen=false;++hud_epoch;
         mouse_delta.clear();
         for(auto& ref:target_references)ref.reset();have_roll_goal=false;
     }
     const Basis view=basis(camera_pitch.load(),camera_yaw.load(),camera_roll.load());
     if(resume_center_requested.exchange(false)) {
+        control_goal_seen=false;
         for(auto& ref:target_references)ref.reset();have_roll_goal=false;
         // Intersect the camera-centre ray with the HUD's 500m aim sphere.
         V offset{view_offset_x.load(),view_offset_y.load(),view_offset_z.load()};
@@ -450,14 +540,23 @@ void update_commands() {
         mouse_delta.clear();
         filtered_pitch_rate=filtered_yaw_rate=filtered_roll_rate=0;
     }
-    const V goal_before_input=aim;
+    const V goal_before_input=independent_mouse.load()&&control_goal_seen?control_last_goal:aim;
+    const float sensitivity=live_sensitivity.load();
     const bool looking=!manual && (GetAsyncKeyState('C')&0x8000)!=0;
-    const auto delta=mouse_delta.take();
-    const V camera_target=free_look.step(looking,aim,view,
-        delta.x*config.sensitivity,delta.y*config.sensitivity,view_fov.load(),config.mouse_reference_fov,
-        {view_offset_x.load(),view_offset_y.load(),view_offset_z.load()});
-    look_pitch.store(flight::pitch(camera_target)); look_yaw.store(flight::yaw(camera_target));
-    target_pitch.store(flight::pitch(aim)); target_yaw.store(flight::yaw(aim));
+    MouseDelta delta{};
+    if(independent_mouse.load()){
+        const auto sequence=input_goal_sequence.load();delta.x=sequence!=control_last_sequence?1:0;control_last_sequence=sequence;
+        // Only the input thread advances FreeLook; game-thread recenter still owns lifecycle resets.
+        target_pitch=flight::pitch(aim);target_yaw=flight::yaw(aim);
+        if(!looking){look_pitch=target_pitch.load();look_yaw=target_yaw.load();}
+    }else{
+        delta=mouse_delta.take();
+        const V camera_target=free_look.step(looking,aim,view,delta.x*sensitivity,delta.y*sensitivity,view_fov.load(),config.mouse_reference_fov,
+            {view_offset_x.load(),view_offset_y.load(),view_offset_z.load()});
+        look_pitch=flight::pitch(camera_target);look_yaw=flight::yaw(camera_target);
+        target_pitch=flight::pitch(aim);target_yaw=flight::yaw(aim);
+    }
+    control_last_goal=aim;control_goal_seen=true;
     const float f=dot(aim,b.f), right=dot(aim,b.r), up=dot(aim,b.u);
     const float angle=std::acos(std::clamp(f,-1.0f,1.0f))/rad;
     // Direct MouseFlight Plane.RunAutopilot port: normalized local target * 5.
@@ -505,6 +604,8 @@ void update_commands() {
 #include "native_camera.h"
 
 void release_controls() {
+    std::lock_guard<std::recursive_mutex> lock(target_mutex);
+    control_goal_seen=false;
     full_model_new_flight=true;
     active.store(false); aircraft.store(0);
     command_pitch.store(0); command_yaw.store(0); command_roll.store(0);
@@ -516,31 +617,35 @@ void release_controls() {
 // Called synchronously on the game thread. Fixed numeric arguments replace
 // the pipe queue, sscanf and the camera-target disk snapshot entirely.
 void receive_pose(const double (&v)[13]) {
+    const auto pose_received=hud_qpc();pose_gaps.event(pose_received,hud_frequency());
+    std::lock_guard<std::recursive_mutex> lock(target_mutex);
     const uintptr_t address=static_cast<uintptr_t>(v[0]);
     const float pitch=float(v[1]),yaw=float(v[2]),roll=float(v[3]);
     const float view_pitch=float(v[4]),view_yaw=float(v[5]),view_roll=float(v[6]);
     const float fov=float(v[7]),ox=float(v[8]),oy=float(v[9]),oz=float(v[10]);
     const bool paused=v[11]!=0,gazing=v[12]!=0;
     if(gaze_active.exchange(gazing)!=gazing) {
+        ++hud_epoch;
         mouse_delta.clear();
         command_pitch.store(0); command_yaw.store(0); command_roll.store(0);
         log_line("gaze: %s",gazing?"native camera and controls; mouse target frozen":"mouse mode resumed");
     }
     const bool was_paused=game_paused.exchange(paused);
     if(was_paused!=paused) {
+        ++hud_epoch;
         mouse_delta.clear();
         if(was_paused) resume_center_requested.store(true);
         else { command_pitch.store(0); command_roll.store(0); command_yaw.store(0); }
         log_line("game pause: %s",paused?"paused; aim frozen":"resumed; centre aim on next pose");
     }
     view_offset_x.store(ox); view_offset_y.store(oy); view_offset_z.store(oz);
-    view_fov.store(std::clamp(fov,30.0f,150.0f));
+    view_fov.store(std::clamp(fov,15.0f,150.0f));
     if (aircraft.load() != static_cast<uintptr_t>(address)) {
         aircraft.store(static_cast<uintptr_t>(address));
         roll_reference.store(roll);
         previous_pose_tick = 0;
         telemetry_tick = 0;
-        recenter_requested.store(true);
+        recenter_requested.store(true);control_goal_seen=false;
         free_look.reset();
         log_line("aircraft acquired 0x%llX pose=(%.3f,%.3f,%.3f) camera=(%.3f,%.3f,%.3f)",
                  static_cast<unsigned long long>(address), pitch, yaw, roll, view_pitch, view_yaw, view_roll);
@@ -555,7 +660,7 @@ void receive_pose(const double (&v)[13]) {
     active.store(true);
     update_commands();
     stage_hud_frame({address,GetTickCount64(),pitch,yaw,roll,view_pitch,view_yaw,view_roll,
-        target_pitch.load(),target_yaw.load(),fov,ox,oy,oz});
+        target_pitch.load(),target_yaw.load(),fov,ox,oy,oz,0,pose_received});
 }
 
 #include "smooth_overlay.h"
@@ -773,11 +878,96 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_reload(void*) {
     return 0;
 }
 
+struct CanvasCounters {uint64_t callbacks=0,eligible=0,drawn=0,lines=0,errors=0;double cost_ms=0,max_ms=0;ULONGLONG since=0;} canvas_counts;
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_mode(lua_State* state){
+    LuaView lua(state);lua.set_number(hud_renderer.load());return 1;
+}
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_gate(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;
+    ++canvas_counts.callbacks;
+    LuaView lua(state);
+    const int reason=(!active.load()?1:0)|(!enabled.load()?2:0)|(!hud_enabled.load()?4:0)|(game_paused.load()?8:0)|(gaze_active.load()?16:0)|(context_suspended.load()?32:0)|(!foreground_is_game()?64:0);
+    lua.set_number((hud_renderer.load()!=2&&hud_renderer.load()!=3)?0:reason==0?1:2);lua.set_number(reason);return 2;
+}
+// Game-thread-only draw transaction: ring and nose must use one published frame.
+HudFrame canvas_draw_frame;
+bool canvas_draw_valid=false;
+int canvas_position_status(uintptr_t pawn,float width,float height,float& x,float& y,float& radius){
+    canvas_draw_valid=false;
+    if(width<320||height<200||width>16384||height>16384)return -1;
+    HudFrame f;if(!read_hud_frame(f))return -2;
+    if(f.pawn!=pawn||pawn!=aircraft.load())return -3;
+    if(GetTickCount64()-f.tick>=250||f.epoch!=hud_epoch.load())return -4;
+    // Do not mix a newer asynchronous mouse goal with an older camera sample.
+    auto view=flight::basis(f.cp,f.cy,f.cr);auto point=flight::basis(f.tp,f.ty,0).f*50000-flight::V{f.ox,f.oy,f.oz};
+    float depth=flight::dot(point,view.f);if(depth<=.01f)return -5;if(!std::isfinite(f.fov)||f.fov<15||f.fov>150)return -6;
+    float focal=width*.5f/std::tan(f.fov*.5f*flight::rad);x=width*.5f+focal*flight::dot(point,view.r)/depth;y=height*.5f-focal*flight::dot(point,view.u)/depth;
+    radius=30*height/1080.f;
+    canvas_draw_frame=f;canvas_draw_valid=true;
+    return std::isfinite(x)&&std::isfinite(y)&&x>=radius&&x<=width-radius&&y>=radius&&y<=height-radius?1:-7;
+}
+bool canvas_position(uintptr_t pawn,float width,float height,float& x,float& y,float& radius){return canvas_position_status(pawn,width,height,x,y,radius)==1;}
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_viewport(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;RECT rect{};LuaView lua(state);
+    if(!game_window||!GetClientRect(game_window,&rect))return 0;
+    lua.set_number(rect.right);lua.set_number(rect.bottom);lua.set_number(double(hud_qpc())*1000/hud_frequency());return 3;
+}
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_ring(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);double v[3]{};if(!read_numbers(lua,v)||!live_pointer_number(v[0]))return 0;
+    if((hud_renderer.load()!=2&&hud_renderer.load()!=3)||!active.load()||!enabled.load()||!hud_enabled.load()||game_paused.load()||gaze_active.load()||context_suspended.load()||!foreground_is_game()){lua.set_number(-8);return 1;}
+    float x=0,y=0,radius=0;int status=canvas_position_status(uintptr_t(v[0]),float(v[1]),float(v[2]),x,y,radius);lua.set_number(status);if(status!=1)return 1;
+    ++canvas_counts.eligible;lua.set_number(x);lua.set_number(y);lua.set_number(radius);lua.set_number(std::max(1.f,float(v[2])/1080.f*1.3f));lua.set_number(double(hud_qpc())*1000/hud_frequency());return 6;
+}
+
+double umg_update_hz=0;
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_ui(lua_State* state){
+ if(!running.load()||!on_bridge_thread())return 0;LuaView lua(state);auto now=GetTickCount64();
+ if(mode_notice_pending.exchange(false))mode_notice_until=now+2500;
+ int toast=0;float value=0;uint64_t end=0;
+ auto choose=[&](uint64_t until,int id,float v){if(until>now&&until>=end){end=until;toast=id;value=v;}};
+ choose(mode_notice_until.load(),1,float(control_mode.load()));choose(camera_notice_until.load(),2,float(camera_view_mode.load()));
+ choose(helmet_notice_until.load(),3,float(helmet_notice.load()));choose(sensitivity_notice_until.load(),4,live_sensitivity.load());choose(zoom_notice_until.load(),5,free_look_zoom.load());
+ const double values[]={settings_panel.load()?1.:0.,helmet_enabled.load()?1.:0.,double(control_mode.load()),double(camera_view_mode.load()),live_sensitivity.load(),configured_sensitivity.load(),free_look_zoom.load(),configured_zoom.load(),view_fov.load(),umg_update_hz,double(toast),value,end?std::min(1.,double(end-now)/90.):0.,hud_opacity.load(),hud_connector.load()?1.:0.,hud_link_always.load()?1.:0.};
+ for(double v:values)lua.set_number(v);return 16;
+}
+bool canvas_nose_position(uintptr_t pawn,float width,float height,float& x,float& y){
+ if(!canvas_draw_valid||width<320||height<200)return false;
+ const auto& f=canvas_draw_frame;
+ if(f.pawn!=pawn||pawn!=aircraft.load()||GetTickCount64()-f.tick>=250||f.epoch!=hud_epoch.load())return false;
+ auto view=flight::basis(f.cp,f.cy,f.cr);auto point=flight::basis(f.p,f.y,f.r).f*50000-flight::V{f.ox,f.oy,f.oz};float z=flight::dot(point,view.f);if(z<=.01)return false;
+ float focal=width*.5f/std::tan(std::clamp(f.fov,15.f,150.f)*.5f*flight::rad);
+ x=width*.5f+focal*flight::dot(point,view.r)/z;y=height*.5f-focal*flight::dot(point,view.u)/z;
+ return std::isfinite(x)&&std::isfinite(y);
+}
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_nose(lua_State* state){
+ if(!running.load()||!on_bridge_thread())return 0;LuaView lua(state);double v[3]{};if(!read_numbers(lua,v)||!live_pointer_number(v[0]))return 0;
+ float x=0,y=0;if(!canvas_nose_position(uintptr_t(v[0]),float(v[1]),float(v[2]),x,y))return 0;
+ lua.set_number(1);lua.set_number(x);lua.set_number(y);return 3;
+}
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_report(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);double v[2]{};if(!read_numbers(lua,v))return 0;
+    if(v[0]<0){++canvas_counts.errors;return 0;}
+    double elapsed=double(hud_qpc())*1000/hud_frequency()-v[1];
+    if(v[0]!=24||elapsed<0||elapsed>1000)return 0;
+    ++canvas_counts.drawn;canvas_counts.lines+=24;canvas_counts.cost_ms+=elapsed;canvas_counts.max_ms=std::max(canvas_counts.max_ms,elapsed);return 0;
+}
 extern "C" __declspec(dllexport) int ac8_mouseaim_begin(void*) {
     if(!running.load()) return 0;
     if(!bridge_thread) bridge_thread=GetCurrentThreadId();
     if(!on_bridge_thread()) return 0;
+    rate_bridge.fetch_add(1,std::memory_order_relaxed);
+    if(hud_renderer.load()==2||hud_renderer.load()==3){
+        auto now=GetTickCount64();if(!canvas_counts.since)canvas_counts.since=now;
+        if(now-canvas_counts.since>=10000){double seconds=(now-canvas_counts.since)/1000.;
+            log_line("UMG_HUD checks=%llu eligible=%llu updates=%llu update_hz=%.2f mean_cpu_ms=%.3f max_cpu_ms=%.3f errors=%llu external_overlay=OFF (not display FPS)",canvas_counts.callbacks,canvas_counts.eligible,canvas_counts.drawn,canvas_counts.drawn/seconds,canvas_counts.drawn?canvas_counts.cost_ms/canvas_counts.drawn:0,canvas_counts.max_ms,canvas_counts.errors);
+            umg_update_hz=canvas_counts.drawn/seconds;canvas_counts={};canvas_counts.since=now;
+        }
+    }
+
     if(camera_toggle_requested.exchange(false)){
+        ++hud_epoch;
         camera_view_mode=1-camera_view_mode.load();camera_notice_until=GetTickCount64()+2500;
         log_line("CAMERA_MODE selected=%d name=%s distance_m=%.1f height_m=%.1f",camera_view_mode.load(),camera_view_mode.load()?"FAR":"GAME",camera_distance_cm.load()/100,camera_height_cm.load()/100);
     }
@@ -796,6 +986,14 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_begin(void*) {
     return 0;
 }
 
+// Read the effective final-POV FOV, not a cached pre-override game property.
+extern "C" __declspec(dllexport) int ac8_mouseaim_camera_fov(lua_State* state){
+    if(!running.load()||!on_bridge_thread())return 0;
+    LuaView lua(state);double v[1]{};if(!read_numbers(lua,v)||!live_pointer_number(v[0]))return 0;
+    const bool fresh=uintptr_t(v[0])==effective_fov_manager.load()&&GetTickCount64()-effective_fov_tick.load()<250;
+    lua.set_number(fresh?effective_camera_fov.load():0);return 1;
+}
+
 extern "C" __declspec(dllexport) int ac8_mouseaim_manual_look(lua_State* state){
     if(!running.load()||!on_bridge_thread())return 0;
     LuaView lua(state);if(lua.get_stack_size()!=0)return 0;
@@ -809,12 +1007,14 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_context(lua_State* state){
     bool manual_changed=manual_camera_active.exchange(v[2]!=0)!=(v[2]!=0);
     bool changed=context_suspended.exchange(v[0]!=0)!=(v[0]!=0);
     if(v[1]!=0){transition_center_requested=true;native_rig_reset_requested=true;}
+    if(changed||v[1]!=0||manual_changed)++hud_epoch;
     if(changed||v[1]!=0||manual_changed)log_line("VIEW_CONTEXT suspended=%d recenter=%d manual_orbit=%d",int(v[0]),int(v[1]),int(v[2]));
     if(v[0]!=0){command_pitch=0;command_roll=0;command_yaw=0;mouse_delta.clear();}
     lua.set_number(1);lua.set_number(camera_view_mode.load());return 2;
 }
 
 extern "C" __declspec(dllexport) int ac8_mouseaim_frame(lua_State* state) {
+    std::lock_guard<std::recursive_mutex> lock(target_mutex);
     if(!running.load() || !on_bridge_thread()) return 0;
     PerfSpan timing(perf_bridge);
     LuaView lua(state); double v[13]{};
@@ -829,6 +1029,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_frame(lua_State* state) {
 
 // Separate from frame(): that API returns the camera destination during C.
 extern "C" __declspec(dllexport) int ac8_mouseaim_helmet_state(lua_State* state) {
+    std::lock_guard<std::recursive_mutex> lock(target_mutex);
     if(!running.load()||!on_bridge_thread())return 0;
     LuaView lua(state);if(lua.get_stack_size()!=0)return 0;
     if(helmet_enabled.load()&&!helmet::supported){helmet_enabled=false;helmet_notice=2;helmet_notice_until=GetTickCount64()+2500;}

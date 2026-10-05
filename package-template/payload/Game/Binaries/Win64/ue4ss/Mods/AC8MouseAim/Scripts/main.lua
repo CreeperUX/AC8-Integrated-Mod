@@ -16,9 +16,11 @@ local observation = dofile(directory .. "observation.lua")
 local context_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_context"))
 local view_context=dofile(directory..'view_context.lua').new()
 local manual_look_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_manual_look"))
+local effective_fov_native=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_camera_fov"))
 local helmet_state=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_helmet_state"))
 local helmet_submit=assert(package.loadlib(directory.."ac8_mouse_aim_010.dll","ac8_mouseaim_helmet_submit"))
 local helmet=dofile(directory..'helmet.lua').new(helmet_submit)
+local native_hud=dofile(directory.."native_hud.lua")
 local helmet_error_time=0
 local shadow_next=0
 local shadow_sim_seconds=0
@@ -109,7 +111,7 @@ local function player_plane()
     if not valid(controller)then return nil end
     local pawn=controller.Pawn
     if valid(pawn)and pawn:IsA(plane_class)then return pawn,controller end
-    return nil
+    return nil,controller
 end
 
 local function camera_rotation(manager, fallback)
@@ -128,6 +130,8 @@ RegisterKeyBind(Key.F6, function() gaze_probe.request() end)
 RegisterKeyBind(Key.F5, function() perf_native() end)
 
 assert(start_native(1729,0.125)==30,'AC8 direct bridge unavailable; control disabled (check native log).')
+local hud_ok,hud_error=pcall(native_hud.start,directory)
+if not hud_ok then print('[AC8CanvasHUD] START_FAILED '..tostring(hud_error)..'\n')end
 
 RegisterInitGameStatePreHook(function(context)
     local ok,name=pcall(function()local object=context:get();if object and object:IsValid()then return object:GetFullName()end end)
@@ -148,6 +152,7 @@ else
             if now < next_search then return end
             local pawn, controller = player_plane()
             if not pawn then
+                if hud_ok and controller then native_hud.hide(controller)end
                 gaze_probe.end_mission()
                 startup_address=nil; startup_time=0
                 view_context:reset("no-player")
@@ -197,8 +202,8 @@ else
             assert(manager and manager:IsValid(),'Camera manager unavailable')
             local frame_time=pause_gameplay:GetRealTimeSeconds(pawn)
             local gazing,automatic_view,manual_view=gaze.update(pawn,frame_time,manual_look_native()==1)
-            -- Manual C always uses the mod orbit; only automatic/scripted
-            -- camera ownership yields to the game camera implementation.
+            -- C uses the mod orbit. Native target-focus and scripted views
+            -- yield to the game; native focus is not a C-key gesture.
             gazing=automatic_view or (gazing and not manual_view)
             local camera = camera_rotation(manager, rotation)
             local camera_pitch = rotation_component(camera, "Pitch") or pitch
@@ -208,6 +213,8 @@ else
             assert(type(address) == "number" and address > 0, "Invalid aircraft address")
             local fov=100
             pcall(function() fov=manager:GetFOVAngle() end)
+            local effective_fov=effective_fov_native(manager:GetAddress())
+            if effective_fov and effective_fov>0 then fov=effective_fov end
             local position=pawn:K2_GetActorLocation()
             local view_position=manager:GetCameraLocation()
             local ox=assert(rotation_component(view_position,"X"))-assert(rotation_component(position,"X"))
@@ -221,7 +228,7 @@ else
                 or view_context:optional_bool(pawn,'bEnableWingInput',false)==false
                 or view_context:optional_bool(pawn,'bEnableMovmentInput',false)==false
             local eligible=not paused and not automatic_view and not cinematic
-                and (manual_view or (owned and not input_blocked))
+                and (manual_view or gazing or (owned and not input_blocked))
             local ready,center=view_context:update(address,controller:GetAddress(),eligible,dt,frame_time)
             if center then
                 aim_camera.restore()
@@ -301,6 +308,7 @@ else
             else
                 camera_native(0,0,0,0,0)
             end
+            if hud_ok then native_hud.update(controller,pawn,rotation_component)end
             if current_address ~= address then
                 current_address = address
                 notice("Active for " .. pawn:GetFullName())

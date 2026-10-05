@@ -3,6 +3,15 @@ $ErrorActionPreference='Stop'
 if($CleanupOnly -and $CheckOnly){throw 'CleanupOnly and CheckOnly cannot be combined.'}
 $root=$PSScriptRoot
 . (Join-Path $root 'Install-Common.ps1')
+function Assert-ModEnabled {
+if(!$CleanupOnly -and !$CheckOnly){
+ $disabled=Test-Path -LiteralPath (Join-Path $PSScriptRoot 'mod-disabled.flag')
+ $parent=Split-Path $PSScriptRoot -Parent
+ if((Test-Path -LiteralPath (Join-Path $parent 'AC8-Managed-Packages.json')) -and (Test-Path -LiteralPath (Join-Path $parent 'mod-disabled.flag'))){$disabled=$true}
+ if($disabled){throw 'Mod disabled. Use Enable-Mod.cmd to restore offline mod mode.'}
+}
+}
+Assert-ModEnabled
 if(!$CleanupOnly){& (Join-Path $root 'Check-Package.ps1') -PackageRoot $root}
 $gameRoot=([string](Get-Content -LiteralPath (Join-Path $root 'game-path.txt') -Raw -Encoding UTF8)).Trim()
 $gameRoot=Resolve-AC8GameRoot $gameRoot
@@ -16,6 +25,7 @@ $expectedHash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'
 $operation=$null
 if(!$CheckOnly){$operation=Enter-AC8Operation $gameRoot}
 try {
+Assert-ModEnabled
 function Get-SaveHashes {
  $save=Join-Path $env:LOCALAPPDATA 'BANDAI NAMCO Entertainment/ACE COMBAT 8/Saved/SaveGames'
  if(!(Test-Path -LiteralPath $save)){return @()}
@@ -107,9 +117,8 @@ try {
  Set-Content -LiteralPath (Join-Path $w64 'steam_appid.txt') -Value '2288340' -Encoding ASCII
  Write-AC8Json $state $statePath
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
- $packageInfo=Get-Content -LiteralPath (Join-Path $root 'package-info.json') -Raw -Encoding UTF8 | ConvertFrom-Json
- Write-Host ('AC8 '+$packageInfo.version+' - offline single-player only. Keep this console open for cleanup.')
- Write-Host 'Mouse Aim: select Expert controls. F2 HMD (starts OFF); F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; hold C for free look.'
+ Write-Host 'AC8 2.3.5 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
+ Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; hold C for free look.'
  Write-Host ('FEATURES: mouse flight; missile mode='+$features.MissileMode)
  $stage='启动游戏'
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru

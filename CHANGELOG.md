@@ -1,3 +1,89 @@
+## 2.3.15-beta.1
+
+Optional public Beta of nativeui-preview.2. v2.3.6 remains stable. Native UMG ring, on-demand panel/toasts, in-session controls, native zoom transitions and disable tools. See docs/RELEASE-v2.3.15-beta.1.md for validation limits and rollback.
+
+## 2.3.15-nativeui-preview.2
+
+- Enlarge native ring visible diameter by 50%, with matching connector clearance.
+- Project the captured mouse goal with its published camera snapshot; reuse that exact frame for the nose ticks.
+- Keep an owned canvas stable; retain known canvas height through temporary unavailable geometry.
+- No control-law changes, no display smoothing/prediction added. Actual jitter improvement needs game validation.
+
+## 2.3.15-nativeui-preview.1
+
+- Native cyan ring80 with dark outline, HMD inner ticks and directional ticks, owned texture retention and zero-geometry normalized tracking.
+- Hybrid renderer3: native reticle; UI kit panel/toasts only in on-demand external overlay. No idle GPU submissions, panel20Hz/notifications60Hz.
+
+## 2.3.14-umg-layout-preview.1
+
+- Break hidden-widget/layout bootstrap dependency with a sized visible marker before target projection.
+- Select laid-out visible root canvases, normalize placement, update after control context, and report each rejection stage.
+
+## 2.3.13-umg-preview.1
+
+- Attach a native UImage to a game-owned HUD canvas using existing ring texture; no external GUI or ReceiveDrawHUD dependency.
+- Add Disable/Enable actions with verified owned cleanup, residue checks and original Steam-command passthrough. Never treat F8 as uninstall.
+- Runtime UMG visibility and performance await offline game validation.
+
+## 2.3.12-nativehud-preview.1
+
+- Add renderer2 minimal in-game ReceiveDrawHUD ring probe, transient Canvas use and draw cadence/CPU diagnostics.
+- Disable external overlay resources in this mode; no automatic overlay fallback. Actual game event/marshaling acceptance pending.
+
+## 2.3.11-prediction-preview.1
+
+- Isolated candidate from2.3.9; separate pose/camera QPC timestamps and add quantile timing diagnostics.
+- Bounded display-only quaternion camera forecast, 8ms/half-frame horizon and0.35%-height pixel cap, stable-sample and lifecycle guards.
+- Ctrl+End raw/predicted display; F1 state and bounds. No control, targeting or input architecture changes.
+
+## 2.3.9-independent-preview.2
+
+- Fix loss of mouse motion: independent target consumption no longer disables the proven Raw Input producer. DirectInput is used only if raw capture is unavailable.
+- Add capture-to-consumption regression and raw nonzero packet diagnostics.
+
+## 2.3.9-independent-preview.1
+
+- Independent non-exclusive mouse polling advances shared target direction between control ticks; HUD and flight logic consume coherent target snapshots.
+- Retain raw input fallback without double accumulation, lifecycle reset guards, native zoom envelope and automatic per-stage telemetry. Display interpolation defaults off.
+
+## 2.3.8-smooth120-preview.2
+
+- Add automatic per-stage HUD_PIPELINE frequency counters to distinguish Lua callback cadence, camera updates, lock contention and overlay submissions during testing.
+
+## 2.3.8-smooth120-preview.1
+
+- Display-only ring interpolation at the configured 120 Hz renderer rate; Ctrl+End toggles raw/smooth display. Adds approximately one source frame of visual delay without changing control or HMD targeting.
+- Amplify native zoom excursion and preserve native hold/transition timing instead of stacking an instant zoom.
+- Show source and submission rates separately.
+
+## 2.3.7-settings-preview.4
+
+- Add F1 free-look zoom row and Alt+PageUp/PageDown/Home session controls.
+- Retry temporarily unavailable GPU queue at 1ms cadence; reread coherent latest POV before drawing. Add source-age diagnostics; keep configured HUD cap.
+
+## 2.3.7-settings-preview.3
+
+- Add configurable 1.75x additional optical zoom during C+RMB free look; retain native target-focus handling.
+- Publish effective FOV to HUD, input projection and HMD sampling; preserve orbit geometry and post effects.
+
+## 2.3.7-settings-preview.2
+
+- Adapt the F1 panel and HMD/camera/control/sensitivity notifications to CreeperUX UI Kit dark tokens, bundled display/mono fonts, compact spacing and keycaps.
+- Keep F1 immediate; use the kit 90 ms notification fade. Scale panels to the viewport, and separate simultaneous panel/notification placement.
+- Verify generated tokens at native build and package creation; preserve controls and session-only sensitivity.
+
+## 2.3.7-settings-preview.1
+
+- Add F1 GPU HUD settings/diagnostics panel and Ctrl+PageUp/PageDown/Home runtime sensitivity controls.
+- Changes are session-only, atomic, bounded and edge-triggered; no automatic calibration.
+- Retain target-focus and lifecycle fixes.
+
+## 2.3.6-hmd-preview.5
+
+- Distinguish stock held target-focus from C free-look, yielding camera ownership for stock focus.
+- Preserve the flight target across stock focus and release; keep scripted-camera recentering.
+- Retain preview.4 lifecycle crash mitigation.
+
 ## 2.3.6-hmd-preview.4
 
 - Remove runtime global lookups from missile visual polling, deferred equipment callbacks and HMD sampling.
@@ -23,32 +109,6 @@
 - Tested geometry, dispatch guards and renderer; actual mission selection remains pending.
 
 # Changelog
-
-## 2.3.6 English supplement
-
-- Adds a separate English-only installer package to the same release, retaining all 28 gameplay files and the existing Chinese ZIP.
-- Localizes application prompts, recovery confirmation, diagnostics and player instructions at build time. No language switch is added to 2.3.6.
-- Plans runtime Chinese/English switching for 2.3.7. Updates the author binding reference to G for gear and F/right mouse for target selection.
-
-## Documentation and English-interface preparation
-
-- Adds Chinese/English home-page navigation and English installation, keybinding, recovery and limitation guides.
-- Adds bilingual release notes and 76 paired UI/critical-message entries with key/placeholder/link validation.
-- Catalogs are preparation-only, not yet connected to the application. Existing v2.3.6 release assets are unchanged.
-
-## 2.3.6 — recommended release
-
-- Promoted to the recommended release with owner approval. Existing release ZIP and checksum are retained unchanged.
-- Rewrites the public overview with GUI-first installation, three modes, camera/HMD usage and known limits.
-- Adds the current flight/camera keyboard reference, extracted from named settings fields without distributing the save.
-- Includes the current no-scroll GUI image and accurate prerelease labels.
-
-## 2.3.6-rc.1 — complete release candidate preparation
-
-- Freezes current hmd-preview.4 sources, including lifecycle fixes, and rebuilds the native DLL.
-- Includes launcher/cleanup hardening, three installation scopes, automatic discovery, CreeperUX themes, F2 HMD and F3 cameras.
-- Makes GUI/console version labels data-driven, documents in-game controls and enforces required HMD/camera/runtime mode files.
-- Packaging and isolated validation do not replace real-game lifecycle acceptance; release approval remains pending.
 
 ## 2.3.5 camera preview2 — local candidate
 

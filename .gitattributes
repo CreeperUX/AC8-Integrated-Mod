@@ -7,3 +7,6 @@
 package-template/ui/creeperux/tokens.json text eol=lf
 package-template/ui/creeperux/fonts/*.txt text eol=lf whitespace=-blank-at-eol
 *.ttf binary
+
+# Preserve upstream runtime font license text.
+package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8MouseAim/Scripts/ui-fonts/*.txt text eol=lf whitespace=-blank-at-eol

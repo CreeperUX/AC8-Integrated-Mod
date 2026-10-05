@@ -35,7 +35,8 @@ function M.update(pawn,frame_time,manual_pressed)
         local forced=valid_focus and focus.bForceInput==true
         local event_active=event and event:IsValid()
         local now=frame_time or gameplay:GetRealTimeSeconds(pawn)
-        if manual_gaze or manual_pressed then manual_until=now+0.25 end
+        -- Native target-focus input is distinct from the hardcoded C free-look.
+        if manual_pressed then manual_until=now+0.25 end
         if event_active or cinematic or (forced and not manual_gaze and not manual_pressed and now>=manual_until) then automatic_until=now+0.25 end
         if manual_gaze or forced or event_active or cinematic then release_at=now+0.25 end
         local active=manual_gaze or forced or event_active or cinematic or now<release_at
@@ -44,7 +45,7 @@ function M.update(pawn,frame_time,manual_pressed)
                 active and 'active' or 'clear',tostring(manual_gaze),held,tostring(forced),tostring(event_active==true),tostring(cinematic==true)))
             last_active=active
         end
-        return active,now<automatic_until,manual_gaze or manual_pressed==true or now<manual_until
+        return active,now<automatic_until,manual_pressed==true or now<manual_until
     end)
     if not ok then
         failed=true

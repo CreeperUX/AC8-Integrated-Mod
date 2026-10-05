@@ -7,6 +7,8 @@ if not defined VSCMD_ARG_TGT_ARCH (
 if not defined VSCMD_ARG_TGT_ARCH call "%AC8_VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
 if errorlevel 1 exit /b 1
 if /i not "%VSCMD_ARG_TGT_ARCH%"=="x64" exit /b 1
+python -X utf8 ..\scripts\generate-hud-theme.py --check
+if errorlevel 1 exit /b 1
 if not exist build mkdir build
 lib /nologo /def:src\ue4ss_lua.def /out:build\UE4SS.lib /machine:x64
 if errorlevel 1 exit /b 1

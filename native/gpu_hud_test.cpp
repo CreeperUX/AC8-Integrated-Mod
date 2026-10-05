@@ -56,8 +56,9 @@ int main(){
     HWND w=CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP|WS_EX_LAYERED|WS_EX_TRANSPARENT|WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE,wc.lpszClassName,L"Hidden renderer test",WS_POPUP,0,0,960,540,nullptr,nullptr,wc.hInstance,nullptr);assert(w);
     assert(SetLayeredWindowAttributes(w,0,255,LWA_ALPHA));
     {
-        gpu_hud::Renderer r;check(r.initialize(w,960,540),"hardware initialize");
+        gpu_hud::Renderer r;check(r.initialize(w,960,540,L"..\\package-template\\payload\\Game\\Binaries\\Win64\\ue4ss\\Mods\\AC8MouseAim\\Scripts\\ui-fonts"),"hardware initialize");
         gpu_hud::Layout f;f.target=f.nose=true;f.target_point={300,230};f.nose_point={660,285};
+        assert(r.bundled_fonts && r.ui_body && r.ui_mono && r.ui_title);
         unsigned submitted=0,busy=0;LARGE_INTEGER start,end,freq;QueryPerformanceFrequency(&freq);QueryPerformanceCounter(&start);
         for(int i=0;i<180;++i){
             auto wait=WaitForSingleObject(r.latency,1000);assert(wait==WAIT_OBJECT_0);
@@ -86,6 +87,24 @@ int main(){
         check(r.draw(f,1.f/120,true),"persistent HMD reticle after notice");
         dump(r,"test-runtime/previews/hmd-persistent.bgra",false);
         check(r.present(),"persistent HMD present");
+        assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);
+        f.ui_only=true;f.settings=true;f.smoothing=true;f.predicted=true;f.prediction_ms=6.5f;f.prediction_shift=3.2f;f.prediction_fallbacks=4;f.zoom=2.f;f.zoom_start=1.75f;f.sensitivity=.11f;f.configured_sensitivity=.1f;f.pose_age=8;f.fov=62;
+        check(r.draw(f,1.f/120,true),"settings panel");dump(r,"test-runtime/previews/settings-panel.bgra",false);check(r.present(),"settings present");
+        for(auto size:{std::pair<UINT,UINT>{640,360},{1280,720},{1920,1080},{3840,2160}}){
+            assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);check(r.resize(size.first,size.second),"UI kit resize");
+            f.settings=true;f.zoom_notice=2.f;f.sensitivity_notice=-1;f.mode_notice=-1;f.camera_notice=-1;f.helmet_notice=-1;
+            check(r.draw(f,1.f/120,true),"UI kit panel and sensitivity toast");
+            char name[160];sprintf_s(name,"test-runtime/previews/uikit-%ux%u.bgra",size.first,size.second);dump(r,name,false);check(r.present(),"UI kit present");
+        }
+        assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);check(r.resize(960,540),"UI kit restore");
+        check(r.draw(f,1.f/120,true),"UI kit restore draw");check(r.present(),"UI kit restore present");
+        for(int mode=0;mode<2;++mode){
+            for(int kind=0;kind<2;++kind){assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);
+                f.settings=false;f.zoom_notice=-1;f.sensitivity_notice=-1;f.mode_notice=kind==0?mode:-1;f.camera_notice=kind==1?mode:-1;
+                check(r.draw(f,1.f/120,true),"UI kit switching card");check(r.present(),"UI kit switch present");}
+        }
+
+
     }
     DestroyWindow(w);UnregisterClassW(wc.lpszClassName,wc.hInstance);CoUninitialize();
     puts("PASS transparent premultiplied pixels; own-buffer preview; resource teardown");

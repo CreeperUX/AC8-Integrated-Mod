@@ -14,7 +14,7 @@ local function basis(p,y,r)
 end
 function M.choose(candidates,selected,origin,camera,rotation,aim,fov,aspect)
     for _,v in ipairs({origin,camera,rotation,aim})do for _,n in ipairs(v)do if not finite(n)then return nil end end end
-    if not finite(fov)or fov<30 or fov>150 or not finite(aspect)or aspect<=0 then return nil end
+    if not finite(fov)or fov<15 or fov>150 or not finite(aspect)or aspect<=0 then return nil end
     local forward,right,up=basis(table.unpack(rotation))
     local limit=math.tan(fov*rad*.5)
     local function project(pos)

@@ -4,8 +4,8 @@
 #include <cstdint>
 static HWND WINAPI fixture_foreground(){return reinterpret_cast<HWND>(uintptr_t(0x1238));}
 static DWORD WINAPI fixture_process(HWND,LPDWORD p){*p=GetCurrentProcessId();return GetCurrentThreadId();}
-static bool fixture_c=false;
-static SHORT WINAPI fixture_key(int key){return key=='C'&&fixture_c?SHORT(0x8000):0;}
+static bool fixture_c=false,fixture_rmb=false;
+static SHORT WINAPI fixture_key(int key){return ((key=='C'&&fixture_c)||(key==VK_RBUTTON&&fixture_rmb))?SHORT(0x8000):0;}
 #define GetForegroundWindow fixture_foreground
 #define GetWindowThreadProcessId fixture_process
 #define GetAsyncKeyState fixture_key
@@ -13,6 +13,25 @@ static SHORT WINAPI fixture_key(int key){return key=='C'&&fixture_c?SHORT(0x8000
 #include <cassert>
 #include <cstdio>
 int main(){
+ // Runtime sensitivity: edge-triggered, gated, bounded, no held-key repeat.
+ configured_sensitivity=.1f;live_sensitivity=.1f;
+ sensitivity_keys(false,false,false,true);sensitivity_keys(true,false,false,false);assert(live_sensitivity.load()==.1f);
+ sensitivity_keys(true,false,false,true);assert(live_sensitivity.load()==.1f);
+ sensitivity_keys(false,false,false,true);sensitivity_keys(true,false,false,true);assert(std::abs(live_sensitivity.load()-.11f)<.00001f);
+ sensitivity_keys(true,false,false,true);assert(std::abs(live_sensitivity.load()-.11f)<.00001f);
+ sensitivity_keys(false,false,false,true);sensitivity_keys(false,true,false,true);assert(std::abs(live_sensitivity.load()-.1f)<.00001f);
+ live_sensitivity=1; sensitivity_keys(true,false,false,true);assert(live_sensitivity.load()==1);
+ sensitivity_keys(false,false,false,true);live_sensitivity=.01f;sensitivity_keys(false,true,false,true);assert(live_sensitivity.load()==.01f);
+ sensitivity_keys(false,false,true,true);assert(live_sensitivity.load()==configured_sensitivity.load());
+ sensitivity_keys(false,false,false,true);
+ configured_zoom=1.75f;free_look_zoom=1.75f;
+ zoom_keys(false,false,false,true);zoom_keys(true,false,false,false);assert(free_look_zoom==1.75f);
+ zoom_keys(true,false,false,true);assert(free_look_zoom==1.75f);
+ zoom_keys(false,false,false,true);zoom_keys(true,false,false,true);assert(free_look_zoom==2.f);
+ zoom_keys(true,false,false,true);assert(free_look_zoom==2.f);
+ zoom_keys(false,false,false,true);free_look_zoom=3;zoom_keys(true,false,false,true);assert(free_look_zoom==3);
+ zoom_keys(false,false,false,true);free_look_zoom=1;zoom_keys(false,true,false,true);assert(free_look_zoom==1);
+ zoom_keys(false,false,true,true);assert(free_look_zoom==1.75f);zoom_keys(false,false,false,true);
  QueryPerformanceFrequency(&perf_frequency);
  alignas(8) std::array<unsigned char,0x300> pawn{},root{};
  alignas(8) std::array<unsigned char,0x1600> manager{};
@@ -73,6 +92,26 @@ int main(){
  originalBytes=manager;
  camera_view_mode=1;context_suspended=true;update_native_camera(manager.data(),.016f);assert(manager==originalBytes);
  context_suspended=false;game_paused=true;update_native_camera(manager.data(),.016f);assert(manager==originalBytes);game_paused=false;
+ // Follow stock zoom timing: a press with unchanged native FOV must never jump.
+ NativeZoomEnvelope envelope;assert(envelope.step(80,1.75,false)==80);
+ assert(envelope.step(80,1.75,true)==80);
+ float prev=80;
+ for(float native:{78.f,74.f,68.f,60.f,50.f}){float value=envelope.step(native,1.75,true);assert(value<prev&&value<=native);prev=value;}
+ float held=envelope.step(50,1.75,true);assert(held==prev);
+ for(float native:{54.f,62.f,72.f,80.f}){float value=envelope.step(native,1.75,false);assert(value>=prev);prev=value;}
+ assert(prev==80&&!envelope.engaged);
+ NativeZoomEnvelope identity;identity.step(80,1,false);assert(identity.step(50,1,true)==50);
+ // Final POV and HUD share amplified native FOV; no change outside the52-byte region.
+ manager=originalBytes;manual_camera_active=false;fixture_c=fixture_rmb=false;
+ update_native_camera(manager.data(),.016f);
+ manual_camera_active=true;fixture_c=fixture_rmb=true;manager=originalBytes;
+ update_native_camera(manager.data(),.016f);assert(*reinterpret_cast<float*>(manager.data()+0x14D0)==fov);
+ float nativeFov=50;manager=originalBytes;memcpy(manager.data()+0x14D0,&nativeFov,4);
+ update_native_camera(manager.data(),.016f);assert(read_hud_frame(displayed));
+ float zoomed=*reinterpret_cast<float*>(manager.data()+0x14D0);assert(zoomed<nativeFov&&displayed.fov==zoomed&&view_fov==zoomed);
+ for(size_t i=0;i<manager.size();++i)if(i<0x14A0||i>=0x14D4)assert(manager[i]==originalBytes[i]);
+ fixture_c=fixture_rmb=false;manager=originalBytes;update_native_camera(manager.data(),.016f);
+ assert(*reinterpret_cast<float*>(manager.data()+0x14D0)==fov);manual_camera_active=false;
  // A suspended context cannot steer and cannot consume the pending one-shot centre.
  active=true;enabled=true;game_paused=false;gaze_active=false;context_suspended=true;transition_center_requested=true;
  target_pitch=60;target_yaw=-120;command_pitch=.8f;command_roll=.5f;command_yaw=.2f;
@@ -99,5 +138,43 @@ int main(){
  ac8_mouseaim_begin(nullptr);assert(camera_view_mode==0);
  camera_toggle_requested=true;ac8_mouseaim_begin(nullptr);assert(camera_view_mode==1&&camera_notice_until>GetTickCount64());
  assert(std::abs(target_pitch.load()-10)<.001&&std::abs(target_yaw.load()-30)<.001);
- puts("PASS shared aircraft orbit, frozen native C rig and mouse-follow rotation, 36m geometry, exact48-byte write/FOV preservation, pending recenter, gaze return and view-switch target preservation.");
+ // Raw producer must remain enabled while independent target consumption is active.
+ original_get_raw_input_data=+[](HRAWINPUT,UINT,LPVOID,PUINT,UINT)->UINT{return sizeof(RAWINPUT);};
+ independent_mouse=true;active=true;enabled=true;game_paused=false;gaze_active=false;context_suspended=false;
+ mouse_delta.clear();RAWINPUT raw{};raw.header.dwType=RIM_TYPEMOUSE;raw.data.mouse.lLastX=17;raw.data.mouse.lLastY=-9;
+ UINT raw_size=sizeof(raw);capture_get_raw_input_data(nullptr,RID_INPUT,&raw,&raw_size,sizeof(RAWINPUTHEADER));
+ auto captured=mouse_delta.take();assert(captured.x==17&&captured.y==-9);
+ captured=mouse_delta.take();assert(captured.x==0&&captured.y==0);
+ // Independent target advances with no new pose, no new HUD source frame, and no control write.
+ independent_mouse=true;fixture_c=false;active=true;enabled=true;game_paused=false;gaze_active=false;context_suspended=false;
+ recenter_requested=false;resume_center_requested=false;transition_center_requested=false;
+ HudFrame fresh;fresh.pawn=aircraft.load();fresh.tick=GetTickCount64();fresh.cp=10;fresh.cy=30;fresh.fov=80;fresh.ox=-3000;fresh.oz=600;
+ publish_hud_frame(fresh);free_look.reset();
+ const auto source_before=hud_source_sequence.load();const float before_yaw=target_yaw.load(),before_command=command_yaw.load();
+ for(int i=0;i<12;++i){mouse_delta.add(2,0);target_input_tick();}
+ const float new_yaw=target_yaw.load();assert(std::abs(new_yaw-before_yaw)>.1f);
+ assert(hud_source_sequence==source_before&&command_yaw==before_command);
+ target_input_tick();assert(std::abs(target_yaw.load()-new_yaw)<.0001f); // no duplicate delta consumption
+ receive_pose(pose);assert(std::abs(target_yaw.load()-new_yaw)<.0001f); // controller consumes same goal
+ fixture_c=true;target_input_tick();mouse_delta.add(50,0);target_input_tick();
+ assert(std::abs(target_yaw.load()-new_yaw)<.0001f);fixture_c=false;target_input_tick();
+ context_suspended=true;mouse_delta.add(100,100);target_input_tick();assert(std::abs(target_yaw.load()-new_yaw)<.0001f);
+ context_suspended=false;independent_mouse=false;
+ puts("PASS independent target updates without new pose/control steps, shared target consumption, no double deltas, C retention and suspension guards");
+ // Display prediction cannot mutate the real command, target, camera or policy.
+ const std::array<float,8> real_before{command_pitch.load(),command_roll.load(),command_yaw.load(),target_pitch.load(),target_yaw.load(),look_pitch.load(),look_yaw.load(),float(control_mode.load())};
+ hud_prediction::Predictor display_only;
+ for(unsigned i=0;i<40;++i){display_only.observe({1,2,3,i+1,i*16.667,0,i*.1f,0,62});
+  for(bool enabled:{false,true}){auto result=display_only.evaluate(i*16.667+8,flight::basis(0,i*.1f,0).f,{1,0,0},{},1920,1080,enabled);(void)result;}
+ }
+ const std::array<float,8> real_after{command_pitch.load(),command_roll.load(),command_yaw.load(),target_pitch.load(),target_yaw.load(),look_pitch.load(),look_yaw.load(),float(control_mode.load())};
+ assert(real_before==real_after);puts("PASS display prediction on/off leaves real controls, targets, camera commands and policy unchanged");
+ // Canvas ring projection uses the same real snapshot and target, never a display prediction.
+ independent_mouse=false;aircraft=65536;HudFrame canvas_frame;canvas_frame.pawn=65536;canvas_frame.tick=GetTickCount64();canvas_frame.fov=62;canvas_frame.epoch=hud_epoch.load();
+ target_pitch=target_yaw=0;publish_hud_frame(canvas_frame);float cx=0,cy=0,cr=0;
+ assert(canvas_position(65536,1920,1080,cx,cy,cr)&&cx==960&&cy==540&&cr==30);
+ assert(!canvas_position(77777,1920,1080,cx,cy,cr));
+ canvas_frame.tick-=251;publish_hud_frame(canvas_frame);assert(!canvas_position(65536,1920,1080,cx,cy,cr));
+ puts("PASS Canvas projection, player identity and stale-data guards");
+ puts("PASS shared aircraft orbit, frozen native C rig and mouse-follow rotation, 36m geometry, 48-byte pose plus bounded C+RMB optical FOV zoom, HUD sync/release restoration, pending recenter, gaze return and view-switch target preservation.");
 }

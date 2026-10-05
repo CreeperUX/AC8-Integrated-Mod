@@ -15,6 +15,8 @@ jobs:
       - run: python -X utf8 tools/check-localization.py
       - run: native\test.cmd
         shell: cmd
+      - run: python -X utf8 tests/test_native_style.py
+      - run: python -X utf8 tests/test_mod_mode.py
       - run: python -X utf8 tests/test_helmet.py
       - run: python -X utf8 tests/test_visuals.py
       - run: python -X utf8 tests/test_integration.py
@@ -50,6 +52,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if ((Get-Content version.json -Raw | ConvertFrom-Json).version -ne '2.3.6') {
+            Write-Host 'Fixed English supplement belongs to v2.3.6; this Beta ships its own Chinese package.'
+            exit 0
+          }
           $download = 'native/test-runtime/english-baseline'
           New-Item -ItemType Directory -Path $download -Force | Out-Null
           gh release download v2.3.6 --repo CreeperUX/AC8-Integrated-Mod --pattern AC8-Integrated-v2.3.6-share.zip --dir $download

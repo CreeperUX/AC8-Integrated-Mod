@@ -28,7 +28,7 @@ inline V rotate(V v,V axis,float angle) {
 // Reproject only when mouse input exists. Camera motion alone NEVER changes aim.
 inline V move_world_target(V aim,const Basis& view,float dx,float dy,float fov,float reference_fov,V offset={}) {
     if(dx==0 && dy==0)return aim;
-    const float scale=std::tan(std::clamp(fov,30.0f,150.0f)*0.5f*rad)/std::tan(std::clamp(reference_fov,30.0f,150.0f)*0.5f*rad);
+    const float scale=std::tan(std::clamp(fov,15.0f,150.0f)*0.5f*rad)/std::tan(std::clamp(reference_fov,30.0f,150.0f)*0.5f*rad);
     V point=aim*50000.0f-offset;float depth=dot(point,view.f);
     if(depth>500.0f){
         float x=dot(point,view.r)/depth+dx*rad*scale;

@@ -11,6 +11,8 @@ import uuid
 REPO = Path(__file__).resolve().parents[1]
 
 def build(baseline, output):
+    if json.loads((REPO / "version.json").read_text())["version"] != "2.3.6":
+        raise ValueError("Use the v2.3.6 source/tag to rebuild the fixed English supplement; this Beta does not ship an English package.")
     sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
     info = json.loads((baseline / 'package-info.json').read_text(encoding='utf-8'))
     if info['version'] != '2.3.6':

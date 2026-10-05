@@ -1,5 +1,5 @@
 // Build-specific offsets independently resolved from the read-only probe and
-// native getter disassembly. Only the first 48 bytes of final camera POV change.
+// native getter disassembly. Only location/rotation and the adjacent float FOV are eligible for changes.
 using CameraUpdate = void(__fastcall*)(void*,float);
 CameraUpdate original_camera_update=nullptr;
 struct CameraCommand { uintptr_t manager=0,pawn=0; double p=0,y=0,r=0; ULONGLONG tick=0; };
@@ -16,7 +16,28 @@ bool receive_camera(uintptr_t manager,uintptr_t pawn,double p,double y,double r)
 }
 struct NativeCameraRig {uintptr_t pawn=0;flight::V local{-3000,0,600};bool calibrated=false;};
 NativeCameraRig native_camera_rig;
-struct CameraSample {double actor[3]{},pov[6]{};};
+struct CameraSample {double actor[3]{},pov[6]{};float fov=0;};
+// Amplify only the game's own zoom excursion; preserve its hold threshold and timing.
+struct NativeZoomEnvelope {
+    float baseline=0;bool engaged=false;
+    void reset(){baseline=0;engaged=false;}
+    float step(float original,float factor,bool held){
+        if(!std::isfinite(original)||original<5||original>170||!std::isfinite(factor)||factor<1||factor>3){reset();return original;}
+        if(!engaged){
+            if(!held){baseline=original;return original;}
+            if(baseline<=0)baseline=original;
+            engaged=true;
+        }
+        const float base=std::tan(baseline*.5f*flight::rad);
+        const float magnification=base/std::tan(original*.5f*flight::rad);
+        if(!held&&magnification<=1.001f){engaged=false;baseline=original;return original;}
+        if(magnification<=1||factor==1)return original;
+        const float enhanced=1+(magnification-1)*factor;
+        const float result=2*std::atan(base/enhanced)/flight::rad;
+        return std::clamp(result,std::min(original,15.f),original);
+    }
+};
+NativeZoomEnvelope native_zoom;
 bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraSample& sample) {
     __try {
         auto base=reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
@@ -25,12 +46,14 @@ bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraS
         if(root<65536||(root&7)) return false;
         memcpy(sample.actor,reinterpret_cast<const void*>(root+0x220),sizeof(sample.actor));
         memcpy(sample.pov,static_cast<unsigned char*>(manager)+0x14A0,sizeof(sample.pov));
+        memcpy(&sample.fov,static_cast<unsigned char*>(manager)+0x14D0,sizeof(float));
+        if(!std::isfinite(sample.fov)||sample.fov<5||sample.fov>170)return false;
         for(double n:sample.actor)if(!std::isfinite(n)||std::abs(n)>1e12)return false;
         for(double n:sample.pov)if(!std::isfinite(n)||std::abs(n)>1e12)return false;
         for(double n:{cmd.p,cmd.y,cmd.r})if(!std::isfinite(n)||std::abs(n)>1e9)return false;
         if(mode!=0&&mode!=1)return false;
         if(native_rig_reset_requested.exchange(false)||native_camera_rig.pawn!=cmd.pawn){
-            native_camera_rig={};native_camera_rig.pawn=cmd.pawn;
+            native_camera_rig={};native_camera_rig.pawn=cmd.pawn;native_zoom.reset();
         }
         // Sample the game's framing before our override. Keep this local rig
         // fixed throughout C and its release grace period, so native focus/orbit
@@ -50,9 +73,13 @@ bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraS
         auto local=mode==0?native_camera_rig.local:flight::V{-distance,0,height};
         auto offset=axes.f*local.x+axes.r*local.y+axes.u*local.z;
         double result[6]={sample.actor[0]+offset.x,sample.actor[1]+offset.y,sample.actor[2]+offset.z,cmd.p,cmd.y,cmd.r};
-        // Exactly location+rotation; preserve the game's FOV and post effects.
+        // Preserve post effects; only C+RMB adds a bounded optical zoom.
         memcpy(static_cast<unsigned char*>(manager)+0x14A0,result,sizeof(result));
         memcpy(sample.pov,result,sizeof(result));
+        const bool zooming=manual_camera_active.load()&&foreground_is_game()&&
+            (GetAsyncKeyState('C')&0x8000)&&(GetAsyncKeyState(VK_RBUTTON)&0x8000);
+        const float zoomed=native_zoom.step(sample.fov,free_look_zoom.load(),zooming);
+        if(zoomed!=sample.fov){memcpy(static_cast<unsigned char*>(manager)+0x14D0,&zoomed,sizeof(float));sample.fov=zoomed;}
         return true;
     } __except(EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
@@ -69,6 +96,7 @@ void __fastcall update_native_camera(void* manager,float dt) {
     // Report actual ownership interruptions, without relaxing release safeguards.
     // Ignore other camera managers rather than counting them as interruptions.
     if(cmd.manager && reinterpret_cast<uintptr_t>(manager)!=cmd.manager) return;
+    if(cmd.manager)rate_camera.fetch_add(1,std::memory_order_relaxed);
     const char* reason=nullptr;
     if(!cmd.manager) reason="Lua release";
     else if(cmd.pawn!=aircraft.load()) reason="aircraft changed";
@@ -87,8 +115,13 @@ void __fastcall update_native_camera(void* manager,float dt) {
         log_line("native camera disabled: invalid live camera/aircraft data");
         return;
     }
+    rate_camera_ok.fetch_add(1,std::memory_order_relaxed);
+    effective_camera_fov=sample.fov;effective_fov_manager=reinterpret_cast<uintptr_t>(manager);effective_fov_tick=GetTickCount64();
+    view_fov=sample.fov;
     HudFrame frame;
     if(read_pending_hud_frame(frame) && frame.pawn==cmd.pawn && GetTickCount64()-frame.tick<250){
+        frame.camera_qpc=hud_qpc();camera_gaps.event(frame.camera_qpc,hud_frequency());frame.camera_sequence=++camera_sequence;frame.camera_manager=cmd.manager;frame.epoch=hud_epoch.load();
+        frame.fov=sample.fov;
         frame.cp=float(sample.pov[3]);frame.cy=float(sample.pov[4]);frame.cr=float(sample.pov[5]);
         frame.ox=float(sample.pov[0]-sample.actor[0]);
         frame.oy=float(sample.pov[1]-sample.actor[1]);

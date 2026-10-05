@@ -137,7 +137,7 @@ void legacy_overlay_loop() {
             auto project=[&](flight::V v,POINT& out){
                 v=v*50000.0f-offset;float depth=flight::dot(v,view.f);
                 if(depth<=0.01f||w<=0||h<=0)return false;
-                float focal=w*0.5f/std::tan(std::clamp(frame.fov,30.0f,150.0f)*0.5f*flight::rad);
+                float focal=w*0.5f/std::tan(std::clamp(frame.fov,15.0f,150.0f)*0.5f*flight::rad);
                 float x=w*0.5f+focal*flight::dot(v,view.r)/depth,y=h*0.5f-focal*flight::dot(v,view.u)/depth;
                 if(!std::isfinite(x)||!std::isfinite(y)||x<0||y<0||x>=w||y>=h)return false;
                 out={origin.x+LONG(std::lround(x)),origin.y+LONG(std::lround(y))};return true;};
