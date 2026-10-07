@@ -3,7 +3,7 @@ from lupa import LuaRuntime
 from PIL import Image
 r=Path(__file__).resolve().parents[1];lua=LuaRuntime(unpack_returned_tuples=True)
 lua.execute("""
-allowed=1;projection=1;noseGood=1;freelook=0;hmd=0;lines=0;reports=0;created=0;layouts=0;errors=0;loads=0
+allowed=1;projection=1;noseGood=1;freelook=0;crossOn=1;hmd=0;lines=0;reports=0;created=0;layouts=0;errors=0;loads=0
 function print()end
 local nextid=100
 function obj(t)t=t or{};nextid=nextid+1;local id=nextid;t.IsValid=function(self)return not self.invalid end;t.GetAddress=function()return id end;t.GetFullName=function()return 'Object test.'..id end;return t end
@@ -23,7 +23,7 @@ function package.loadlib(path,name)
  if name:find('canvas_viewport')then return function()return 1920,1080,100 end end
  if name:find('canvas_ring')then return function()return projection,ringX,ringY,21,1.3,42 end end
  if name:find('canvas_nose')then return function()return noseGood,1200,540 end end
- if name:find('canvas_ui')then return function()return 0,hmd,1,1,.1,.1,1.75,1.75,62,60,0,0,0,.65,1,0,freelook end end
+ if name:find('canvas_ui')then return function()return 0,hmd,1,1,.1,.1,1.75,1.75,62,60,0,0,0,.65,1,0,freelook,crossOn end end
  if name:find('canvas_look')then return function()return 1,700,400 end end
  if name:find('canvas_report')then return function(n)if n<0 then errors=errors+1 else reports=reports+1 end end end
  error(name)
@@ -67,6 +67,9 @@ allowed=2;mod.update(controller,pawn,read);for _,o in ipairs(parent.children)do 
 allowed=1;freelook=1;mod.update(controller,pawn,read);assert(errors==0 and created==6 and loads==4 and ring.tex.name=='ring')
 local look=parent.children[6];assert(look.tex.name=='ring-hmd' and look.visibility==3 and bore.visibility==3)
 freelook=0;mod.update(controller,pawn,read);assert(ring.tex.name=='ring-hmd' and look.visibility==2)
+-- 2.4.1: the cross can be switched off (hud_boresight / Alt+F7); ring and ticks are unaffected, and it comes back.
+crossOn=0;mod.update(controller,pawn,read);assert(errors==0 and bore.visibility==2 and ring.visibility==3)
+crossOn=1;mod.update(controller,pawn,read);assert(bore.visibility==3 and ring.visibility==3)
 -- Without a valid ring projection the ring and its ticks hide; the cross does not depend on the ring.
 allowed=1;projection=-7;mod.update(controller,pawn,read);for _,o in ipairs(parent.children)do assert(o.visibility==(o==bore and 3 or 2))end
 noseGood=0;mod.update(controller,pawn,read);for _,o in ipairs(parent.children)do assert(o.visibility==2)end;noseGood=1
@@ -77,4 +80,4 @@ assert {p.stem for p in a.glob('*.png')}=={'ring','ring-hmd','tick','boresight'}
 for name in ['ring','ring-hmd','boresight']:
  im=Image.open(a/(name+'.png'));assert im.mode=='RGBA' and im.getpixel((64,64))[3]==0
 assert len({(a/(n+'.png')).read_bytes() for n in ['ring','ring-hmd','boresight']})==3
-print('PASS zero-geometry tracking, native ring/three ticks, reference gun cross independent of the ring, HMD ring at the view point in C free look, texture reuse/retention, F7/offscreen hiding and transparent assets')
+print('PASS zero-geometry tracking, native ring/three ticks, reference gun cross independent of the ring and switchable, HMD ring at the view point in C free look, texture reuse/retention, F7/offscreen hiding and transparent assets')

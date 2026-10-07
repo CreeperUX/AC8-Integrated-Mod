@@ -1,6 +1,8 @@
-# AC8 Integrated Mod — v2.4.0
+# AC8 Integrated Mod — v2.4.1
 
 **正式版。仅限离线单人，禁止用于线上或多人游戏。**
+
+**2.4.1 更新**：机头参考准星（十字）可以开关。飞行中按 **Alt+F7** 临时切换，`MouseAim-Settings.ini` 的 `hud_boresight` 决定启动时是否显示。另修复了启动器“键位设置”对话框在部分启动方式下无法保存的问题。飞控与 2.4.0 相同。
 
 鼠标指定方向，Mod 协调飞机姿态飞向圆环。按 **F4** 在两种飞控之间切换：
 - **PEACE**（默认）：原 CLASSIC 2.0；
@@ -12,10 +14,10 @@
 - 逐帧同步输入与自定义按键；
 - 修复过场后模组相机／HUD 不恢复的问题。
 
-- [v2.4.0 更新、安装及回退说明](docs/RELEASE-v2.4.0.md) · [WAR 飞控说明](docs/WAR-FLIGHT-CONTROL.md)
+- [v2.4.1 更新说明](docs/RELEASE-v2.4.1.md) · [v2.4.0 更新、安装及回退说明](docs/RELEASE-v2.4.0.md) · [WAR 飞控说明](docs/WAR-FLIGHT-CONTROL.md)
 - [安装与三种范围](docs/INSTALL.md) · [游戏内调整](docs/IN-GAME-SETTINGS.md) · [自定义键位](docs/CUSTOM-KEYBINDINGS.md) · [快捷停用](docs/MOD-DISABLE.md)
 - [按键参考](docs/KEYBINDINGS.md) · [控制原理](docs/CONTROL.md) · [原生 HUD 与参考准星](docs/NATIVE-UI-STYLE.md) · [头盔瞄准](docs/HELMET-SELECTION.md) · [已知限制](docs/LIMITATIONS.md)
-- [GitHub 下载](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.4.0)
+- [GitHub 下载](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.4.1)
 
 ## 安装
 
@@ -26,9 +28,10 @@
 - 不要覆盖旧目录，也不要复制旧版的 DLL、设置或 sessions。
 - 旧设置中的 `control_mode` 会自动迁移：1 → PEACE，2/4/5 → WAR。
 - v2.3.15-beta.1 默认是 AGILE 2.1，此版本默认 PEACE。
+- 设置文件里没有 `hud_boresight` 时，参考准星按显示处理。
 
 **不保证原生圆环达到 120 Hz，也不保证 F1／通知对所有设备零性能影响。** WAR 未覆盖所有机型和任务，已知边界见发布说明。
 
 基于 [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim) 发展，感谢原作者及贡献者。完整署名和许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-[English overview](https://github.com/CreeperUX/AC8-Integrated-Mod/blob/release/v2.4.0/README.en.md)
+[English overview](https://github.com/CreeperUX/AC8-Integrated-Mod/blob/release/v2.4.1/README.en.md)

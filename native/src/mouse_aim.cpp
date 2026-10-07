@@ -23,6 +23,7 @@
 #include "free_look.h"
 #include "paired_mouse.h"
 #include "custom_keys.h"
+#include "hud_toggles.h"
 #include "hud_timing.h"
 #include "control_timing.h"
 #include "lua_bridge.h"
@@ -199,6 +200,9 @@ uint64_t previous_pose_qpc=0;
 Config config;
 std::atomic<int> hud_target_hz{120},hud_renderer{1};
 std::atomic<bool> hud_connector{true},hud_link_always{false};
+// Reference gun cross: startup value from hud_boresight, Alt+F7 toggles it for the session.
+std::atomic<bool> hud_boresight{true};
+std::atomic<uint64_t> boresight_notice_until{0};
 std::atomic<float> hud_opacity{.65f};
 wchar_t module_folder[MAX_PATH]{};
 wchar_t status_path[MAX_PATH]{};
@@ -268,6 +272,7 @@ void load_config() {
     hud_renderer.store(std::clamp(read_config_int(L"hud_renderer",3),0,3));
     hud_connector.store(read_config_int(L"hud_connector",1)!=0);
     hud_link_always.store(read_config_int(L"hud_link_always",0)!=0);
+    hud_boresight.store(read_config_int(L"hud_boresight",1)!=0);log_line("HUD_BORESIGHT startup=%d (hud_boresight; Alt+F7 toggles)",hud_boresight.load()?1:0);
     hud_opacity.store(std::clamp(read_config_float(L"hud_opacity",.65f),.15f,1.f));
     config.sensitivity = std::clamp(read_config_float(L"sensitivity", config.sensitivity), 0.01f, 1.0f);
     live_sensitivity=config.sensitivity;configured_sensitivity=config.sensitivity;
@@ -419,9 +424,14 @@ void mouse_loop() {
         target_input_tick();
         static bool f7_down=false;
         bool f7=(GetAsyncKeyState(VK_F7)&0x8000)!=0;
-        if(f7 && !f7_down && foreground_is_game()) {
+        const auto f7_action=hud_toggles::f7_action(f7&&!f7_down&&foreground_is_game(),(GetAsyncKeyState(VK_MENU)&0x8000)!=0,
+            (GetAsyncKeyState(VK_CONTROL)&0x8000)!=0,(GetAsyncKeyState(VK_SHIFT)&0x8000)!=0);
+        if(f7_action==hud_toggles::F7Action::Hud) {
             hud_enabled.store(!hud_enabled.load());
             log_line("HUD only: %s",hud_enabled.load()?"ON":"OFF");
+        }else if(f7_action==hud_toggles::F7Action::GunCross){
+            hud_boresight.store(!hud_boresight.load());boresight_notice_until=GetTickCount64()+2500;
+            log_line("HUD_BORESIGHT visible=%d (Alt+F7, this session)",hud_boresight.load()?1:0);
         }
         f7_down=f7;
         bool plain=(GetAsyncKeyState(VK_MENU)&0x8000)==0&&(GetAsyncKeyState(VK_CONTROL)&0x8000)==0&&(GetAsyncKeyState(VK_SHIFT)&0x8000)==0;
@@ -938,7 +948,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
     }
     load_config();
     log_line("CAMERA_SETTINGS mode=%d distance_m=%.1f height_m=%.1f F3=toggle; mission/cinematic recenter enabled",camera_view_mode.load(),camera_distance_cm.load()/100,camera_height_cm.load()/100);
-    log_line("PROFILE 2.4.0 WAR=13.7 HUD=GUNCROSS+HMD-FREELOOK LEVEL-REARM PEACE-BANK-GOAL WAR=FE-EXACT-WT PATH-LOCK QUINTIC-LEVEL IDLE-GATE-LEVEL ROLL-PREDICT-NEAR AIM-WINDOW CAMERA-FAULT-RETRY HIL-TUNED WT-LEVEL WT-OVERRIDE WAR-DEGRADED=V11.1 PEACE-WAR-CYCLE CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
+    log_line("PROFILE 2.4.1 WAR=13.7 HUD=GUNCROSS-TOGGLE+HMD-FREELOOK LEVEL-REARM PEACE-BANK-GOAL WAR=FE-EXACT-WT PATH-LOCK QUINTIC-LEVEL IDLE-GATE-LEVEL ROLL-PREDICT-NEAR AIM-WINDOW CAMERA-FAULT-RETRY HIL-TUNED WT-LEVEL WT-OVERRIDE WAR-DEGRADED=V11.1 PEACE-WAR-CYCLE CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
     if (!prepare_hook()) return 0;
     install_native_camera();
     helmet::install();
@@ -1016,8 +1026,10 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_ui(lua_State* state){
  auto choose=[&](uint64_t until,int id,float v){if(until>now&&until>=end){end=until;toast=id;value=v;}};
  choose(mode_notice_until.load(),1,float(control_mode.load()));choose(camera_notice_until.load(),2,float(camera_view_mode.load()));
  choose(helmet_notice_until.load(),3,float(helmet_notice.load()));choose(sensitivity_notice_until.load(),4,live_sensitivity.load());choose(zoom_notice_until.load(),5,free_look_zoom.load());
- const double values[]={settings_panel.load()?1.:0.,helmet_enabled.load()?1.:0.,double(control_mode.load()),double(camera_view_mode.load()),live_sensitivity.load(),configured_sensitivity.load(),free_look_zoom.load(),configured_zoom.load(),view_fov.load(),umg_update_hz,double(toast),value,end?std::min(1.,double(end-now)/90.):0.,hud_opacity.load(),hud_connector.load()?1.:0.,hud_link_always.load()?1.:0.,free_look.held?1.:0.};
- for(double v:values)lua.set_number(v);return 17;
+ choose(boresight_notice_until.load(),6,hud_boresight.load()?1.f:0.f);
+ // 18th value (2.4.1): reference gun cross shown; older scripts read only the first 16/17.
+ const double values[]={settings_panel.load()?1.:0.,helmet_enabled.load()?1.:0.,double(control_mode.load()),double(camera_view_mode.load()),live_sensitivity.load(),configured_sensitivity.load(),free_look_zoom.load(),configured_zoom.load(),view_fov.load(),umg_update_hz,double(toast),value,end?std::min(1.,double(end-now)/90.):0.,hud_opacity.load(),hud_connector.load()?1.:0.,hud_link_always.load()?1.:0.,free_look.held?1.:0.,hud_boresight.load()?1.:0.};
+ for(double v:values)lua.set_number(v);return int(std::size(values));
 }
 bool canvas_nose_position(uintptr_t pawn,float width,float height,float& x,float& y){
  if(!canvas_draw_valid||width<320||height<200)return false;

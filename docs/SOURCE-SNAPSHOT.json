@@ -1,7 +1,7 @@
 {
-  "source_version": "2.4.0",
+  "source_version": "2.4.1",
   "snapshot_date": "2026-10-07",
-  "native_sha256": "50A3349FBAA86705DF5DDB8CE679A6090B863832583557EFC2FE567EDEC8C981",
+  "native_sha256": "ACCF0FDAF3562E0DBA836B14B4C96A0D844CAA0F4F27C00D351062C2CC0F9C8D",
   "note": "source/MouseAim is the complete public source of the shipped DLL (build.cmd); test.cmd runs 23 native suites, test-gpu.cmd the GPU HUD test; lua/tests holds the offline HUD/HMD script tests. Extracted game data and research tooling are not included.",
   "files": [
     {
@@ -42,7 +42,7 @@
     },
     {
       "path": "source/MouseAim/gpu_hud_test.cpp",
-      "sha256": "e9990afce39a4a4dbc23c50f8cf36a19db7a4c060f4659dacb347fc0859a410c"
+      "sha256": "f3a88d5e072dbf0814a83411f3ca4e0ffd8390db7e2c38a02afc5647b1e98586"
     },
     {
       "path": "source/MouseAim/helmet_tests.cpp",
@@ -58,7 +58,7 @@
     },
     {
       "path": "source/MouseAim/hud_reference_tests.cpp",
-      "sha256": "11bb3486d946afc3a514838173b6cf534932b43c211f8ed27222b2286c21ce19"
+      "sha256": "80a6951e285d4c335caddc613b373460cc361a513f5984017f86c4a46a521e36"
     },
     {
       "path": "source/MouseAim/hybrid_hud_tests.cpp",
@@ -78,7 +78,7 @@
     },
     {
       "path": "source/MouseAim/lua/tests/test_native_hud.lua",
-      "sha256": "83e5293743482e14a0e7e5e72689ed459af09972c85335ff21ce86f4b3fc8dc1"
+      "sha256": "895dcd138b2321f93befda15317204d6194832b9ad84065949955b18ec2b541c"
     },
     {
       "path": "source/MouseAim/modes_tests.cpp",
@@ -214,11 +214,11 @@
     },
     {
       "path": "source/MouseAim/src/gpu_hud_loop.h",
-      "sha256": "e7d07acb510e30315608601ab372f122ea3b5d65e11bf4a4b88772844e027e6a"
+      "sha256": "98e6a67cbb5ac2912d95ee5dfab6ecc052fd0461f4afb61f70661f4308ff3b5d"
     },
     {
       "path": "source/MouseAim/src/gpu_hud_renderer.h",
-      "sha256": "caeed360e8c27949f088e231c74dc504207c474ff42c48ebe062d66010f01d0a"
+      "sha256": "c9e2e278606d31ae9b986aaf7572f080f6140ecfaf057affecb7eb5ab1a7345b"
     },
     {
       "path": "source/MouseAim/src/helmet_selection.h",
@@ -245,6 +245,10 @@
       "sha256": "94c7fb77eda3f48a75bac3fa0d20df47df743e198391da61f7c3b810708c1fa6"
     },
     {
+      "path": "source/MouseAim/src/hud_toggles.h",
+      "sha256": "e877b47c206db36983e5fa4cde2fb634a69eb14e87c7b2b9497d0de23dec2000"
+    },
+    {
       "path": "source/MouseAim/src/hybrid_hud_policy.h",
       "sha256": "68b73dae12b3f02f4dd7bb1efdaec0b22042162f46be718ce378c27a31d085bb"
     },
@@ -266,7 +270,7 @@
     },
     {
       "path": "source/MouseAim/src/mouse_aim.cpp",
-      "sha256": "a79973d5acbc5b53353ee49af6eccec81595fb46a8bdb20ed6311370d9fcc569"
+      "sha256": "25de8dbacb682a8d465b6cf9d7eada05be23286c6f4ac19454308167bcc02736"
     },
     {
       "path": "source/MouseAim/src/native_camera.h",
@@ -363,6 +367,10 @@
     {
       "path": "source/MouseAim/src/vector_stop.h",
       "sha256": "983954f32f1a7e95771bc2ba3d80c992b568a5f71ea766ae6e223976367d93c1"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/include/MinHook.h",
+      "sha256": "c3608e584bd9659aebdbb4c8c82585605989193623f240552d35c43311b3d31a"
     },
     {
       "path": "source/MouseAim/src/vendor/minhook/LICENSE.txt",

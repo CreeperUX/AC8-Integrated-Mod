@@ -1,11 +1,11 @@
 {
-  "version": "2.4.0",
+  "version": "2.4.1",
   "status": "release",
   "game_build": "25201480",
   "game_sha256": "51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F",
   "steam_app_id": 2288340,
-  "native_controller_version": "2.4.0 (WAR 13.7)",
-  "functional_baseline": "2.3.17-keybindings-preview.1",
+  "native_controller_version": "2.4.1 (WAR 13.7)",
+  "functional_baseline": "2.4.0",
   "release_approved": true,
   "control_modes": {
     "0": "PEACE (CLASSIC 2.0, unchanged)",

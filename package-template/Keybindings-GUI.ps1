@@ -15,7 +15,10 @@ function New-AC8KeybindingsDialog([string]$Root,$Owner,[ValidateSet('dark','ligh
  Set-CreeperUXTheme $dialog $Theme
  $area=[Windows.SystemParameters]::WorkArea;$dialog.Width=[Math]::Min($dialog.Width,$area.Width-24);$dialog.Height=[Math]::Min($dialog.Height,$area.Height-24);$dialog.MinWidth=[Math]::Min($dialog.MinWidth,$dialog.Width);$dialog.MinHeight=[Math]::Min($dialog.MinHeight,$dialog.Height)
  $state=@{Values=(Read-AC8Keybindings (Join-Path $Root 'Keybindings.ini'));Capture=$null;Saved=$false}
- $ctx=[pscustomobject]@{Window=$dialog;State=$state;Buttons=@{};Status=$dialog.FindName('BindingStatus');Save=$dialog.FindName('SaveBindings');Root=$Root}
+ # Event handlers are GetNewClosure() closures, which resolve commands only at global scope. Carry the functions they
+ # call on the context so the dialog works however the launcher was started (-File, call operator or dot-source).
+ $commands=@{Capture=${function:Set-AC8CapturedBinding};Defaults=${function:Get-AC8DefaultBindings};Spec=${function:Get-AC8KeybindingSpec};Save=${function:Save-AC8Keybindings}}
+ $ctx=[pscustomobject]@{Window=$dialog;State=$state;Buttons=@{};Status=$dialog.FindName('BindingStatus');Save=$dialog.FindName('SaveBindings');Root=$Root;Commands=$commands}
  $rows=$dialog.FindName('BindingRows')
  foreach($action in (Get-AC8KeybindingSpec).actions){
   $name=[string]$action.name;$row=[Windows.Controls.Grid]::new();$row.Margin=[Windows.Thickness]::new(0,0,0,8)
@@ -30,16 +33,16 @@ function New-AC8KeybindingsDialog([string]$Root,$Owner,[ValidateSet('dark','ligh
   if(!$ctx.State.Capture){return};$event.Handled=$true
   $key=$event.Key;if($key -eq [Windows.Input.Key]::System){$key=$event.SystemKey}
   if($key -eq [Windows.Input.Key]::Escape){$ctx.State.Capture=$null;$ctx.Status.Text='已取消按键录入，尚未保存。';return}
-  Set-AC8CapturedBinding $ctx ([Windows.Input.KeyInterop]::VirtualKeyFromKey($key))
+  & $ctx.Commands.Capture $ctx ([Windows.Input.KeyInterop]::VirtualKeyFromKey($key))
  }.GetNewClosure())
  $dialog.Add_PreviewMouseDown({param($sender,$event)
   if(!$ctx.State.Capture){return};$event.Handled=$true
   $vk=switch($event.ChangedButton.ToString()){'Left'{if([Windows.SystemParameters]::SwapButtons){2}else{1}} 'Right'{if([Windows.SystemParameters]::SwapButtons){1}else{2}} 'Middle'{4} 'XButton1'{5} 'XButton2'{6}}
-  if($vk){Set-AC8CapturedBinding $ctx $vk}
+  if($vk){& $ctx.Commands.Capture $ctx $vk}
  }.GetNewClosure())
- $dialog.FindName('RestoreBindings').Add_Click({$ctx.State.Capture=$null;$ctx.State.Values=Get-AC8DefaultBindings;foreach($action in (Get-AC8KeybindingSpec).actions){$ctx.Buttons[$action.name].Content=[string](Get-AC8KeybindingSpec).keys.PSObject.Properties[$action.default].Value.label};$ctx.Status.Text='已恢复默认；点击保存应用，或取消放弃。';$ctx.Save.IsEnabled=$true}.GetNewClosure())
+ $dialog.FindName('RestoreBindings').Add_Click({$ctx.State.Capture=$null;$ctx.State.Values=& $ctx.Commands.Defaults;$spec=& $ctx.Commands.Spec;foreach($action in $spec.actions){$ctx.Buttons[$action.name].Content=[string]$spec.keys.PSObject.Properties[$action.default].Value.label};$ctx.Status.Text='已恢复默认；点击保存应用，或取消放弃。';$ctx.Save.IsEnabled=$true}.GetNewClosure())
  $dialog.FindName('CancelBindings').Add_Click({$ctx.State.Capture=$null;$ctx.Window.Close()}.GetNewClosure())
- $ctx.Save.Add_Click({try{if($ctx.State.Capture){throw '请先完成或取消按键录入。'};Save-AC8Keybindings $ctx.Root $ctx.State.Values;$ctx.State.Saved=$true;$ctx.Status.Text='已保存，下次启动生效。原配置备份为 Keybindings.ini.bak。'}catch{$ctx.Status.Text=$_.Exception.Message}}.GetNewClosure())
+ $ctx.Save.Add_Click({try{if($ctx.State.Capture){throw '请先完成或取消按键录入。'};& $ctx.Commands.Save $ctx.Root $ctx.State.Values;$ctx.State.Saved=$true;$ctx.Status.Text='已保存，下次启动生效。原配置备份为 Keybindings.ini.bak。'}catch{$ctx.Status.Text=$_.Exception.Message}}.GetNewClosure())
  return $ctx
 }
 function Show-AC8KeybindingsDialog([string]$Root,$Owner,[string]$Theme='dark') {

@@ -1,5 +1,6 @@
 // Reference gun cross and HMD-in-free-look support: the nose projection must not depend on the ring being visible,
 // the HMD look marker exists only in C free look, and HMD selection follows the view direction while it is held.
+// 2.4.1: the cross can be switched off (hud_boresight, Alt+F7 for the session) without touching F7.
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
@@ -42,4 +43,13 @@ int main(){
  free_look.held=true;assert(helmet_aim_direction(hp,hy)&&hp==-3&&hy==95);
  free_look.held=false;
  puts("PASS HMD look marker only in C free look; HMD selection follows the view direction while free look is held");
+ // 8. 2.4.1 switch: cross shown by default; plain F7 keeps toggling the HUD (also with Ctrl/Shift held for throttle),
+ //    Alt+F7 toggles only the cross, Alt with Ctrl/Shift does nothing, no edge does nothing.
+ using hud_toggles::F7Action;using hud_toggles::f7_action;
+ assert(hud_boresight.load());
+ assert(f7_action(true,false,false,false)==F7Action::Hud&&f7_action(true,false,true,false)==F7Action::Hud&&f7_action(true,false,false,true)==F7Action::Hud);
+ assert(f7_action(true,true,false,false)==F7Action::GunCross);
+ assert(f7_action(true,true,true,false)==F7Action::None&&f7_action(true,true,false,true)==F7Action::None);
+ for(int m=0;m<8;++m)assert(f7_action(false,m&1,m&2,m&4)==F7Action::None);
+ puts("PASS gun cross shown by default; F7 = HUD (Ctrl/Shift allowed), Alt+F7 = gun cross only, Alt+Ctrl/Shift ignored");
 }

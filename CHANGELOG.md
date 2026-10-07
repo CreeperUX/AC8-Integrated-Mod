@@ -1,3 +1,10 @@
+## 2.4.1
+
+- Reference gun cross switch: Alt+F7 shows/hides it in flight (this session only, with a notice; the F1 panel shows the state). `hud_boresight=1/0` in MouseAim-Settings.ini sets the startup state (default shown). Plain F7 still toggles the whole mod HUD.
+- Fix: the launcher key-settings dialog (Save, Restore defaults, key capture) no longer depends on the launcher running at global scope; it failed with "Save-AC8Keybindings is not recognized" when started via the call operator. Start-GUI.cmd users were not affected.
+- Flight control unchanged from 2.4.0 (WAR v13.7, PEACE).
+- Tests: new Test-MouseSettings; Test-Keybindings runs via the call operator in CI; native, GPU and Lua HUD tests cover the switch.
+
 ## 2.4.0
 
 - Stable release. Offline single-player only.

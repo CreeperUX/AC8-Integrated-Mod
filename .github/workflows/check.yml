@@ -46,9 +46,11 @@ jobs:
         shell: powershell
       - run: .\tests\Test-GuiLayout.ps1
         shell: powershell
-      # -File like Start-GUI.cmd: the dialog's event closures resolve the launcher's functions at global scope.
-      - run: powershell -NoProfile -STA -ExecutionPolicy Bypass -File tests\Test-Keybindings.ps1
-        shell: cmd
+      # Call operator on purpose (a script scope, not global): the key-settings dialog must work however it is started.
+      - run: .\tests\Test-Keybindings.ps1
+        shell: powershell
+      - run: .\tests\Test-MouseSettings.ps1
+        shell: powershell
 
       - name: Build and check the fixed English supplement
         shell: powershell

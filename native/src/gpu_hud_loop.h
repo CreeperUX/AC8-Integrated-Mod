@@ -28,7 +28,7 @@ bool run_gpu_hud(){
         MSG message{};while(PeekMessageW(&message,nullptr,0,0,PM_REMOVE)){TranslateMessage(&message);DispatchMessageW(&message);}
         if(!game_window||!IsWindow(game_window)||GetTickCount64()-window_check>1000){if(HWND found=locate_game_window())game_window=found;window_check=GetTickCount64();}
         auto now=GetTickCount64();const bool ui_only=hud_renderer.load()==3;
-        const bool has_notice=mode_notice_pending.load()||now<mode_notice_until.load()||now<camera_notice_until.load()||now<helmet_notice_until.load()||now<sensitivity_notice_until.load()||now<zoom_notice_until.load();
+        const bool has_notice=mode_notice_pending.load()||now<mode_notice_until.load()||now<camera_notice_until.load()||now<helmet_notice_until.load()||now<sensitivity_notice_until.load()||now<zoom_notice_until.load()||now<boresight_notice_until.load();
         bool wanted=game_window&&foreground_is_game()&&!IsIconic(game_window)&&active.load()&&enabled.load()&&hud_enabled.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load()&&now-pose_tick.load()<250&&hybrid_hud::needs_overlay(ui_only,settings_panel.load(),has_notice);
         if(!wanted){predictor.reset();cache.reset();last_sequence=0;last_draw=0;}
         HudFrame received{};bool read=false;if(wanted&&!ui_only)read=read_hud_frame(received);if(wanted&&!ui_only){cache.observe(read,received);if(!read)++misses;}
@@ -50,7 +50,7 @@ bool run_gpu_hud(){
                 }
                 if(renderer->ready()){
                     HudFrame f{};f.tick=pose_tick.load();f.fov=view_fov.load();
-                    gpu_hud::Layout frame;frame.ui_only=ui_only;frame.scale=std::max(.75f,height/1080.f);frame.opacity=hud_opacity.load();frame.connector=!ui_only&&hud_connector.load();frame.always=hud_link_always.load();frame.helmet_active=helmet_enabled.load();
+                    gpu_hud::Layout frame;frame.ui_only=ui_only;frame.scale=std::max(.75f,height/1080.f);frame.opacity=hud_opacity.load();frame.connector=!ui_only&&hud_connector.load();frame.always=hud_link_always.load();frame.helmet_active=helmet_enabled.load();frame.boresight_active=hud_boresight.load();
                     if(!ui_only){
                     // Queue readiness may arrive after our initial snapshot: render the newest coherent POV.
                     HudFrame latest{};if(read_hud_frame(latest)){cache.observe(true,latest);++fresh_reads;}
@@ -96,6 +96,10 @@ bool run_gpu_hud(){
                     auto zoom_end=zoom_notice_until.load();
                     if(now<zoom_end&&zoom_end>=std::max({sensitivity_end,helmet_end,camera_end,notice_end})){
                         frame.zoom_notice=free_look_zoom.load();frame.notice_alpha=std::min(1.f,float(zoom_end-now)/(creeperux::notice_exit*1000.f));
+                    }
+                    auto boresight_end=boresight_notice_until.load();
+                    if(now<boresight_end&&boresight_end>=std::max({zoom_end,sensitivity_end,helmet_end,camera_end,notice_end})){
+                        frame.boresight_notice=hud_boresight.load()?1:0;frame.notice_alpha=std::min(1.f,float(boresight_end-now)/(creeperux::notice_exit*1000.f));
                     }
                     if(ui_only){frame.target=false;frame.nose=false;frame.connector=false;}
                     auto tick=perf_clock();float dt=last_draw?float(perf_us(tick-last_draw))/1e6f:1.f/120;

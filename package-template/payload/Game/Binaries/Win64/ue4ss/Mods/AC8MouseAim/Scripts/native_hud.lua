@@ -93,7 +93,7 @@ function M.start(dir)
  directory=dir;local function api(n)return assert(package.loadlib(dir..'ac8_mouse_aim_010.dll','ac8_mouseaim_canvas_'..n))end
  mode=api('mode');gate=api('gate');query=api('ring');report=api('report');viewport=api('viewport');ui=api('ui');nose=api('nose')
  local okLook,lookApi=pcall(api,'look');look=okLook and lookApi or nil
- log('Native reticle: render-translation ring120; reference gun cross at the nose; HMD bracket ring (view point in C free look); frame-synchronous goal and connector; panel/notifications use on-demand GPU overlay')
+ log('Native reticle: render-translation ring120; reference gun cross at the nose (hud_boresight, Alt+F7); HMD bracket ring (view point in C free look); frame-synchronous goal and connector; panel/notifications use on-demand GPU overlay')
 end
 function M.hide(controller)
  if not state or not valid(controller)then return end
@@ -132,6 +132,8 @@ function M.update(controller,pawn,read)
   if #values<16 then sweep(parent);status('UI bridge unavailable');return end
   local panel,hmd,control,camera,sens,startSens,zoom,startZoom,fov,hz,toast,toastValue,toastAlpha,opacity,connector,always=table.unpack(values)
   local freelook=values[17]==1
+  -- Reference gun cross switch (hud_boresight / Alt+F7, 2.4.1); a DLL without the 18th value keeps it shown.
+  local boresight=values[18]~=0
   local on,x,y,radius,thickness,time=query(pawn:GetAddress(),vw,vh)
   local good,nx,ny=nose(pawn:GetAddress(),vw,vh)
   -- 120 design units: 50% larger; retain valid size through temporary geometry gaps.
@@ -140,7 +142,7 @@ function M.update(controller,pawn,read)
   -- Reference gun cross: where the nose and guns actually point, on the same 500 m sphere as the ring (the cross
   -- sits in the ring once the nose has arrived). Drawn on its own, so it stays visible in C free look and while
   -- the ring is off-screen.
-  if good==1 and onscreen(nx,ny,4)then draw(parent,hud,'bore','boresight',nx/vw,ny/vh,0,0,ringSize,ringSize,.5,.5,math.max(.85,opacity))end
+  if boresight and good==1 and onscreen(nx,ny,4)then draw(parent,hud,'bore','boresight',nx/vw,ny/vh,0,0,ringSize,ringSize,.5,.5,math.max(.85,opacity))end
   -- HMD: the bracketed ring marks where the target-switch key picks; in C free look that is the view direction.
   if hmd==1 and freelook and look then
    local lk,lx,ly=look(pawn:GetAddress(),vw,vh)

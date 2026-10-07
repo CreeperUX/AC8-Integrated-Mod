@@ -101,6 +101,12 @@ int main(){
         f.selected_mode=0;f.mode_notice=0;f.camera_notice=-1;f.helmet_notice=-1;f.zoom_notice=-1;f.settings=true;
         check(r.draw(f,1.f/120,true),"PEACE policy panel");dump(r,"test-runtime/previews/peace-panel.bgra",false);check(r.present(),"capture present");
         f.selected_mode=3;f.mode_notice=3;check(r.draw(f,1.f/120,true),"WAR policy panel");dump(r,"test-runtime/previews/war-panel.bgra",false);check(r.present(),"vector present");
+        // 2.4.1 gun cross switch: Alt+F7 notice and the F1 panel state row
+        assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);f.mode_notice=-1;f.boresight_active=false;f.boresight_notice=0;
+        check(r.draw(f,1.f/120,true),"gun cross hidden");dump(r,"test-runtime/previews/guncross-off.bgra",false);check(r.present(),"gun cross hidden present");
+        assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);f.boresight_active=true;f.boresight_notice=1;
+        check(r.draw(f,1.f/120,true),"gun cross shown");dump(r,"test-runtime/previews/guncross-on.bgra",false);check(r.present(),"gun cross shown present");
+        f.boresight_notice=-1;
         for(int mode=0;mode<2;++mode){
             for(int kind=0;kind<2;++kind){assert(WaitForSingleObject(r.latency,1000)==WAIT_OBJECT_0);
                 f.settings=false;f.zoom_notice=-1;f.sensitivity_notice=-1;f.mode_notice=kind==0?mode:-1;f.camera_notice=kind==1?mode:-1;

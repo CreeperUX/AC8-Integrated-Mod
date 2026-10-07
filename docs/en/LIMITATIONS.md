@@ -3,7 +3,7 @@
 [简体中文](../LIMITATIONS.md) | **English** · [English home](../../README.en.md)
 
 - Only the pinned game build and UE4SS ABI are supported. A game update can cause version validation to refuse launch.
-- v2.4.0 is the current stable release. WAR has been flown on several aircraft, but not every computer, mission, aircraft or binding configuration is covered.
+- v2.4.1 is the current stable release. WAR has been flown on several aircraft, but not every computer, mission, aircraft or binding configuration is covered.
 - The independent-axis model does not fully model aerodynamic coupling, angle of attack, G-loads, stalls or energy management. (This applies to PEACE; WAR uses a reconstructed model of the game's rotation law but does not change aircraft performance.)
 - Learning is not guaranteed for every axis or flight and does not persist between game processes. Validated speed-range coverage is incomplete.
 - HUD submissions and a 120 Hz target do not guarantee display FPS. The GDI fallback does not show the same text notifications as the GPU renderer; consult console logs.

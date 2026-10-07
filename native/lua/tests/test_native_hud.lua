@@ -33,7 +33,7 @@ local pawn=obj()
 local S={}
 local exports={
  mode=function()return 3 end,gate=function()return 1,0 end,report=function()end,viewport=function()return 1920,1080,1000 end,
- ui=function()local v={0,S.hmd,3,0,.1,.1,1.75,1.75,62,0,0,0,0,.65,1,0};if S.v17~=false then v[17]=S.freelook end;return table.unpack(v)end,
+ ui=function()local v={0,S.hmd,3,0,.1,.1,1.75,1.75,62,0,0,0,0,.65,1,0};if S.v17~=false then v[17]=S.freelook;v[18]=S.bore end;return table.unpack(v)end,
  ring=function()if S.ring then return 1,S.ring[1],S.ring[2],30,1.3,0 end;return S.ringStatus or -7 end,
  nose=function()if S.nose then return 1,S.nose[1],S.nose[2]end end,
  look=function()if S.look then return 1,S.look[1],S.look[2]end end}
@@ -75,10 +75,19 @@ assert(has(v,'ring')and not has(v,'boresight'),table.concat(v,' '))
 M=fresh();S.noLook=true
 v=run(M,{hmd=1,freelook=1,v17=false,ring={960,540},nose={960,540},look={960,560},noLook=true})
 assert(has(v,'ring-hmd')and has(v,'boresight'),table.concat(v,' '))
+-- 7b. cross switched off (hud_boresight=0 / Alt+F7): ring, ticks and HMD view marker unaffected; back on restores it.
+--     Scenarios above send no 18th value (2.4.0 DLL): the cross stays shown.
+S.noLook=nil;M=fresh()
+v=run(M,{hmd=0,freelook=0,bore=0,ring={960,540},nose={1000,600}})
+assert(has(v,'ring')and count(v,'tick')>=1 and not has(v,'boresight'),table.concat(v,' '))
+v=run(M,{hmd=1,freelook=1,bore=0,ring={300,300},nose={960,540},look={960,560}})
+assert(count(v,'ring-hmd')==1 and count(v,'ring')==1 and not has(v,'boresight'),table.concat(v,' '))
+v=run(M,{hmd=0,freelook=0,bore=1,ring={960,540},nose={1000,600}})
+assert(has(v,'ring')and has(v,'boresight'),table.concat(v,' '))
 -- 8. cross texture import failure: ring still drawn, HUD not disabled
 importFail['boresight']=true;M=fresh()
 v=run(M,{hmd=0,freelook=0,ring={960,540},nose={1000,600}})
 assert(has(v,'ring')and not has(v,'boresight'),table.concat(v,' '))
 v=run(M,{hmd=0,freelook=0,ring={960,540},nose={1000,600}})
 assert(has(v,'ring'),'HUD must keep running after a missing texture')
-print('PASS native_hud: reference cross independent of the ring, HMD bracket ring at the cursor / view point in C free look, old-DLL and missing-texture fallbacks')
+print('PASS native_hud: reference cross independent of the ring and switchable (hud_boresight / Alt+F7), HMD bracket ring at the cursor / view point in C free look, old-DLL and missing-texture fallbacks')

@@ -6,7 +6,7 @@
 #include "creeperux_tokens.h"
 namespace gpu_hud {
 using Microsoft::WRL::ComPtr;
-struct Layout {std::wstring free_look_key=L"C",zoom_key=L"MouseRight";bool target=false,nose=false;hud_geometry::Point target_point,nose_point;float scale=1,opacity=.65f,link_opacity=1;bool connector=true,always=false,helmet_active=false;int mode_notice=-1,camera_notice=-1,helmet_notice=-1;float notice_alpha=1,sensitivity_notice=-1,zoom_notice=-1,zoom=1.75f,zoom_start=1.75f;int hud_hz=120;float source_hz=0,submit_hz=0;bool smoothing=false,independent=false,predicted=false;bool ui_only=false;float prediction_ms=0,prediction_shift=0;uint64_t prediction_fallbacks=0;bool settings=false;float sensitivity=.1f,configured_sensitivity=.1f,fov=62;unsigned pose_age=0;int selected_mode=0,selected_camera=1;};
+struct Layout {std::wstring free_look_key=L"C",zoom_key=L"MouseRight";bool target=false,nose=false;hud_geometry::Point target_point,nose_point;float scale=1,opacity=.65f,link_opacity=1;bool connector=true,always=false,helmet_active=false;int mode_notice=-1,camera_notice=-1,helmet_notice=-1;float notice_alpha=1,sensitivity_notice=-1,zoom_notice=-1,zoom=1.75f,zoom_start=1.75f;int hud_hz=120;float source_hz=0,submit_hz=0;bool smoothing=false,independent=false,predicted=false;bool ui_only=false;float prediction_ms=0,prediction_shift=0;uint64_t prediction_fallbacks=0;bool settings=false;float sensitivity=.1f,configured_sensitivity=.1f,fov=62;unsigned pose_age=0;int selected_mode=0,selected_camera=1;int boresight_notice=-1;bool boresight_active=true;};
 struct Renderer {
     ComPtr<ID3D11Device> device;ComPtr<ID3D11DeviceContext> immediate;
     ComPtr<IDXGISwapChain1> swap;ComPtr<IDXGISwapChain2> swap2;
@@ -121,10 +121,10 @@ struct Renderer {
     }
     void draw_ui(const Layout& frame){
         if(!ui_paint||!ui_body)return;
-        const float scale=std::max(.25f,std::min({std::clamp(float(height)/720.f,.75f,2.f), (float(height)-40)/602.f,(float(width)-40)/420.f}));
+        const float scale=std::max(.25f,std::min({std::clamp(float(height)/720.f,.75f,2.f), (float(height)-40)/636.f,(float(width)-40)/420.f}));
         const float viewport_w=width/scale,viewport_h=height/scale;
         dc->SetTransform(D2D1::Matrix3x2F::Scale(scale,scale));
-        const bool notice=frame.mode_notice>=0||frame.camera_notice>=0||frame.helmet_notice>=0||frame.sensitivity_notice>=0||frame.zoom_notice>=0;
+        const bool notice=frame.mode_notice>=0||frame.camera_notice>=0||frame.helmet_notice>=0||frame.sensitivity_notice>=0||frame.zoom_notice>=0||frame.boresight_notice>=0;
         if(notice){
             const wchar_t* key=L"F4";const wchar_t* category=L"FLIGHT CONTROL";const wchar_t* title=control_modes::wname(frame.mode_notice);
             const wchar_t* detail=L"Learned response model retained";auto status=creeperux::info;
@@ -133,6 +133,7 @@ struct Renderer {
             wchar_t value[96]{};
             if(frame.sensitivity_notice>=0){key=L"CTRL";category=L"MOUSE SENSITIVITY";swprintf_s(value,L"Sensitivity %.4f",frame.sensitivity_notice);title=value;detail=L"This session only / Ctrl + Home to reset";}
             if(frame.zoom_notice>=0){key=L"ALT";category=L"FREE-LOOK ZOOM";swprintf_s(value,L"Extra zoom %.2fx",frame.zoom_notice);title=value;detail=L"Hold C + right mouse / Alt + Home to reset";}
+            if(frame.boresight_notice>=0){key=L"ALT";category=L"REFERENCE GUN CROSS";title=frame.boresight_notice?L"Gun cross shown":L"Gun cross hidden";detail=L"Alt + F7 / This session only";}
             const float available=frame.settings?viewport_w-460:viewport_w;
             const float left=(available-360)*.5f,top=viewport_h*.10f;
             const float alpha=std::clamp(frame.notice_alpha,0.f,1.f);
@@ -140,15 +141,15 @@ struct Renderer {
             ui_rect(box,creeperux::panel,creeperux::radius_panel,alpha);
             ui_rect(box,creeperux::line,creeperux::radius_panel,alpha,true);
             ui_rect(D2D1::RectF(left,top+12,left+3,top+74),status,0,alpha);
-            ui_key(key,left+14,top+16,(frame.sensitivity_notice>=0||frame.zoom_notice>=0)?50.f:36.f,alpha);
-            float text_x=left+((frame.sensitivity_notice>=0||frame.zoom_notice>=0)?78.f:64.f);
+            ui_key(key,left+14,top+16,(frame.sensitivity_notice>=0||frame.zoom_notice>=0||frame.boresight_notice>=0)?50.f:36.f,alpha);
+            float text_x=left+((frame.sensitivity_notice>=0||frame.zoom_notice>=0||frame.boresight_notice>=0)?78.f:64.f);
             ui_text(category,D2D1::RectF(text_x,top+10,left+346,top+28),ui_mono.Get(),creeperux::quiet,alpha);
             ui_text(title,D2D1::RectF(text_x,top+28,left+346,top+54),ui_title.Get(),creeperux::text,alpha);
             ui_text(detail,D2D1::RectF(left+14,top+58,left+346,top+78),ui_small.Get(),creeperux::muted,alpha);
         }
         if(frame.settings){
             const float w=420,left=viewport_w-w-20,top=20;
-            auto box=D2D1::RectF(left,top,left+w,top+602);
+            auto box=D2D1::RectF(left,top,left+w,top+636);
             ui_rect(box,creeperux::panel,creeperux::radius_panel);
             ui_rect(box,creeperux::line,creeperux::radius_panel,1,true);
             ui_text(L"AC8 / IN-FLIGHT TOOLS",D2D1::RectF(left+20,top+14,left+300,top+32),ui_mono.Get(),creeperux::quiet);
@@ -170,26 +171,27 @@ struct Renderer {
             ui_text(value,D2D1::RectF(left+215,top+230,left+w-20,top+254),ui_mono.Get(),creeperux::text,1,true);
             ui_rect(D2D1::RectF(left+20,top+260,left+w-20,top+292),creeperux::raised,creeperux::radius_control);
             ui_text(L"Alt + PgUp / PgDn    +/- 0.25x",D2D1::RectF(left+30,top+260,left+w-30,top+292),ui_mono.Get(),creeperux::text);
-            auto row=[&](const wchar_t* key,const wchar_t* label,const wchar_t* state,float y){
-                ui_key(key,left+20,top+y+4,34);
-                ui_text(label,D2D1::RectF(left+66,top+y,left+220,top+y+34),ui_body.Get(),creeperux::muted);
+            auto row=[&](const wchar_t* key,const wchar_t* label,const wchar_t* state,float y,float key_width=34){
+                ui_key(key,left+20,top+y+4,key_width);
+                ui_text(label,D2D1::RectF(left+32+key_width,top+y,left+220,top+y+34),ui_body.Get(),creeperux::muted);
                 ui_text(state,D2D1::RectF(left+210,top+y,left+w-20,top+y+34),ui_mono.Get(),creeperux::text,1,true);
             };
             row(L"F4",L"Flight control",control_modes::wname(frame.selected_mode),310);
             row(L"F3",L"Camera",frame.selected_camera?L"FAR FOLLOW":L"NATIVE FRAMING",344);
             row(L"F2",L"Target selection",frame.helmet_active?L"HMD ON":L"HMD OFF",378);
-            ui_rect(D2D1::RectF(left+20,top+426,left+w-20,top+427),creeperux::line);
+            row(L"ALT+F7",L"Gun cross",frame.boresight_active?L"SHOWN":L"HIDDEN",412,64);
+            ui_rect(D2D1::RectF(left+20,top+460,left+w-20,top+461),creeperux::line);
             swprintf_s(value,L"CAMERA FOV  %.1f",frame.fov);
-            ui_text(value,D2D1::RectF(left+20,top+438,left+220,top+460),ui_mono.Get(),creeperux::quiet);
+            ui_text(value,D2D1::RectF(left+20,top+472,left+220,top+494),ui_mono.Get(),creeperux::quiet);
             swprintf_s(value,L"POSE AGE  %u ms",frame.pose_age);
-            ui_text(value,D2D1::RectF(left+210,top+438,left+w-20,top+460),ui_mono.Get(),creeperux::quiet,1,true);
-            ui_text(L"F5 Diagnostics  /  F6 Camera  /  F7 HUD",D2D1::RectF(left+20,top+472,left+w-20,top+494),ui_small.Get(),creeperux::muted);
-            ui_text(L"F8 Flight assist  /  F9 Center  /  F10 Reload",D2D1::RectF(left+20,top+496,left+w-20,top+518),ui_small.Get(),creeperux::muted);
-            ui_text(frame.ui_only?L"Native reticle / On-demand panel overlay":frame.smoothing?L"Ctrl + End: display prediction requested":L"Ctrl + End: raw display",D2D1::RectF(left+20,top+520,left+w-20,top+542),ui_small.Get(),creeperux::muted);
+            ui_text(value,D2D1::RectF(left+210,top+472,left+w-20,top+494),ui_mono.Get(),creeperux::quiet,1,true);
+            ui_text(L"F5 Diagnostics  /  F6 Camera  /  F7 HUD",D2D1::RectF(left+20,top+506,left+w-20,top+528),ui_small.Get(),creeperux::muted);
+            ui_text(L"F8 Flight assist  /  F9 Center  /  F10 Reload",D2D1::RectF(left+20,top+530,left+w-20,top+552),ui_small.Get(),creeperux::muted);
+            ui_text(frame.ui_only?L"Native reticle / On-demand panel overlay":frame.smoothing?L"Ctrl + End: display prediction requested":L"Ctrl + End: raw display",D2D1::RectF(left+20,top+554,left+w-20,top+576),ui_small.Get(),creeperux::muted);
             if(frame.ui_only)swprintf_s(value,L"UI targets: panel20Hz / notices60Hz");else swprintf_s(value,L"%s | Pose %.0f / Submit %.0f Hz",frame.independent?L"Independent input":L"Game input fallback",frame.source_hz,frame.submit_hz);
-            ui_text(value,D2D1::RectF(left+20,top+544,left+w-20,top+562),ui_small.Get(),creeperux::quiet);
+            ui_text(value,D2D1::RectF(left+20,top+578,left+w-20,top+596),ui_small.Get(),creeperux::quiet);
             if(frame.ui_only)swprintf_s(value,L"Reticle: native UMG / no display prediction");else swprintf_s(value,L"%s | %.2f ms | %.2f px | fallback %llu",frame.ui_only?L"NATIVE":frame.predicted?L"ACTIVE":frame.smoothing?L"WAITING":L"RAW",frame.prediction_ms,frame.prediction_shift,static_cast<unsigned long long>(frame.prediction_fallbacks));
-            ui_text(value,D2D1::RectF(left+20,top+570,left+w-20,top+594),ui_small.Get(),creeperux::muted);
+            ui_text(value,D2D1::RectF(left+20,top+604,left+w-20,top+628),ui_small.Get(),creeperux::muted);
         }
         dc->SetTransform(D2D1::Matrix3x2F::Identity());
     }

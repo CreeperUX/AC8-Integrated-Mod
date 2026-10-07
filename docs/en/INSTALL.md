@@ -63,6 +63,7 @@ Edit `MouseAim-Settings.ini` while the game is closed. These settings apply at t
 |---|---:|---|
 | `control_mode` | 0 | 0 = PEACE (CLASSIC 2.0), 3 = WAR; F4 switches during flight; legacy 1->0, 2/4/5->3 |
 | `sensitivity` | 0.10 | Mouse-direction sensitivity |
+| `hud_boresight` | 1 | Reference gun cross at the nose: 1 shown, 0 hidden; Alt+F7 toggles it in flight (this session only) |
 | `model_assist` | 1 | Enable model-based control |
 | `model_assist_strength` | 0.20 | Mixing scale for validated learned parameters; not a simple controller gain |
 | `hud_fps` | 120 | Target HUD submission rate, not guaranteed display FPS |
