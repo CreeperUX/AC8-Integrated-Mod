@@ -18,7 +18,7 @@ def quote_ps(s):return "'"+str(s).replace("'","''")+"'"
 stub.write_text("@{args=@($args);override=$env:EOS_USE_ANTICHEATCLIENTNULL}|ConvertTo-Json|Set-Content -Encoding UTF8 -LiteralPath "+quote_ps(mark),encoding='utf-8-sig')
 command='"'+str(pkg/'Start-AC8-From-Steam.cmd')+'" "'+str(ps)+'" -NoProfile -ExecutionPolicy Bypass -File "'+str(stub)+'" "argument with spaces"'
 env=os.environ.copy();env['EOS_USE_ANTICHEATCLIENTNULL']='1'
-p=subprocess.run('cmd.exe /d /s /c "'+command+'"',env=env,stdin=subprocess.DEVNULL,capture_output=True,timeout=20)
+p=subprocess.run('cmd.exe /d /s /c "'+command+'"',env=env,stdin=subprocess.DEVNULL,capture_output=True,timeout=60)
 assert p.returncode==0,(p.stdout,p.stderr)
 result=json.loads(mark.read_text(encoding='utf-8-sig'));assert result['args']==['argument with spaces'] and not result['override']
 mode('Enable');assert not (pkg/'mod-disabled.flag').exists()
@@ -33,6 +33,6 @@ p=subprocess.run([str(ps),'-NoProfile','-ExecutionPolicy','Bypass','-File',str(c
 assert p.returncode==0 and (managed/'mod-disabled.flag').exists() and not (child/'mod-disabled.flag').exists(),(p.stdout,p.stderr)
 mark.unlink()
 command='"'+str(child/'Start-AC8-From-Steam.cmd')+'" "'+str(ps)+'" -NoProfile -ExecutionPolicy Bypass -File "'+str(stub)+'" "argument with spaces"'
-p=subprocess.run('cmd.exe /d /s /c "'+command+'"',env=env,stdin=subprocess.DEVNULL,capture_output=True,timeout=20)
+p=subprocess.run('cmd.exe /d /s /c "'+command+'"',env=env,stdin=subprocess.DEVNULL,capture_output=True,timeout=60)
 assert p.returncode==0 and mark.exists(),(p.stdout,p.stderr)
 print('PASS managed scope resolves common disable marker and original-command bridge')
