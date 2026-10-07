@@ -1,3 +1,27 @@
+## 2.4.0
+
+- Stable release. Offline single-player only.
+- WAR is rebuilt on a reconstructed model of AC8's rotation law, with a War Thunder-style mouse-instructor structure:
+  - path lock for straight nose paths;
+  - smooth, bank-scaled levelling once the cursor rests (idle gate, minimum-jerk profile, no overshoot); levelling also resumes after a keyboard roll;
+  - cursor-motion-aware roll decisions, used only near the nose (no roll wobble with the cursor far off-axis);
+  - War Thunder-style keyboard takeover;
+  - degraded fallback to WAR v11.1.
+- F4 toggles PEACE (the unchanged CLASSIC 2.0, now the default) and WAR. AGILE 2.1 is retired; `control_mode` 1 migrates to 0, and 2/4/5 migrate to 3.
+- HUD: a reference gun cross at the nose (War Thunder-style cross with a centre gap), drawn independently of the ring and also shown in C free look. The native game reticle sinks and does not match the gun line.
+- HMD: the HMD ring now uses four corner brackets; while holding C, target switching picks along the view direction and the bracketed ring marks it.
+- Includes the 2.3.16 frame-synchronous input and the 2.3.17 configurable keys.
+- Fix: a rejected native-camera frame (invalid FOV on a cutscene or free-look transition) no longer disables the mod camera and HUD for the session; the camera now retries every 500 ms under all existing guards.
+- See docs/RELEASE-v2.4.0.md, docs/WAR-FLIGHT-CONTROL.md, docs/NATIVE-UI-STYLE.md and docs/CAMERA-FAULT-RECOVERY.md.
+
+## 2.3.17-keybindings-preview.1
+
+Local configurable hold keys for free look, zoom and six manual-axis directions. Existing CreeperUX launcher gains key capture/save/defaults; validated numeric staging and one atomic runtime table. Default behavior and stock throttle/brake preserved.
+
+## 2.3.16-phase-preview.1
+
+Local frame-synchronous input candidate; QPC control delta, render-transform reticle motion and UI-only overlay without motion-frame reads/target locks. No public release or game acceptance claim. See docs/INPUT-PHASE-TEST.md.
+
 ## 2.3.15-beta.1
 
 Optional public Beta of nativeui-preview.2. v2.3.6 remains stable. Native UMG ring, on-demand panel/toasts, in-session controls, native zoom transitions and disable tools. See docs/RELEASE-v2.3.15-beta.1.md for validation limits and rollback.

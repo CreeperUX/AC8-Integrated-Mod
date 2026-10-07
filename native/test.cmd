@@ -2,12 +2,5 @@
 cd /d "%~dp0"
 call build.cmd
 if errorlevel 1 exit /b 1
-if not exist test-runtime\Scripts mkdir test-runtime\Scripts
-for %%T in (native_hud_snapshot_tests hybrid_hud_tests hud_prediction_tests hud_interpolation_tests modes_tests fullmodel_tests agility_tests recorder_tests observation_tests camera_context_tests helmet_tests) do (
- cl /nologo /std:c++20 /EHsc /MD /O2 /Iinclude %%T.cpp /Fobuild\%%T.obj /Febuild\%%T.exe /link /DELAYLOAD:UE4SS.dll delayimp.lib build\UE4SS.lib build\buffer.obj build\hook.obj build\trampoline.obj build\hde64.obj
- if errorlevel 1 exit /b 1
- build\%%T.exe
- if errorlevel 1 exit /b 1
- if not errorlevel 0 exit /b 1
-)
-exit /b 0
+python run-checked-tests.py peace_agile_tests peace_agile_joint_tests peace_agile_runtime_tests peace_agile_closedloop_tests recorder_tests modes_tests fullmodel_tests agility_tests control_timing_tests observation_tests custom_keys_tests capture_runtime_tests capture_adaptation_tests camera_context_tests cutscene_recovery_tests hud_reference_tests leveling_tests plane_tests native_hud_snapshot_tests hybrid_hud_tests hud_prediction_tests hud_interpolation_tests helmet_tests
+exit /b %errorlevel%

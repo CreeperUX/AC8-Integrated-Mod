@@ -22,7 +22,9 @@
 #include "flight_math.h"
 #include "free_look.h"
 #include "paired_mouse.h"
+#include "custom_keys.h"
 #include "hud_timing.h"
+#include "control_timing.h"
 #include "lua_bridge.h"
 #include <memory>
 #include <wrl/client.h>
@@ -91,6 +93,8 @@ HudFrame hud_frame,pending_hud_frame;
 std::atomic<uint64_t> hud_source_sequence{0};
 std::recursive_mutex target_mutex;
 std::atomic<bool> independent_mouse{false};
+std::atomic<uint64_t> keybindings{custom_keys::pack(custom_keys::defaults)};
+bool bound_key_down(custom_keys::Action action){return custom_keys::down(keybindings.load(),action,[](int key){return (GetAsyncKeyState(key)&0x8000)!=0;});}
 std::atomic<float> input_reference_fov{62};
 std::atomic<uint64_t> input_goal_sequence{0},rate_input_poll{0},rate_input_move{0},rate_raw_move{0};
 flight::V control_last_goal{1,0,0};bool control_goal_seen=false;uint64_t control_last_sequence=0;
@@ -148,8 +152,14 @@ std::atomic<uint64_t> helmet_notice_until{0};
 std::atomic<bool> resume_center_requested{false};
 std::atomic<bool> active{false};
 std::atomic<bool> model_assist_enabled{true},assist_environment_unsafe{true};
-std::atomic<int> control_mode{1}; // 0: v2.0 limits; 1: current agility schedule.
-std::atomic<float> control_mode_blend{1};
+std::atomic<int> control_mode{0}; // 0 PEACE, 3 WAR (see control_modes::normalize for legacy IDs).
+std::atomic<float> control_mode_blend{0};
+std::atomic<float> capture_mode_weight{0},capture_track_weight{0},capture_level_weight{0},capture_cross_rate{0},capture_joint_delta{0};
+std::atomic<int> capture_level_phase{0},capture_roll_limit_cause{0};
+std::atomic<float> capture_actual_bank{0},capture_target_bank{0},capture_roll_error{0},capture_roll_ratecap{0},capture_relative_pointing_rate{0},capture_joint_roll_delta{0},capture_trim_pitch{0},capture_trim_yaw{0};
+std::array<std::atomic<float>,58> capture_model_diagnostics{};
+std::array<std::atomic<float>,27> heritage_diagnostics{};
+std::atomic<float> vector_mode_weight{0};std::array<std::atomic<float>,112> vector_diagnostics{};std::array<std::atomic<float>,14> vector_decision_diagnostics{};std::array<std::atomic<float>,6> vector_performance_diagnostics{};std::array<std::atomic<float>,40> vector_coordination_diagnostics{};
 std::atomic<bool> mode_notice_pending{true};
 std::atomic<uint64_t> mode_notice_until{0};
 std::atomic<float> assist_speed{0},assist_brake{1},assist_delta_pitch{0},assist_delta_roll{0};
@@ -184,7 +194,8 @@ float previous_pitch{}, previous_yaw{}, previous_roll{};
 float filtered_pitch_rate{}, filtered_yaw_rate{}, filtered_roll_rate{};
 flight::LevelBlend roll_level_blend;
 flight::ArrivalState pitch_arrival,roll_arrival;
-unsigned long long previous_pose_tick{}, telemetry_tick{};
+unsigned long long previous_pose_tick{}, telemetry_tick{}, fe_log_tick{};
+uint64_t previous_pose_qpc=0;
 Config config;
 std::atomic<int> hud_target_hz{120},hud_renderer{1};
 std::atomic<bool> hud_connector{true},hud_link_always{false};
@@ -218,6 +229,7 @@ void init_paths() {
 }
 
 void shadow_drain();
+#include "fe_runtime.h"
 #include "async_diagnostics.h"
 #include "shadow_recorder.h"
 #include "shared_assist_runtime.h"
@@ -239,6 +251,10 @@ int read_config_int(const wchar_t* key, int fallback) {
 
 void load_config() {
     init_paths();
+    std::array<int,8> loaded_keys{};
+    for(unsigned i=0;i<8;++i)loaded_keys[i]=GetPrivateProfileIntW(L"keybindings",custom_keys::names[i],custom_keys::defaults[i],config_path);
+    if(custom_keys::valid(loaded_keys)){keybindings.store(custom_keys::pack(loaded_keys));log_line("KEYBINDINGS loaded free_look=%d zoom=%d pitch=(%d,%d) roll=(%d,%d) yaw=(%d,%d)",loaded_keys[0],loaded_keys[1],loaded_keys[2],loaded_keys[3],loaded_keys[4],loaded_keys[5],loaded_keys[6],loaded_keys[7]);}
+    else log_line("KEYBINDINGS rejected invalid/conflicting runtime values; previous table retained");
     camera_view_mode.store(std::clamp(read_config_int(L"camera_mode",1),0,1));
     camera_distance_cm.store(100*std::clamp(read_config_float(L"camera_distance_m",36),10.f,100.f));
     camera_height_cm.store(100*std::clamp(read_config_float(L"camera_height_m",6),0.f,20.f));
@@ -247,7 +263,7 @@ void load_config() {
     config.mouse_reference_fov=std::clamp(read_config_float(L"mouse_reference_fov",62),30.0f,150.0f);input_reference_fov=config.mouse_reference_fov;
     config.arrival_braking=std::clamp(read_config_float(L"arrival_braking",1.15f),1.0f,1.35f);
     model_assist_enabled.store(read_config_int(L"model_assist",1)!=0);
-    control_mode.store(std::clamp(read_config_int(L"control_mode",1),0,1));mode_notice_pending=true;
+    control_mode.store(control_modes::normalize(read_config_int(L"control_mode",0)));mode_notice_pending=true;
     config.model_assist_strength=std::clamp(read_config_float(L"model_assist_strength",.20f),0.f,.35f);
     hud_renderer.store(std::clamp(read_config_int(L"hud_renderer",3),0,3));
     hud_connector.store(read_config_int(L"hud_connector",1)!=0);
@@ -385,12 +401,13 @@ bool prepare_mouse() {
 
 void mouse_loop() {
     HANDLE input_timer=CreateWaitableTimerExW(nullptr,nullptr,0x2,TIMER_ALL_ACCESS);
-    log_line("INPUT_SOURCE Raw Input preferred; independent target worker; DirectInput fallback only if raw hook unavailable");
+    log_line("INPUT_SOURCE Raw Input preferred; frame-synchronous goal consumption; worker captures only; DirectInput fallback only if raw hook unavailable");
     bool f8_down = false, f9_down = false;
     while (running.load()) {
         // Independent consumption does not require replacing the proven capture source.
         // Use exactly one producer: game Raw Input, or DirectInput only when the hook is unavailable.
-        independent_mouse=true;
+        // The game frame owns goal integration; keep the high-rate producer.
+        independent_mouse=false;
         if(!raw_input_hooked.load()&&(mouse_device||prepare_mouse())){
             DIMOUSESTATE2 state{};HRESULT result=mouse_device->GetDeviceState(sizeof(state),&state);
             if(SUCCEEDED(result)){
@@ -440,8 +457,8 @@ void mouse_loop() {
         static control_modes::KeyLatch mode_key;
         bool f4=(GetAsyncKeyState(VK_F4)&0x8000)!=0;
         if(mode_key.press(f4,plain&&foreground_is_game()&&active.load())) {
-            int next=control_mode.load()==1?0:1;control_mode.store(next);mode_notice_pending=true;
-            log_line("CONTROL_MODE selected=%d name=%s; learned models retained",next,next?"AGILE 2.1":"CLASSIC 2.0");
+            int next=control_modes::next(control_mode.load());control_mode.store(next);mode_notice_pending=true;
+            log_line("CONTROL_MODE selected=%d name=%s; learned models retained",next,control_modes::name(next));
         }
         bool f8 = (GetAsyncKeyState(VK_F8) & 0x8000) != 0;
         bool f9 = (GetAsyncKeyState(VK_F9) & 0x8000) != 0;
@@ -476,14 +493,20 @@ void zoom_keys(bool up,bool down,bool reset,bool allowed){
 
 void target_input_tick(){
     if(!independent_mouse.load())return;
-    HudFrame frame;if(!read_hud_frame(frame))return;
+    // Prefer the final camera snapshot; when it is missing, stale or another aircraft's (camera callback paused
+    // or recovering), use the game thread's own fresh pose/view snapshot. The freshness, identity, pause, gaze
+    // and cutscene gates below apply to either.
+    HudFrame frame;bool have=read_hud_frame(frame);
+    auto fresh=[](const HudFrame& f){const auto now=GetTickCount64();return f.pawn==aircraft.load()&&now>=f.tick&&now-f.tick<250;};
+    if(!have||!fresh(frame)){HudFrame staged;if(read_pending_hud_frame(staged)&&fresh(staged)){frame=staged;have=true;}}
+    if(!have)return;
     std::lock_guard<std::recursive_mutex> lock(target_mutex);
     if(!active.load()||!enabled.load()||game_paused.load()||gaze_active.load()||context_suspended.load()||
        !foreground_is_game()||frame.pawn!=aircraft.load()||GetTickCount64()-frame.tick>=250||
        recenter_requested.load()||resume_center_requested.load()||transition_center_requested.load()){
         mouse_delta.clear();return;
     }
-    const bool looking=(GetAsyncKeyState('C')&0x8000)!=0;
+    const bool looking=bound_key_down(custom_keys::Action::FreeLook);
     const auto delta=mouse_delta.take();
     if(!delta.x&&!delta.y&&looking==free_look.held)return;
     auto aim=flight::basis(target_pitch.load(),target_yaw.load(),0).f;
@@ -509,13 +532,15 @@ void update_commands() {
         filtered_pitch_rate=filtered_yaw_rate=filtered_roll_rate=0;mouse_delta.clear();free_look.reset();
     }
     const auto now = GetTickCount64();
-    const float dt = previous_pose_tick ? std::clamp((now-previous_pose_tick)/1000.0f,0.001f,0.1f) : 1.0f/60;
+    const auto control_qpc=hud_qpc();
+    const float dt=control_timing::delta(control_qpc,previous_pose_qpc,hud_frequency(),previous_pose_tick!=0);
+    previous_pose_qpc=control_qpc;
     const Basis b = basis(pose_pitch.load(),pose_yaw.load(),pose_roll.load());
     const Basis old = basis(previous_pitch,previous_yaw,previous_roll);
     // Estimate body angular velocity from the moving basis, avoiding Euler wrap/pole artifacts.
     V omega = (cross(old.f,b.f)+cross(old.r,b.r)+cross(old.u,b.u))*(0.5f/dt/rad);
     float a = 1-std::exp(-12*dt);
-    if (!previous_pose_tick) { omega={}; roll_level_blend.reset();pitch_arrival.reset();roll_arrival.reset();for(auto& ref:target_references)ref.reset();have_roll_goal=false; }
+    if (!previous_pose_tick) { reset_capture_roll_state();omega={}; roll_level_blend.reset();pitch_arrival.reset();roll_arrival.reset();for(auto& ref:target_references)ref.reset();have_roll_goal=false; }
     filtered_pitch_rate += (-dot(omega,b.r)-filtered_pitch_rate)*a;
     filtered_yaw_rate += (dot(omega,b.u)-filtered_yaw_rate)*a;
     filtered_roll_rate += (-dot(omega,b.f)-filtered_roll_rate)*a;
@@ -524,13 +549,13 @@ void update_commands() {
     V aim=basis(target_pitch.load(),target_yaw.load(),0).f;
     const bool manual = !foreground_is_game();
     if (recenter_requested.exchange(false) || manual) {
-        aim=b.f;control_goal_seen=false;++hud_epoch;
+        reset_capture_roll_state();aim=b.f;control_goal_seen=false;++hud_epoch;
         mouse_delta.clear();
         for(auto& ref:target_references)ref.reset();have_roll_goal=false;
     }
     const Basis view=basis(camera_pitch.load(),camera_yaw.load(),camera_roll.load());
     if(resume_center_requested.exchange(false)) {
-        control_goal_seen=false;
+        reset_capture_roll_state();control_goal_seen=false;
         for(auto& ref:target_references)ref.reset();have_roll_goal=false;
         // Intersect the camera-centre ray with the HUD's 500m aim sphere.
         V offset{view_offset_x.load(),view_offset_y.load(),view_offset_z.load()};
@@ -542,7 +567,7 @@ void update_commands() {
     }
     const V goal_before_input=independent_mouse.load()&&control_goal_seen?control_last_goal:aim;
     const float sensitivity=live_sensitivity.load();
-    const bool looking=!manual && (GetAsyncKeyState('C')&0x8000)!=0;
+    const bool looking=!manual && bound_key_down(custom_keys::Action::FreeLook);
     MouseDelta delta{};
     if(independent_mouse.load()){
         const auto sequence=input_goal_sequence.load();delta.x=sequence!=control_last_sequence?1:0;control_last_sequence=sequence;
@@ -555,6 +580,7 @@ void update_commands() {
             {view_offset_x.load(),view_offset_y.load(),view_offset_z.load()});
         look_pitch=flight::pitch(camera_target);look_yaw=flight::yaw(camera_target);
         target_pitch=flight::pitch(aim);target_yaw=flight::yaw(aim);
+        if(delta.x||delta.y){target_gaps.event(control_qpc,hud_frequency());++input_goal_sequence;rate_input_move.fetch_add(1,std::memory_order_relaxed);}
     }
     control_last_goal=aim;control_goal_seen=true;
     const float f=dot(aim,b.f), right=dot(aim,b.r), up=dot(aim,b.u);
@@ -567,30 +593,56 @@ void update_commands() {
     // The reference proportional demand alone does not brake AC's fast roll response.
     const float pitch_error=std::atan2(up,std::max(0.02f,f))/rad;
     const float yaw_error=std::atan2(right,std::max(0.02f,f))/rad;
+    const V goal_omega=cross(goal_before_input,aim)*(1.f/dt/rad);
+    const bool moving_goal=!manual&&!looking&&(delta.x!=0||delta.y!=0);
+    if(looking){target_references[0].reset();target_references[2].reset();}
+    const float ref_pitch=target_references[0].update(-dot(goal_omega,b.r),moving_goal,dt,45.f);
+    const float ref_yaw=target_references[2].update(dot(goal_omega,b.u),moving_goal,dt,7.f);
+    if(control_modes::exact(control_mode.load())&&!manual)fe_runtime::publish_goal(aircraft.load(),b,aim,ref_pitch,ref_yaw,now,-dot(goal_omega,b.r),dot(goal_omega,b.u));
+    else fe_runtime::invalidate();
+    if(control_modes::exact(control_mode.load())&&now-fe_log_tick>=10000){fe_log_tick=now;
+        log_line("FE_CONTROL mode=%s used=%llu fallbacks=%llu last_reason=%d calib_pitch=%.2f calib_bank=%.2f calib_bad=%d trace_dropped=%llu params=%d",
+            control_modes::name(control_mode.load()),(unsigned long long)fe_runtime::rt.used,(unsigned long long)fe_runtime::rt.fallbacks,fe_runtime::rt.last_reason,
+            fe_runtime::calib_pitch_err.load(),fe_runtime::calib_bank_err.load(),fe_runtime::calib_bad.load(),(unsigned long long)fe_runtime::trace_dropped.load(),fe_runtime::rt.params.valid?1:0);}
     const float level_error=std::atan2(b.r.z,b.u.z)/rad;
     const float near_blend=tracking_weight(angle);
     // Bank until the target lies above the aircraft, then pull toward it.
     const float turn_bank_error=std::clamp(std::atan2(right,std::max(0.12f,up))/rad,-90.0f,90.0f);
     const float roll_blend=roll_level_blend.step(angle,dt);
-    const float roll_error=level_error*(1-roll_blend)+turn_bank_error*roll_blend;
-    // Separate fast tracking from gentler final leveling. Braking remains available.
-    const float roll_speed=70.0f+70.0f*roll_blend;
+    float roll_error=level_error*(1-roll_blend)+turn_bank_error*roll_blend;
+    const float capture_mix=capture_blend.step(control_mode.load()==2,dt);capture_mode_weight=capture_mix;
+    if(assist_plane_type.load()!=learning_plane||aircraft.load()!=learning_pawn||full_model_new_flight.load())reset_capture_roll_state();
+    capture_roll::Input roll_input;roll_input.dt=dt;roll_input.angle=angle;roll_input.up=up;roll_input.right=right;
+    roll_input.turn_error=turn_bank_error;roll_input.level_error=level_error;roll_input.roll_rate=filtered_roll_rate;
+    roll_input.pitch_rate=filtered_pitch_rate-ref_pitch;roll_input.yaw_rate=filtered_yaw_rate-ref_yaw;
+    roll_input.target_rate=std::sqrt(dot(goal_omega,goal_omega));
+    roll_input.target_jump=std::acos(std::clamp(dot(goal_before_input,aim),-1.f,1.f))/rad;
+    roll_input.pole_clearance=std::hypot(b.r.z,b.u.z);roll_input.pursuit_rate=140.f;
+    const bool keyboard_manual=custom_keys::manual_mask(keybindings.load(),[](int key){return (GetAsyncKeyState(key)&0x8000)!=0;})!=0;
+    roll_input.active=capture_mix>0&&!manual&&!keyboard_manual;
+    const auto capture_schedule=capture_control::schedule(capture_roll_guidance,roll_input);
+    const float roll_schedule_mix=capture_schedule.valid?capture_mix:0.f;
+    roll_error+=(capture_schedule.roll_error-roll_error)*roll_schedule_mix;
+    capture_track_weight=roll_schedule_mix;capture_level_weight=capture_schedule.level_weight;capture_cross_rate=capture_schedule.cross_rate;
+    const float roll_speed=(70.0f+70.0f*roll_blend)*(1-roll_schedule_mix)+capture_schedule.rate_limit*roll_schedule_mix;
+    capture_actual_bank=level_error;capture_roll_error=roll_error;capture_target_bank=wrap_degrees(level_error-roll_error);
+    capture_roll_ratecap=roll_speed;capture_relative_pointing_rate=std::hypot(roll_input.pitch_rate,roll_input.yaw_rate);
+    capture_level_phase=!roll_input.active?0:capture_schedule.leveling&&roll_input.pole_clearance<=.05f?4:capture_schedule.leveling?3:capture_schedule.stable_time>0?2:1;
+    capture_roll_limit_cause=!capture_schedule.leveling?0:roll_input.pole_clearance<=.05f?3:capture_schedule.rate_limit<89.f?2:1;
     float rcmd=roll_arrival.command(roll_error,filtered_roll_rate,roll_speed,240.0f,3.5f,1.0f,170.0f,1.0f,config.arrival_braking,dt);
     const float final_gain=1.0f-near_blend;
     float pcmd=pitch_arrival.command(pitch_error,filtered_pitch_rate,45.0f,90.0f,1.8f+0.8f*final_gain,0.2f,55.0f,0.85f,config.arrival_braking,dt);
     const float yaw_rate=std::clamp(dead(yaw_error,0.2f)*(1.2f+0.6f*final_gain),-7.0f,7.0f);
     float ycmd=std::clamp((yaw_rate-filtered_yaw_rate*0.6f)/10.0f,-0.7f,0.7f);
-    const V goal_omega=cross(goal_before_input,aim)*(1.f/dt/rad);
-    const bool moving_goal=!manual&&!looking&&(delta.x!=0||delta.y!=0);
-    if(looking){target_references[0].reset();target_references[2].reset();}
     const float roll_goal=wrap_degrees(pose_roll.load()+roll_error);
     const float goal_roll_rate=have_roll_goal?wrap_degrees(roll_goal-previous_roll_goal)/dt:0;
     previous_roll_goal=roll_goal;have_roll_goal=true;
     std::array<float,3> references{
-        target_references[0].update(-dot(goal_omega,b.r),moving_goal,dt,45.f),
+        ref_pitch,
         target_references[1].update(goal_roll_rate,std::abs(pose_pitch.load())<60.f,dt,roll_speed),
-        target_references[2].update(dot(goal_omega,b.u),moving_goal,dt,7.f)};
-    if(!manual)apply_model_control(pitch_error,roll_error,yaw_error,filtered_pitch_rate,filtered_roll_rate,filtered_yaw_rate,-dot(omega,b.r),-dot(omega,b.f),dot(omega,b.u),dt,pcmd,rcmd,ycmd,roll_speed,references);else reset_model_assist();
+        ref_yaw};
+    if(capture_schedule.leveling)references[1]*=1-capture_mix; // Synthetic leveling is not moving-target feedforward.
+    if(!manual)apply_model_control(pitch_error,roll_error,yaw_error,filtered_pitch_rate,filtered_roll_rate,filtered_yaw_rate,-dot(omega,b.r),-dot(omega,b.f),dot(omega,b.u),dt,pcmd,rcmd,ycmd,roll_speed,references,{f,right,up},{b.f.z,b.r.z,b.u.z},b,std::acos(std::clamp(dot(goal_before_input,aim),-1.f,1.f))/rad);else reset_model_assist();
     command_pitch.store(manual?0:pcmd*config.pitch_sign);
     command_yaw.store(manual?0:ycmd*config.yaw_sign);
     command_roll.store(manual?0:rcmd*config.roll_sign);
@@ -749,9 +801,8 @@ uintptr_t __fastcall process_input(unsigned char* state, unsigned char* context)
     // Manual pitch also suspends automatic roll, matching MouseFlight maneuvers.
     // Preserve AC's native keyboard values, including opposing-key handling.
     auto held=[](int key) { return (GetAsyncKeyState(key)&0x8000)!=0; };
-    const bool keyboard_pitch=held('W') || held('S');
-    const bool keyboard_roll=keyboard_pitch || held('A') || held('D');
-    const bool keyboard_yaw=held('Q') || held('E');
+    const int leases=custom_keys::manual_mask(keybindings.load(),held);
+    const bool keyboard_pitch=(leases&1)!=0,keyboard_yaw=(leases&2)!=0,keyboard_roll=(leases&4)!=0;
     bool override_input = true; // Lifecycle/foreground already checked above.
     if (override_input && reinterpret_cast<uintptr_t>(state) == pawn + 0x22a0) {
         __try {
@@ -764,12 +815,41 @@ uintptr_t __fastcall process_input(unsigned char* state, unsigned char* context)
         }
     }
     float observed_p=0,observed_y=0,observed_r=0;bool observed_valid=false;
+    // WAR: exact flight-engine controller computed here, on the game's own tick and state; when it cannot
+    // run (reason codes in fe_runtime), WAR v11.1 commands from the Lua tick are used (degraded mode).
+    fe_runtime::Command exact{};
+    const int mode_now=control_mode.load();
+    if(override_input&&control_modes::exact(mode_now)){
+        exact=fe_runtime::compute(pawn,context,mode_now,perf_us(perf_clock()));
+        // Log degraded periods that last >= 30 frames (~0.5 s), not momentary gaps (focus changes, respawn).
+        static int bad_frames=0;
+        if(!exact.valid){if(++bad_frames==30)log_line("WAR_DEGRADED v11.1 fallback reason=%d",exact.reason);}
+        else{if(bad_frames>=30)log_line("WAR_RESTORED exact controller after %d frames",bad_frames);bad_frames=0;}
+    }
+    // WAR: War Thunder ownership rule instead of the per-key lease (PEACE keeps the lease).
+    bool own_pitch=keyboard_pitch,own_yaw=keyboard_yaw,own_roll=keyboard_roll;
+    if(override_input&&control_modes::exact(mode_now)){
+        const auto key=[&](custom_keys::Action a){return custom_keys::down(keybindings.load(),a,held)?1:0;};
+        const int dir[3]={key(custom_keys::Action::PitchUp)-key(custom_keys::Action::PitchDown),
+                          key(custom_keys::Action::YawRight)-key(custom_keys::Action::YawLeft),
+                          key(custom_keys::Action::RollRight)-key(custom_keys::Action::RollLeft)};
+        const int release=fe_runtime::manual_release(pawn,context,dir);
+        own_pitch=(release&1)!=0;own_yaw=(release&2)!=0;own_roll=(release&4)!=0;
+    }
     if (override_input && reinterpret_cast<uintptr_t>(state) == pawn + 0x22a0) {
         __try {
             float* axes = reinterpret_cast<float*>(pawn + 0x2268);
+            if(exact.valid){
+                // Flight-engine axes: 0 pitch (+pull), 1 yaw (+right), 2 roll (+right wing down).
+                // Released channels keep the game's own keyboard values (stock input filter).
+                if(!own_pitch) axes[0] = static_cast<float>(exact.stick[0]);
+                if(!own_yaw) axes[1] = static_cast<float>(exact.stick[1]);
+                if(!own_roll) axes[2] = static_cast<float>(exact.stick[2]);
+            }else{
             if(!keyboard_pitch) axes[config.pitch_slot] = command_pitch.load();
             if(!keyboard_yaw) axes[1] = command_yaw.load();
             if(!keyboard_roll) axes[config.roll_slot] = command_roll.load();
+            }
             observed_p=axes[config.pitch_slot]*config.pitch_sign;observed_y=axes[1]*config.yaw_sign;observed_r=axes[config.roll_slot]*config.roll_sign;observed_valid=true;
         } __except (EXCEPTION_EXECUTE_HANDLER) {
             active.store(false);
@@ -777,14 +857,18 @@ uintptr_t __fastcall process_input(unsigned char* state, unsigned char* context)
         }
     }
     if(observed_valid)observe_adaptive_input(pawn,observed_p,observed_r,observed_y);
-    if(observed_valid)observe_assist_input(pawn,observed_p,observed_r,(keyboard_pitch?1:0)|(keyboard_yaw?2:0)|(keyboard_roll?4:0),observed_y);
-    if(observed_valid)shadow_capture_input(pawn,observed_p,observed_y,observed_r,(keyboard_pitch?1:0)|(keyboard_yaw?2:0)|(keyboard_roll?4:0));
+    if(observed_valid)observe_assist_input(pawn,observed_p,observed_r,(own_pitch?1:0)|(own_yaw?2:0)|(own_roll?4:0),observed_y);
+    if(observed_valid)shadow_capture_input(pawn,observed_p,observed_y,observed_r,(own_pitch?1:0)|(own_yaw?2:0)|(own_roll?4:0));
     uintptr_t result = original(state, context);
     if (override_input && reinterpret_cast<uintptr_t>(state) == pawn + 0x22a0) {
         __try {
             // AC8's stock yaw path turns every non-zero axis value into full yaw.
             // Preserve only the proportional input target; downstream response remains stock.
-            if(!keyboard_yaw)
+            if(exact.valid){
+                // Yaw command state (stock yaw is on/off); pitch/roll go through the stock input stage.
+                double* S = reinterpret_cast<double*>(state);
+                if(!own_yaw) S[1] = exact.S[1];
+            }else if(!keyboard_yaw)
                 *reinterpret_cast<double*>(state + 8) = static_cast<double>(command_yaw.load());
         } __except (EXCEPTION_EXECUTE_HANDLER) {
             active.store(false);
@@ -854,7 +938,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
     }
     load_config();
     log_line("CAMERA_SETTINGS mode=%d distance_m=%.1f height_m=%.1f F3=toggle; mission/cinematic recenter enabled",camera_view_mode.load(),camera_distance_cm.load()/100,camera_height_cm.load()/100);
-    log_line("PROFILE 2.2.2 CAMERA-ORBIT SWITCHABLE MODEL CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
+    log_line("PROFILE 2.4.0 WAR=13.7 HUD=GUNCROSS+HMD-FREELOOK LEVEL-REARM PEACE-BANK-GOAL WAR=FE-EXACT-WT PATH-LOCK QUINTIC-LEVEL IDLE-GATE-LEVEL ROLL-PREDICT-NEAR AIM-WINDOW CAMERA-FAULT-RETRY HIL-TUNED WT-LEVEL WT-OVERRIDE WAR-DEGRADED=V11.1 PEACE-WAR-CYCLE CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
     if (!prepare_hook()) return 0;
     install_native_camera();
     helmet::install();
@@ -867,7 +951,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
     running.store(true);
     std::thread(mouse_loop).detach();
     std::thread(overlay_loop).detach();
-    log_line("ready: hold C for free look, release to return; F8 toggle, F9 recenter; RMB reserved");
+    log_line("ready: hold configured free-look key, release to return; F8 toggle, F9 recenter; zoom key configured");
     log_line("HUDSync1.3.7: cached last valid frame, active-rate retry, batched marker movement, source cadence diagnostics");
     lua.set_number(30);
     return 1;
@@ -878,7 +962,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_reload(void*) {
     return 0;
 }
 
-struct CanvasCounters {uint64_t callbacks=0,eligible=0,drawn=0,lines=0,errors=0;double cost_ms=0,max_ms=0;ULONGLONG since=0;} canvas_counts;
+struct CanvasCounters {uint64_t callbacks=0,eligible=0,drawn=0,lines=0,errors=0;double cost_ms=0,max_ms=0,camera_age_ms=0,max_camera_age_ms=0;uint64_t projected=0,repeated_camera=0,last_camera_sequence=0;ULONGLONG since=0;} canvas_counts;
 extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_mode(lua_State* state){
     LuaView lua(state);lua.set_number(hud_renderer.load());return 1;
 }
@@ -898,12 +982,16 @@ int canvas_position_status(uintptr_t pawn,float width,float height,float& x,floa
     HudFrame f;if(!read_hud_frame(f))return -2;
     if(f.pawn!=pawn||pawn!=aircraft.load())return -3;
     if(GetTickCount64()-f.tick>=250||f.epoch!=hud_epoch.load())return -4;
+    // The reference reticle and HMD look marker use this fresh frame even when the ring itself is off-screen or
+    // behind the camera (e.g. C free look).
+    canvas_draw_frame=f;canvas_draw_valid=true;
     // Do not mix a newer asynchronous mouse goal with an older camera sample.
     auto view=flight::basis(f.cp,f.cy,f.cr);auto point=flight::basis(f.tp,f.ty,0).f*50000-flight::V{f.ox,f.oy,f.oz};
     float depth=flight::dot(point,view.f);if(depth<=.01f)return -5;if(!std::isfinite(f.fov)||f.fov<15||f.fov>150)return -6;
     float focal=width*.5f/std::tan(f.fov*.5f*flight::rad);x=width*.5f+focal*flight::dot(point,view.r)/depth;y=height*.5f-focal*flight::dot(point,view.u)/depth;
     radius=30*height/1080.f;
-    canvas_draw_frame=f;canvas_draw_valid=true;
+    if(f.camera_qpc){double age=1000.*double(hud_qpc()-f.camera_qpc)/hud_frequency();canvas_counts.camera_age_ms+=age;canvas_counts.max_camera_age_ms=std::max(canvas_counts.max_camera_age_ms,age);++canvas_counts.projected;}
+    if(f.camera_sequence==canvas_counts.last_camera_sequence)++canvas_counts.repeated_camera;canvas_counts.last_camera_sequence=f.camera_sequence;
     return std::isfinite(x)&&std::isfinite(y)&&x>=radius&&x<=width-radius&&y>=radius&&y<=height-radius?1:-7;
 }
 bool canvas_position(uintptr_t pawn,float width,float height,float& x,float& y,float& radius){return canvas_position_status(pawn,width,height,x,y,radius)==1;}
@@ -915,7 +1003,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_viewport(lua_State* sta
 extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_ring(lua_State* state){
     if(!running.load()||!on_bridge_thread())return 0;
     LuaView lua(state);double v[3]{};if(!read_numbers(lua,v)||!live_pointer_number(v[0]))return 0;
-    if((hud_renderer.load()!=2&&hud_renderer.load()!=3)||!active.load()||!enabled.load()||!hud_enabled.load()||game_paused.load()||gaze_active.load()||context_suspended.load()||!foreground_is_game()){lua.set_number(-8);return 1;}
+    if((hud_renderer.load()!=2&&hud_renderer.load()!=3)||!active.load()||!enabled.load()||!hud_enabled.load()||game_paused.load()||gaze_active.load()||context_suspended.load()||!foreground_is_game()){canvas_draw_valid=false;lua.set_number(-8);return 1;}
     float x=0,y=0,radius=0;int status=canvas_position_status(uintptr_t(v[0]),float(v[1]),float(v[2]),x,y,radius);lua.set_number(status);if(status!=1)return 1;
     ++canvas_counts.eligible;lua.set_number(x);lua.set_number(y);lua.set_number(radius);lua.set_number(std::max(1.f,float(v[2])/1080.f*1.3f));lua.set_number(double(hud_qpc())*1000/hud_frequency());return 6;
 }
@@ -928,8 +1016,8 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_ui(lua_State* state){
  auto choose=[&](uint64_t until,int id,float v){if(until>now&&until>=end){end=until;toast=id;value=v;}};
  choose(mode_notice_until.load(),1,float(control_mode.load()));choose(camera_notice_until.load(),2,float(camera_view_mode.load()));
  choose(helmet_notice_until.load(),3,float(helmet_notice.load()));choose(sensitivity_notice_until.load(),4,live_sensitivity.load());choose(zoom_notice_until.load(),5,free_look_zoom.load());
- const double values[]={settings_panel.load()?1.:0.,helmet_enabled.load()?1.:0.,double(control_mode.load()),double(camera_view_mode.load()),live_sensitivity.load(),configured_sensitivity.load(),free_look_zoom.load(),configured_zoom.load(),view_fov.load(),umg_update_hz,double(toast),value,end?std::min(1.,double(end-now)/90.):0.,hud_opacity.load(),hud_connector.load()?1.:0.,hud_link_always.load()?1.:0.};
- for(double v:values)lua.set_number(v);return 16;
+ const double values[]={settings_panel.load()?1.:0.,helmet_enabled.load()?1.:0.,double(control_mode.load()),double(camera_view_mode.load()),live_sensitivity.load(),configured_sensitivity.load(),free_look_zoom.load(),configured_zoom.load(),view_fov.load(),umg_update_hz,double(toast),value,end?std::min(1.,double(end-now)/90.):0.,hud_opacity.load(),hud_connector.load()?1.:0.,hud_link_always.load()?1.:0.,free_look.held?1.:0.};
+ for(double v:values)lua.set_number(v);return 17;
 }
 bool canvas_nose_position(uintptr_t pawn,float width,float height,float& x,float& y){
  if(!canvas_draw_valid||width<320||height<200)return false;
@@ -939,6 +1027,21 @@ bool canvas_nose_position(uintptr_t pawn,float width,float height,float& x,float
  float focal=width*.5f/std::tan(std::clamp(f.fov,15.f,150.f)*.5f*flight::rad);
  x=width*.5f+focal*flight::dot(point,view.r)/z;y=height*.5f-focal*flight::dot(point,view.u)/z;
  return std::isfinite(x)&&std::isfinite(y);
+}
+// HMD look marker: the C free-look view direction on the same 500 m sphere and camera frame as the ring.
+bool canvas_look_position(uintptr_t pawn,float width,float height,float& x,float& y){
+ if(!free_look.held||!canvas_draw_valid||width<320||height<200)return false;
+ const auto& f=canvas_draw_frame;
+ if(f.pawn!=pawn||pawn!=aircraft.load()||GetTickCount64()-f.tick>=250||f.epoch!=hud_epoch.load())return false;
+ auto view=flight::basis(f.cp,f.cy,f.cr);auto point=flight::basis(look_pitch.load(),look_yaw.load(),0).f*50000-flight::V{f.ox,f.oy,f.oz};float z=flight::dot(point,view.f);if(z<=.01)return false;
+ float focal=width*.5f/std::tan(std::clamp(f.fov,15.f,150.f)*.5f*flight::rad);
+ x=width*.5f+focal*flight::dot(point,view.r)/z;y=height*.5f-focal*flight::dot(point,view.u)/z;
+ return std::isfinite(x)&&std::isfinite(y);
+}
+extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_look(lua_State* state){
+ if(!running.load()||!on_bridge_thread())return 0;LuaView lua(state);double v[3]{};if(!read_numbers(lua,v)||!live_pointer_number(v[0]))return 0;
+ float x=0,y=0;if(!canvas_look_position(uintptr_t(v[0]),float(v[1]),float(v[2]),x,y))return 0;
+ lua.set_number(1);lua.set_number(x);lua.set_number(y);return 3;
 }
 extern "C" __declspec(dllexport) int ac8_mouseaim_canvas_nose(lua_State* state){
  if(!running.load()||!on_bridge_thread())return 0;LuaView lua(state);double v[3]{};if(!read_numbers(lua,v)||!live_pointer_number(v[0]))return 0;
@@ -962,6 +1065,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_begin(void*) {
         auto now=GetTickCount64();if(!canvas_counts.since)canvas_counts.since=now;
         if(now-canvas_counts.since>=10000){double seconds=(now-canvas_counts.since)/1000.;
             log_line("UMG_HUD checks=%llu eligible=%llu updates=%llu update_hz=%.2f mean_cpu_ms=%.3f max_cpu_ms=%.3f errors=%llu external_overlay=OFF (not display FPS)",canvas_counts.callbacks,canvas_counts.eligible,canvas_counts.drawn,canvas_counts.drawn/seconds,canvas_counts.drawn?canvas_counts.cost_ms/canvas_counts.drawn:0,canvas_counts.max_ms,canvas_counts.errors);
+            log_line("HUD_PHASE frame_goal_sync=%d mean_camera_age_ms=%.3f max_camera_age_ms=%.3f repeated_camera=%llu projected=%llu (sampling diagnostics, NOT display FPS)",independent_mouse.load()?0:1,canvas_counts.projected?canvas_counts.camera_age_ms/canvas_counts.projected:0,canvas_counts.max_camera_age_ms,canvas_counts.repeated_camera,canvas_counts.projected);
             umg_update_hz=canvas_counts.drawn/seconds;canvas_counts={};canvas_counts.since=now;
         }
     }
@@ -997,7 +1101,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_camera_fov(lua_State* state){
 extern "C" __declspec(dllexport) int ac8_mouseaim_manual_look(lua_State* state){
     if(!running.load()||!on_bridge_thread())return 0;
     LuaView lua(state);if(lua.get_stack_size()!=0)return 0;
-    lua.set_number(foreground_is_game()&&(GetAsyncKeyState('C')&0x8000)?1:0);return 1;
+    lua.set_number(foreground_is_game()&&bound_key_down(custom_keys::Action::FreeLook)?1:0);return 1;
 }
 
 extern "C" __declspec(dllexport) int ac8_mouseaim_context(lua_State* state){
@@ -1028,6 +1132,12 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_frame(lua_State* state) {
 }
 
 // Separate from frame(): that API returns the camera destination during C.
+// HMD selection point: the flight target normally; during C free look the view direction (head aim), so a target
+// can be picked by looking at it. Returns true while free look is held.
+bool helmet_aim_direction(float& pitch,float& yaw){
+    const bool looking=free_look.held;
+    pitch=looking?look_pitch.load():target_pitch.load();yaw=looking?look_yaw.load():target_yaw.load();return looking;
+}
 extern "C" __declspec(dllexport) int ac8_mouseaim_helmet_state(lua_State* state) {
     std::lock_guard<std::recursive_mutex> lock(target_mutex);
     if(!running.load()||!on_bridge_thread())return 0;
@@ -1038,7 +1148,8 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_helmet_state(lua_State* state)
     RECT client{};if(game_window)GetClientRect(game_window,&client);
     const double aspect=client.bottom>0?double(client.right)/client.bottom:0;
     if(!usable)helmet::snapshot={};
-    lua.set_number(usable?1:0);lua.set_number(target_pitch.load());lua.set_number(target_yaw.load());lua.set_number(aspect);return 4;
+    float aim_p=0,aim_y=0;const bool looking=helmet_aim_direction(aim_p,aim_y);
+    lua.set_number(usable?1:0);lua.set_number(aim_p);lua.set_number(aim_y);lua.set_number(aspect);lua.set_number(looking?1:0);return 5;
 }
 extern "C" __declspec(dllexport) int ac8_mouseaim_helmet_submit(lua_State* state) {
     if(!running.load()||!on_bridge_thread())return 0;
@@ -1116,3 +1227,4 @@ BOOL WINAPI DllMain(HINSTANCE module, DWORD reason, LPVOID) {
     }
     return TRUE;
 }
+

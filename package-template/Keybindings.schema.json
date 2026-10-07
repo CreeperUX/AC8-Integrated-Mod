@@ -1,0 +1,420 @@
+{
+  "version": 1,
+  "actions": [
+    {
+      "name": "free_look",
+      "label": "自由观察（按住）",
+      "default": "C"
+    },
+    {
+      "name": "free_look_zoom",
+      "label": "自由观察放大（与观察键一起按住）",
+      "default": "MouseRight"
+    },
+    {
+      "name": "pitch_up",
+      "label": "抬起机头：手动接管检测",
+      "default": "S"
+    },
+    {
+      "name": "pitch_down",
+      "label": "压低机头：手动接管检测",
+      "default": "W"
+    },
+    {
+      "name": "roll_left",
+      "label": "向左滚转：手动接管检测",
+      "default": "A"
+    },
+    {
+      "name": "roll_right",
+      "label": "向右滚转：手动接管检测",
+      "default": "D"
+    },
+    {
+      "name": "yaw_left",
+      "label": "向左偏航：手动接管检测",
+      "default": "Q"
+    },
+    {
+      "name": "yaw_right",
+      "label": "向右偏航：手动接管检测",
+      "default": "E"
+    }
+  ],
+  "keys": {
+    "A": {
+      "vk": 65,
+      "label": "A"
+    },
+    "B": {
+      "vk": 66,
+      "label": "B"
+    },
+    "C": {
+      "vk": 67,
+      "label": "C"
+    },
+    "D": {
+      "vk": 68,
+      "label": "D"
+    },
+    "E": {
+      "vk": 69,
+      "label": "E"
+    },
+    "F": {
+      "vk": 70,
+      "label": "F"
+    },
+    "G": {
+      "vk": 71,
+      "label": "G"
+    },
+    "H": {
+      "vk": 72,
+      "label": "H"
+    },
+    "I": {
+      "vk": 73,
+      "label": "I"
+    },
+    "J": {
+      "vk": 74,
+      "label": "J"
+    },
+    "K": {
+      "vk": 75,
+      "label": "K"
+    },
+    "L": {
+      "vk": 76,
+      "label": "L"
+    },
+    "M": {
+      "vk": 77,
+      "label": "M"
+    },
+    "N": {
+      "vk": 78,
+      "label": "N"
+    },
+    "O": {
+      "vk": 79,
+      "label": "O"
+    },
+    "P": {
+      "vk": 80,
+      "label": "P"
+    },
+    "Q": {
+      "vk": 81,
+      "label": "Q"
+    },
+    "R": {
+      "vk": 82,
+      "label": "R"
+    },
+    "S": {
+      "vk": 83,
+      "label": "S"
+    },
+    "T": {
+      "vk": 84,
+      "label": "T"
+    },
+    "U": {
+      "vk": 85,
+      "label": "U"
+    },
+    "V": {
+      "vk": 86,
+      "label": "V"
+    },
+    "W": {
+      "vk": 87,
+      "label": "W"
+    },
+    "X": {
+      "vk": 88,
+      "label": "X"
+    },
+    "Y": {
+      "vk": 89,
+      "label": "Y"
+    },
+    "Z": {
+      "vk": 90,
+      "label": "Z"
+    },
+    "0": {
+      "vk": 48,
+      "label": "0"
+    },
+    "1": {
+      "vk": 49,
+      "label": "1"
+    },
+    "2": {
+      "vk": 50,
+      "label": "2"
+    },
+    "3": {
+      "vk": 51,
+      "label": "3"
+    },
+    "4": {
+      "vk": 52,
+      "label": "4"
+    },
+    "5": {
+      "vk": 53,
+      "label": "5"
+    },
+    "6": {
+      "vk": 54,
+      "label": "6"
+    },
+    "7": {
+      "vk": 55,
+      "label": "7"
+    },
+    "8": {
+      "vk": 56,
+      "label": "8"
+    },
+    "9": {
+      "vk": 57,
+      "label": "9"
+    },
+    "F11": {
+      "vk": 122,
+      "label": "F11"
+    },
+    "F12": {
+      "vk": 123,
+      "label": "F12"
+    },
+    "F13": {
+      "vk": 124,
+      "label": "F13"
+    },
+    "F14": {
+      "vk": 125,
+      "label": "F14"
+    },
+    "F15": {
+      "vk": 126,
+      "label": "F15"
+    },
+    "F16": {
+      "vk": 127,
+      "label": "F16"
+    },
+    "F17": {
+      "vk": 128,
+      "label": "F17"
+    },
+    "F18": {
+      "vk": 129,
+      "label": "F18"
+    },
+    "F19": {
+      "vk": 130,
+      "label": "F19"
+    },
+    "F20": {
+      "vk": 131,
+      "label": "F20"
+    },
+    "F21": {
+      "vk": 132,
+      "label": "F21"
+    },
+    "F22": {
+      "vk": 133,
+      "label": "F22"
+    },
+    "F23": {
+      "vk": 134,
+      "label": "F23"
+    },
+    "F24": {
+      "vk": 135,
+      "label": "F24"
+    },
+    "None": {
+      "vk": 0,
+      "label": "未绑定"
+    },
+    "MouseLeft": {
+      "vk": 1,
+      "label": "鼠标左键"
+    },
+    "MouseRight": {
+      "vk": 2,
+      "label": "鼠标右键"
+    },
+    "MouseMiddle": {
+      "vk": 4,
+      "label": "鼠标中键"
+    },
+    "MouseX1": {
+      "vk": 5,
+      "label": "鼠标侧键 1"
+    },
+    "MouseX2": {
+      "vk": 6,
+      "label": "鼠标侧键 2"
+    },
+    "Backspace": {
+      "vk": 8,
+      "label": "Backspace"
+    },
+    "Tab": {
+      "vk": 9,
+      "label": "Tab"
+    },
+    "Space": {
+      "vk": 32,
+      "label": "Space"
+    },
+    "PageUp": {
+      "vk": 33,
+      "label": "PageUp"
+    },
+    "PageDown": {
+      "vk": 34,
+      "label": "PageDown"
+    },
+    "End": {
+      "vk": 35,
+      "label": "End"
+    },
+    "Home": {
+      "vk": 36,
+      "label": "Home"
+    },
+    "Left": {
+      "vk": 37,
+      "label": "Left"
+    },
+    "Up": {
+      "vk": 38,
+      "label": "Up"
+    },
+    "Right": {
+      "vk": 39,
+      "label": "Right"
+    },
+    "Down": {
+      "vk": 40,
+      "label": "Down"
+    },
+    "Insert": {
+      "vk": 45,
+      "label": "Insert"
+    },
+    "Delete": {
+      "vk": 46,
+      "label": "Delete"
+    },
+    "Shift": {
+      "vk": 16,
+      "label": "Shift"
+    },
+    "Ctrl": {
+      "vk": 17,
+      "label": "Ctrl"
+    },
+    "Alt": {
+      "vk": 18,
+      "label": "Alt"
+    },
+    "LeftShift": {
+      "vk": 160,
+      "label": "LeftShift"
+    },
+    "RightShift": {
+      "vk": 161,
+      "label": "RightShift"
+    },
+    "LeftCtrl": {
+      "vk": 162,
+      "label": "LeftCtrl"
+    },
+    "RightCtrl": {
+      "vk": 163,
+      "label": "RightCtrl"
+    },
+    "LeftAlt": {
+      "vk": 164,
+      "label": "LeftAlt"
+    },
+    "RightAlt": {
+      "vk": 165,
+      "label": "RightAlt"
+    },
+    "NumMultiply": {
+      "vk": 106,
+      "label": "NumMultiply"
+    },
+    "NumAdd": {
+      "vk": 107,
+      "label": "NumAdd"
+    },
+    "NumSubtract": {
+      "vk": 109,
+      "label": "NumSubtract"
+    },
+    "NumDecimal": {
+      "vk": 110,
+      "label": "NumDecimal"
+    },
+    "NumDivide": {
+      "vk": 111,
+      "label": "NumDivide"
+    },
+    "Num0": {
+      "vk": 96,
+      "label": "Num0"
+    },
+    "Num1": {
+      "vk": 97,
+      "label": "Num1"
+    },
+    "Num2": {
+      "vk": 98,
+      "label": "Num2"
+    },
+    "Num3": {
+      "vk": 99,
+      "label": "Num3"
+    },
+    "Num4": {
+      "vk": 100,
+      "label": "Num4"
+    },
+    "Num5": {
+      "vk": 101,
+      "label": "Num5"
+    },
+    "Num6": {
+      "vk": 102,
+      "label": "Num6"
+    },
+    "Num7": {
+      "vk": 103,
+      "label": "Num7"
+    },
+    "Num8": {
+      "vk": 104,
+      "label": "Num8"
+    },
+    "Num9": {
+      "vk": 105,
+      "label": "Num9"
+    }
+  },
+  "reserved_note": "F1–F10 保留给现有 Mod 功能；Esc 用于取消录入。此页不改写游戏键位。"
+}

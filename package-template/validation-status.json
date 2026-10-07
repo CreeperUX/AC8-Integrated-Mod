@@ -1,8 +1,8 @@
 {
   "deploymentAllowed": true,
-  "candidateOnly": true,
-  "releaseAccepted": false,
-  "scope": "Distribution gate for the tested integrated modules; not a claim of complete in-game acceptance.",
-  "nativeControllerVersion": "2.2.2",
+  "candidateOnly": false,
+  "releaseAccepted": true,
+  "scope": "Stable 2.4.0 release gate: 21-suite native gate; the 23 public native suites and the GPU HUD test built from the shipped source; offline Lua HUD/HMD tests; package checks, live WAR flights on several aircraft; not a claim of exhaustive in-game acceptance.",
+  "nativeControllerVersion": "2.4.0",
   "gameBuild": "25201480"
 }

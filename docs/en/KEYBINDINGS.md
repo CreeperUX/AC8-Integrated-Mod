@@ -35,10 +35,10 @@ The installer does not modify these settings. Apply them manually in the game if
 | Input | Function |
 |---|---|
 | Mouse movement | Set a flight target direction; the controller coordinates aircraft attitude |
-| Hold C + move mouse | Mod free look; releasing C preserves the flight target |
-| F2 | Toggle HMD; disabled at startup, with four inward reticle ticks while enabled |
+| Hold C + move mouse | Mod free look; releasing C preserves the flight target. The nose reference cross stays visible |
+| F2 | Toggle HMD; disabled at startup. While enabled the mouse ring gets four corner brackets; while holding C the bracketed ring moves to the view direction and target switching picks from there |
 | F3 | Switch native relative / farther follow-camera position |
-| F4 | Switch CLASSIC / AGILE control policy |
+| F4 | Toggle PEACE / WAR flight control |
 | F5 | Performance diagnostics |
 | F6 | Camera diagnostics |
 | F7 | Show or hide the mod HUD and its notifications |
@@ -51,7 +51,7 @@ The installer does not modify these settings. Apply them manually in the game if
 - **C / Left Alt:** both are saved native camera bindings, but mod free look checks C directly. Use C for aircraft-centered mod observation; Left Alt is not an equivalent mod shortcut.
 - **V / F3:** V switches the native game view; F3 changes the mod's camera-position profile. Use the game's third-person view as instructed.
 - **F2 / F3 / F4:** release Shift, Ctrl and Alt before pressing them. Since throttle/brake use Left Shift/Left Ctrl here, holding them may prevent a toggle.
-- **W/S, A/D, Q/E:** manual override detection currently uses these fixed keys; W/S also yield automatic roll. Rebinding only the game does not automatically update that detection.
+- **W/S, A/D, Q/E:** default manual-takeover keys. In WAR a held pitch/yaw key takes all three axes and a roll key alone takes roll only; in PEACE W/S also yield automatic roll. If you rebind the game, change them in the launcher key settings too.
 - **F / right mouse button:** use the original target-switch action after enabling HMD. Candidate priority changes, not weapon range, lock angle or lock time.
 - Number-row keys and F-keys are different. Native autopilot, landing gear and directional camera actions depend on game context; this reference records saved bindings, not exhaustive live testing of every combination.
 

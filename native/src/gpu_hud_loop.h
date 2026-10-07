@@ -31,8 +31,8 @@ bool run_gpu_hud(){
         const bool has_notice=mode_notice_pending.load()||now<mode_notice_until.load()||now<camera_notice_until.load()||now<helmet_notice_until.load()||now<sensitivity_notice_until.load()||now<zoom_notice_until.load();
         bool wanted=game_window&&foreground_is_game()&&!IsIconic(game_window)&&active.load()&&enabled.load()&&hud_enabled.load()&&!game_paused.load()&&!gaze_active.load()&&!context_suspended.load()&&now-pose_tick.load()<250&&hybrid_hud::needs_overlay(ui_only,settings_panel.load(),has_notice);
         if(!wanted){predictor.reset();cache.reset();last_sequence=0;last_draw=0;}
-        HudFrame received{};bool read=read_hud_frame(received);if(wanted){cache.observe(read,received);if(!read)++misses;}
-        now=GetTickCount64();bool show=wanted&&cache.fresh(aircraft.load(),now);
+        HudFrame received{};bool read=false;if(wanted&&!ui_only)read=read_hud_frame(received);if(wanted&&!ui_only){cache.observe(read,received);if(!read)++misses;}
+        now=GetTickCount64();bool show=wanted&&(ui_only||cache.fresh(aircraft.load(),now));
         if(show){
             RECT client{};POINT origin{};GetClientRect(game_window,&client);ClientToScreen(game_window,&origin);
             UINT width=UINT(std::max(0L,client.right)),height=UINT(std::max(0L,client.bottom));
@@ -49,11 +49,14 @@ bool run_gpu_hud(){
                     SetWindowPos(window,HWND_TOPMOST,origin.x,origin.y,width,height,SWP_NOACTIVATE|SWP_SHOWWINDOW);shown=true;last_origin=origin;last_rect=client;
                 }
                 if(renderer->ready()){
+                    HudFrame f{};f.tick=pose_tick.load();f.fov=view_fov.load();
+                    gpu_hud::Layout frame;frame.ui_only=ui_only;frame.scale=std::max(.75f,height/1080.f);frame.opacity=hud_opacity.load();frame.connector=!ui_only&&hud_connector.load();frame.always=hud_link_always.load();frame.helmet_active=helmet_enabled.load();
+                    if(!ui_only){
                     // Queue readiness may arrive after our initial snapshot: render the newest coherent POV.
                     HudFrame latest{};if(read_hud_frame(latest)){cache.observe(true,latest);++fresh_reads;}
                     now=GetTickCount64();
                     if(!cache.fresh(aircraft.load(),now)){pacer.wait(1000);continue;}
-                    auto f=cache.value;
+                    f=cache.value;
                     if(independent_mouse.load()){
                         std::lock_guard<std::recursive_mutex> lock(target_mutex);
                         if(f.pawn==aircraft.load()){f.tp=target_pitch.load();f.ty=target_yaw.load();}
@@ -71,9 +74,11 @@ bool run_gpu_hud(){
                     auto project=[&](flight::V v,hud_geometry::Point& p){v=v*50000-offset;float z=flight::dot(v,view.f);if(z<=.01f)return false;
                         float focal=width*.5f/std::tan(std::clamp(f.fov,15.f,150.f)*.5f*flight::rad);p={width*.5f+focal*flight::dot(v,view.r)/z,height*.5f-focal*flight::dot(v,view.u)/z};
                         return std::isfinite(p.x)&&std::isfinite(p.y)&&p.x>=0&&p.y>=0&&p.x<width&&p.y<height;};
-                    gpu_hud::Layout frame;frame.ui_only=ui_only;frame.scale=std::max(.75f,height/1080.f);frame.opacity=hud_opacity.load();frame.connector=hud_connector.load();frame.always=hud_link_always.load();frame.helmet_active=helmet_enabled.load();
                     frame.independent=independent_mouse.load();frame.smoothing=requested;frame.predicted=prediction.applied;frame.prediction_ms=prediction.horizon_ms;frame.prediction_shift=prediction.shift_px;frame.prediction_fallbacks=fallback_count;
+                    frame.target=project(flight::basis(f.tp,f.ty,0).f,frame.target_point);frame.nose=project(flight::basis(f.p,f.y,f.r).f,frame.nose_point);
+                    }
                     frame.source_hz=measured_source_hz;frame.submit_hz=measured_submit_hz;
+                    const auto bindings=keybindings.load();frame.free_look_key=custom_keys::label(custom_keys::get(bindings,custom_keys::Action::FreeLook));frame.zoom_key=custom_keys::label(custom_keys::get(bindings,custom_keys::Action::Zoom));
                     frame.zoom=free_look_zoom.load();frame.zoom_start=configured_zoom.load();frame.hud_hz=hud_target_hz.load();
                     frame.settings=settings_panel.load();frame.sensitivity=live_sensitivity.load();frame.configured_sensitivity=configured_sensitivity.load();
                     frame.selected_mode=control_mode.load();frame.selected_camera=camera_view_mode.load();frame.fov=f.fov;frame.pose_age=unsigned(now-f.tick);
@@ -92,7 +97,6 @@ bool run_gpu_hud(){
                     if(now<zoom_end&&zoom_end>=std::max({sensitivity_end,helmet_end,camera_end,notice_end})){
                         frame.zoom_notice=free_look_zoom.load();frame.notice_alpha=std::min(1.f,float(zoom_end-now)/(creeperux::notice_exit*1000.f));
                     }
-                    frame.target=project(flight::basis(f.tp,f.ty,0).f,frame.target_point);frame.nose=project(flight::basis(f.p,f.y,f.r).f,frame.nose_point);
                     if(ui_only){frame.target=false;frame.nose=false;frame.connector=false;}
                     auto tick=perf_clock();float dt=last_draw?float(perf_us(tick-last_draw))/1e6f:1.f/120;
                     hr=renderer->draw(frame,dt);if(SUCCEEDED(hr))hr=renderer->present();
@@ -101,7 +105,7 @@ bool run_gpu_hud(){
                         ++errors;log_line("GPU_HUD device error hr=%08lX",static_cast<unsigned long>(hr));ShowWindow(window,SW_HIDE);shown=false;renderer.reset();
                         if(++recovery>2){failed=true;break;}
                     }else{
-                        if(last_draw){auto gap=perf_us(tick-last_draw);total_gap+=gap;peak_gap=std::max(peak_gap,gap);}last_draw=tick;++drawn;submit_gaps.event(tick,hud_frequency());camera_ages.sample(double(hud_qpc()-f.camera_qpc)*clock_ms);pose_ages.sample(double(hud_qpc()-f.pose_qpc)*clock_ms);total_source_age+=GetTickCount64()-f.tick;
+                        if(last_draw){auto gap=perf_us(tick-last_draw);total_gap+=gap;peak_gap=std::max(peak_gap,gap);}last_draw=tick;++drawn;submit_gaps.event(tick,hud_frequency());if(!ui_only){const double clock_ms=1000.0/perf_frequency.QuadPart;camera_ages.sample(double(hud_qpc()-f.camera_qpc)*clock_ms);pose_ages.sample(double(hud_qpc()-f.pose_qpc)*clock_ms);}total_source_age+=GetTickCount64()-f.tick;
                         if(f.sequence==last_sequence)++repeats;else{if(last_sequence&&f.sequence>last_sequence)source_frames+=f.sequence-last_sequence;last_sequence=f.sequence;}
                     }
                 }else {++busy;queue_retry=true;}

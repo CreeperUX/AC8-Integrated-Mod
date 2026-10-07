@@ -61,7 +61,7 @@ Edit `MouseAim-Settings.ini` while the game is closed. These settings apply at t
 
 | Setting | Default | Meaning |
 |---|---:|---|
-| `control_mode` | 1 | 0 = CLASSIC, 1 = AGILE; F4 switches during flight |
+| `control_mode` | 0 | 0 = PEACE (CLASSIC 2.0), 3 = WAR; F4 switches during flight; legacy 1->0, 2/4/5->3 |
 | `sensitivity` | 0.10 | Mouse-direction sensitivity |
 | `model_assist` | 1 | Enable model-based control |
 | `model_assist_strength` | 0.20 | Mixing scale for validated learned parameters; not a simple controller gain |

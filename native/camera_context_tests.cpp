@@ -4,8 +4,8 @@
 #include <cstdint>
 static HWND WINAPI fixture_foreground(){return reinterpret_cast<HWND>(uintptr_t(0x1238));}
 static DWORD WINAPI fixture_process(HWND,LPDWORD p){*p=GetCurrentProcessId();return GetCurrentThreadId();}
-static bool fixture_c=false,fixture_rmb=false;
-static SHORT WINAPI fixture_key(int key){return ((key=='C'&&fixture_c)||(key==VK_RBUTTON&&fixture_rmb))?SHORT(0x8000):0;}
+static bool fixture_c=false,fixture_rmb=false;static bool fixture_keys[256]{};
+static SHORT WINAPI fixture_key(int key){return ((key=='C'&&fixture_c)||(key==VK_RBUTTON&&fixture_rmb)||(key>0&&key<256&&fixture_keys[key]))?SHORT(0x8000):0;}
 #define GetForegroundWindow fixture_foreground
 #define GetWindowThreadProcessId fixture_process
 #define GetAsyncKeyState fixture_key
@@ -176,5 +176,32 @@ int main(){
  assert(!canvas_position(77777,1920,1080,cx,cy,cr));
  canvas_frame.tick-=251;publish_hud_frame(canvas_frame);assert(!canvas_position(65536,1920,1080,cx,cy,cr));
  puts("PASS Canvas projection, player identity and stale-data guards");
+ // The high-rate worker no longer mutates the goal; one game frame consumes
+ // the complete accumulated packet pair and stages the exact control goal.
+ independent_mouse=false;context_suspended=false;game_paused=false;gaze_active=false;
+ active=true;enabled=true;recenter_requested=false;resume_center_requested=false;transition_center_requested=false;
+ free_look.reset();mouse_delta.clear();target_pitch=0;target_yaw=0;fixture_c=false;
+ double synced_pose[13]={65536,0,0,0,0,0,0,62,0,0,0,0,0};
+ mouse_delta.add(10,0);mouse_delta.add(15,0);target_input_tick();assert(target_yaw.load()==0);
+ receive_pose(synced_pose);float synced_yaw=target_yaw.load();assert(synced_yaw>0);
+ HudFrame staged;assert(read_pending_hud_frame(staged)&&staged.ty==synced_yaw&&staged.tp==target_pitch.load());
+ assert(mouse_delta.take().x==0);receive_pose(synced_pose);assert(target_yaw.load()==synced_yaw);
+ fixture_c=true;receive_pose(synced_pose);mouse_delta.add(50,0);receive_pose(synced_pose);assert(target_yaw.load()==synced_yaw);
+ fixture_c=false;mouse_delta.add(30,0);receive_pose(synced_pose);assert(target_yaw.load()==synced_yaw);
+ puts("PASS frame-owned packet consumption, exact staged goal, no duplicate input and C target retention");
+ auto original_bindings=keybindings.load();auto new_bindings=custom_keys::defaults;new_bindings[0]='V';new_bindings[1]=VK_XBUTTON1;keybindings=custom_keys::pack(new_bindings);
+ fixture_c=true;fixture_rmb=true;assert(!bound_key_down(custom_keys::Action::FreeLook)&&!bound_key_down(custom_keys::Action::Zoom));
+ fixture_keys['V']=true;fixture_keys[VK_XBUTTON1]=true;assert(bound_key_down(custom_keys::Action::FreeLook)&&bound_key_down(custom_keys::Action::Zoom));
+ free_look.reset();receive_pose(synced_pose);mouse_delta.add(40,0);receive_pose(synced_pose);assert(target_yaw.load()==synced_yaw); // remapped free look preserves actual flight goal
+ fixture_keys['V']=false;fixture_keys[VK_XBUTTON1]=false;fixture_c=false;fixture_rmb=false;keybindings=original_bindings;
+ puts("PASS runtime remapped free-look and zoom predicates ignore old C/RMB; frame integration retains the flight goal");
+ CustomZoomEnvelope optical;float zoom=62;for(int i=0;i<8;++i){zoom=optical.step(62,1.75f,true,1.f/60);assert(zoom==62);}
+ float last=62;for(int i=0;i<60;++i){zoom=optical.step(62,1.75f,true,1.f/60);assert(zoom<=last&&zoom>=15);last=zoom;}
+ assert(zoom<30);last=zoom;for(int i=0;i<90;++i){zoom=optical.step(62,1.75f,false,1.f/60);assert(zoom>=last&&zoom<=62);last=zoom;}assert(zoom==62);
+ optical.reset();for(int i=0;i<100;++i)zoom=optical.step(25,3,true,1.f/60);assert(zoom>=15);assert(optical.step(62,1.75f,true,NAN)==62);
+ puts("PASS custom zoom independent of native RMB FOV, hold threshold, monotonic entry/return, optical floor and invalid-delta reset");
+
+
+
  puts("PASS shared aircraft orbit, frozen native C rig and mouse-follow rotation, 36m geometry, 48-byte pose plus bounded C+RMB optical FOV zoom, HUD sync/release restoration, pending recenter, gaze return and view-switch target preservation.");
 }

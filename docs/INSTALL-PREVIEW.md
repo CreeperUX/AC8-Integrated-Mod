@@ -79,7 +79,7 @@ missile_enhancement=0
 
 | 参数 | 默认 | 含义 |
 |---|---:|---|
-| `control_mode` | 1 | 0=CLASSIC 2.0，1=AGILE 2.1；F4 可在飞行中临时切换 |
+| `control_mode` | 0 | 0=PEACE（CLASSIC 2.0），3=WAR；F4 可在飞行中切换；旧值 1→0、2/4/5→3 |
 | `sensitivity` | 0.10 | 鼠标方向灵敏度 |
 | `model_assist` | 1 | 0 回到旧基础控制器，1 启用三轴模型控制 |
 | `model_assist_strength` | 0.20 | 已验证学习参数的混合尺度，不是操纵增益旋钮；0 仍保留标准模型控制 |

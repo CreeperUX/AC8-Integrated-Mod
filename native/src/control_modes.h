@@ -1,6 +1,15 @@
 #pragma once
 #include "model_control.h"
 namespace control_modes {
+// Selectable modes: 0 PEACE and 3 WAR. WAR is the exact flight-engine controller (War Thunder structure on
+// the reverse-engineered AC8 rotation law, stock stick input); WAR v11.1 is no longer selectable and only
+// serves as WAR's automatic degraded mode (state/parameter/calibration failures). Legacy IDs: 1 -> PEACE;
+// 2 (CAPTURE), 4 (WAR1), 5 (WAR2) -> WAR.
+inline int normalize(int mode){mode=std::clamp(mode,0,5);return mode>=2?3:0;}
+inline int next(int mode){return normalize(mode)==0?3:0;}
+inline const char* name(int mode){return normalize(mode)==3?"WAR":"PEACE";}
+inline const wchar_t* wname(int mode){return normalize(mode)==3?L"WAR":L"PEACE";}
+inline bool exact(int mode){return normalize(mode)==3;}
 struct KeyLatch {
  bool held=false;
  bool press(bool down,bool allowed){bool event=down&&!held&&allowed;held=down;return event;}

@@ -1,6 +1,7 @@
-local M={};local mode,gate,query,report,viewport,ui,nose;local directory
+local M={};local mode,gate,query,report,viewport,ui,nose,look;local directory
 local imageClass,panelClass,slate,rendering;local state,failed;local textures={};local retained={};local retainedOwner
 local lastStatus;local budget=80;local logged={}
+local motion={layouts=0,translations=0,since=nil}
 local stock='/Game/UI/Texture/System/_Cmn/T_UI_SystemIcon_Cmn_Skip_Ring.T_UI_SystemIcon_Cmn_Skip_Ring'
 local function valid(o)return o and o:IsValid()end
 local function log(s)print('[AC8NativeUI] '..s..'\n')end
@@ -46,7 +47,11 @@ end
 local function node(parent,key)
  local n=state.nodes[key];local o=n and locate(parent,n)
  if not valid(o)then
-  o=StaticConstructObject(imageClass,parent);assert(valid(o),'Native image construction failed');local slot=parent:AddChildToCanvas(o);assert(valid(slot),'UI attachment failed')
+  o=StaticConstructObject(imageClass,parent);assert(valid(o),'Native image construction failed')
+  -- Set before Slate construction; moving indicators should preserve fractions.
+  local pixelOk=pcall(function()o.PixelSnapping=1;assert(o.PixelSnapping==1)end)
+  once('pixel-snap','PIXEL_SNAPPING '..(pixelOk and 'Disabled' or 'unavailable; inherited'))
+  local slot=parent:AddChildToCanvas(o);assert(valid(slot),'UI attachment failed')
   n={address=o:GetAddress(),path=o:GetFullName(),index=parent:GetChildrenCount()-1,slot=slot:GetAddress(),visible=2};state.nodes[key]=n
   o:SetVisibility(2);slot:SetAutoSize(false);slot:SetZOrder(key=='panel'and 11000 or key:find('toast')and 13000 or key=='ring'and 10010 or 12000)
  end
@@ -56,12 +61,19 @@ local function draw(parent,hud,key,tex,ax,ay,x,y,w,h,alignx,aligny,opacity,angle
  local resource=texture(tex,hud);if not valid(resource)then return end
  local o,n=node(parent,key)
  if n.texture~=resource:GetAddress()then o:SetBrushFromTexture(resource,false);n.texture=resource:GetAddress()end
+ local tx=(ax-.5)*state.width+x;local ty=(ay-.5)*state.heightForDraw+y
+ if n.renderMotion~=false and (n.tx~=tx or n.ty~=ty)then
+  local ok=pcall(function()o:SetRenderTranslation({X=tx,Y=ty})end)
+  if ok then n.tx=tx;n.ty=ty;n.renderMotion=true;motion.translations=motion.translations+1
+  else n.renderMotion=false;once('render-motion-fallback','RENDER_TRANSLATION unavailable; using original layout movement')end
+ end
+ if n.renderMotion then ax=.5;ay=.5;x=0;y=0 end
  local signature=table.concat({ax,ay,x,y,w,h,alignx or .5,aligny or .5},':')
  if signature~=n.layout then
   local slot=o.Slot;assert(valid(slot)and slot:GetAddress()==n.slot,'UI slot changed');local v=slot.LayoutData
   v.Anchors.Minimum.X=ax;v.Anchors.Maximum.X=ax;v.Anchors.Minimum.Y=ay;v.Anchors.Maximum.Y=ay
   v.Alignment.X=alignx or .5;v.Alignment.Y=aligny or .5;v.Offsets.Left=x;v.Offsets.Top=y;v.Offsets.Right=w;v.Offsets.Bottom=h
-  slot:SetLayout(v);n.layout=signature
+  slot:SetLayout(v);n.layout=signature;motion.layouts=motion.layouts+1
  end
  opacity=opacity or 1;angle=angle or 0
  if n.opacity~=opacity then o:SetOpacity(opacity);n.opacity=opacity end
@@ -80,7 +92,8 @@ end
 function M.start(dir)
  directory=dir;local function api(n)return assert(package.loadlib(dir..'ac8_mouse_aim_010.dll','ac8_mouseaim_canvas_'..n))end
  mode=api('mode');gate=api('gate');query=api('ring');report=api('report');viewport=api('viewport');ui=api('ui');nose=api('nose')
- log('Native reticle: cyan ring120; coherent snapshot, HMD ticks and connector; panel/notifications use on-demand GPU overlay')
+ local okLook,lookApi=pcall(api,'look');look=okLook and lookApi or nil
+ log('Native reticle: render-translation ring120; reference gun cross at the nose; HMD bracket ring (view point in C free look); frame-synchronous goal and connector; panel/notifications use on-demand GPU overlay')
 end
 function M.hide(controller)
  if not state or not valid(controller)then return end
@@ -115,15 +128,26 @@ function M.update(controller,pawn,read)
   local allowed,reason=gate();if allowed~=1 then sweep(parent);status('gate '..tostring(reason));return end
   -- Game HUD is authored at4K. Normalized anchors do not require cached geometry.
   if ph then state.height=ph end
-  local lh=state.height or 2160;local unit=lh/vh;local values={ui()}
+  local lh=state.height or 2160;local unit=lh/vh;state.width=pw or vw*unit;state.heightForDraw=lh;local values={ui()}
   if #values<16 then sweep(parent);status('UI bridge unavailable');return end
   local panel,hmd,control,camera,sens,startSens,zoom,startZoom,fov,hz,toast,toastValue,toastAlpha,opacity,connector,always=table.unpack(values)
+  local freelook=values[17]==1
   local on,x,y,radius,thickness,time=query(pawn:GetAddress(),vw,vh)
+  local good,nx,ny=nose(pawn:GetAddress(),vw,vh)
+  -- 120 design units: 50% larger; retain valid size through temporary geometry gaps.
+  local ringSize=120*lh/2160
+  local function onscreen(px,py,margin)return type(px)=='number'and type(py)=='number'and px>=margin and px<=vw-margin and py>=margin and py<=vh-margin end
+  -- Reference gun cross: where the nose and guns actually point, on the same 500 m sphere as the ring (the cross
+  -- sits in the ring once the nose has arrived). Drawn on its own, so it stays visible in C free look and while
+  -- the ring is off-screen.
+  if good==1 and onscreen(nx,ny,4)then draw(parent,hud,'bore','boresight',nx/vw,ny/vh,0,0,ringSize,ringSize,.5,.5,math.max(.85,opacity))end
+  -- HMD: the bracketed ring marks where the target-switch key picks; in C free look that is the view direction.
+  if hmd==1 and freelook and look then
+   local lk,lx,ly=look(pawn:GetAddress(),vw,vh)
+   if lk==1 and onscreen(lx,ly,8)then draw(parent,hud,'look','ring-hmd',lx/vw,ly/vh,0,0,ringSize,ringSize,.5,.5,math.max(.85,opacity))end
+  end
   if on==1 then
-   -- 120 design units: 50% larger; retain valid size through temporary geometry gaps.
-   local ringSize=120*lh/2160
-   draw(parent,hud,'ring',hmd==1 and 'ring-hmd'or'ring',x/vw,y/vh,0,0,ringSize,ringSize,.5,.5,math.max(.85,opacity))
-   local good,nx,ny=nose(pawn:GetAddress(),vw,vh)
+   draw(parent,hud,'ring',(hmd==1 and not freelook)and 'ring-hmd'or'ring',x/vw,y/vh,0,0,ringSize,ringSize,.5,.5,math.max(.85,opacity))
    if connector==1 and good==1 then
     local dx,dy=nx-x,ny-y;local distance=math.sqrt(dx*dx+dy*dy)
     if distance>.001 then
@@ -136,6 +160,8 @@ function M.update(controller,pawn,read)
     end
    end
    report(24,time);status('tracking styled ring')
+   if not motion.since then motion.since=now end
+   if now-motion.since>=10000 then log('MOTION render_translation_calls='..motion.translations..' layout_calls='..motion.layouts..' (not display FPS)');motion.since=now;motion.layouts=0;motion.translations=0 end
   else status('projection '..tostring(on))end
   sweep(parent)
  end)

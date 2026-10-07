@@ -46,6 +46,8 @@ jobs:
         shell: powershell
       - run: .\tests\Test-GuiLayout.ps1
         shell: powershell
+      - run: .\tests\Test-Keybindings.ps1
+        shell: powershell
 
       - name: Build and check the fixed English supplement
         shell: powershell

@@ -1,11 +1,12 @@
 #pragma once
 #include "hud_geometry.h"
+#include "control_modes.h"
 #include <dwrite_3.h>
 #include <string>
 #include "creeperux_tokens.h"
 namespace gpu_hud {
 using Microsoft::WRL::ComPtr;
-struct Layout {bool target=false,nose=false;hud_geometry::Point target_point,nose_point;float scale=1,opacity=.65f,link_opacity=1;bool connector=true,always=false,helmet_active=false;int mode_notice=-1,camera_notice=-1,helmet_notice=-1;float notice_alpha=1,sensitivity_notice=-1,zoom_notice=-1,zoom=1.75f,zoom_start=1.75f;int hud_hz=120;float source_hz=0,submit_hz=0;bool smoothing=false,independent=false,predicted=false;bool ui_only=false;float prediction_ms=0,prediction_shift=0;uint64_t prediction_fallbacks=0;bool settings=false;float sensitivity=.1f,configured_sensitivity=.1f,fov=62;unsigned pose_age=0;int selected_mode=1,selected_camera=1;};
+struct Layout {std::wstring free_look_key=L"C",zoom_key=L"MouseRight";bool target=false,nose=false;hud_geometry::Point target_point,nose_point;float scale=1,opacity=.65f,link_opacity=1;bool connector=true,always=false,helmet_active=false;int mode_notice=-1,camera_notice=-1,helmet_notice=-1;float notice_alpha=1,sensitivity_notice=-1,zoom_notice=-1,zoom=1.75f,zoom_start=1.75f;int hud_hz=120;float source_hz=0,submit_hz=0;bool smoothing=false,independent=false,predicted=false;bool ui_only=false;float prediction_ms=0,prediction_shift=0;uint64_t prediction_fallbacks=0;bool settings=false;float sensitivity=.1f,configured_sensitivity=.1f,fov=62;unsigned pose_age=0;int selected_mode=0,selected_camera=1;};
 struct Renderer {
     ComPtr<ID3D11Device> device;ComPtr<ID3D11DeviceContext> immediate;
     ComPtr<IDXGISwapChain1> swap;ComPtr<IDXGISwapChain2> swap2;
@@ -125,7 +126,7 @@ struct Renderer {
         dc->SetTransform(D2D1::Matrix3x2F::Scale(scale,scale));
         const bool notice=frame.mode_notice>=0||frame.camera_notice>=0||frame.helmet_notice>=0||frame.sensitivity_notice>=0||frame.zoom_notice>=0;
         if(notice){
-            const wchar_t* key=L"F4";const wchar_t* category=L"FLIGHT CONTROL";const wchar_t* title=frame.mode_notice?L"Agile control":L"Classic control";
+            const wchar_t* key=L"F4";const wchar_t* category=L"FLIGHT CONTROL";const wchar_t* title=control_modes::wname(frame.mode_notice);
             const wchar_t* detail=L"Learned response model retained";auto status=creeperux::info;
             if(frame.camera_notice>=0){key=L"F3";category=L"CAMERA";title=frame.camera_notice?L"Far follow camera":L"Native camera framing";detail=L"Mouse-follow direction retained";}
             if(frame.helmet_notice>=0){key=L"F2";category=L"TARGET SELECTION";title=frame.helmet_notice==2?L"HMD unavailable":frame.helmet_notice?L"HMD enabled":L"HMD disabled";detail=frame.helmet_notice==2?L"Stock target selection remains active":L"Use the game's target-switch key";if(frame.helmet_notice==2)status=creeperux::warn;}
@@ -163,7 +164,8 @@ struct Renderer {
             ui_text(L"Ctrl + PgUp / PgDn",D2D1::RectF(left+30,top+158,left+245,top+190),ui_mono.Get(),creeperux::accent_text);
             ui_text(L"+10% / -9.1%",D2D1::RectF(left+240,top+158,left+w-30,top+190),ui_mono.Get(),creeperux::accent_text,1,true);
             ui_text(L"Ctrl + Home: reset    /    This session only",D2D1::RectF(left+20,top+198,left+w-20,top+222),ui_small.Get(),creeperux::muted);
-            ui_text(L"FREE-LOOK ZOOM",D2D1::RectF(left+20,top+230,left+220,top+254),ui_mono.Get(),creeperux::quiet);
+            swprintf_s(value,L"ZOOM: %s + %s",frame.free_look_key.c_str(),frame.zoom_key.c_str());
+            ui_text(value,D2D1::RectF(left+20,top+230,left+220,top+254),ui_mono.Get(),creeperux::quiet);
             swprintf_s(value,L"%.2fx / start %.2fx",frame.zoom,frame.zoom_start);
             ui_text(value,D2D1::RectF(left+215,top+230,left+w-20,top+254),ui_mono.Get(),creeperux::text,1,true);
             ui_rect(D2D1::RectF(left+20,top+260,left+w-20,top+292),creeperux::raised,creeperux::radius_control);
@@ -173,7 +175,7 @@ struct Renderer {
                 ui_text(label,D2D1::RectF(left+66,top+y,left+220,top+y+34),ui_body.Get(),creeperux::muted);
                 ui_text(state,D2D1::RectF(left+210,top+y,left+w-20,top+y+34),ui_mono.Get(),creeperux::text,1,true);
             };
-            row(L"F4",L"Flight control",frame.selected_mode?L"AGILE 2.1":L"CLASSIC 2.0",310);
+            row(L"F4",L"Flight control",control_modes::wname(frame.selected_mode),310);
             row(L"F3",L"Camera",frame.selected_camera?L"FAR FOLLOW":L"NATIVE FRAMING",344);
             row(L"F2",L"Target selection",frame.helmet_active?L"HMD ON":L"HMD OFF",378);
             ui_rect(D2D1::RectF(left+20,top+426,left+w-20,top+427),creeperux::line);
@@ -193,10 +195,11 @@ struct Renderer {
     }
     HRESULT draw(const Layout& frame,float dt,bool preview=false){
         const float scale=frame.scale,alpha=std::clamp(frame.opacity,0.f,1.f);
-        auto link=hud_geometry::connector(frame.nose_point,frame.target_point,scale,frame.always);
+
         dc->BeginDraw();dc->SetTransform(D2D1::Matrix3x2F::Identity());dc->Clear(preview?D2D1::ColorF(.045f,.065f,.09f,1):D2D1::ColorF(0,0,0,0));
         if(preview){ink->SetOpacity(.08f);for(float x=0;x<width;x+=80)dc->DrawLine({x,0},{x,float(height)},ink.Get(),1);for(float y=0;y<height;y+=80)dc->DrawLine({0,y},{float(width),y},ink.Get(),1);}
         if(!frame.ui_only&&frame.connector&&frame.nose&&frame.target){
+            auto link=hud_geometry::connector(frame.nose_point,frame.target_point,scale,frame.always);
             for(const auto& tick:link.ticks)if(tick.opacity>0)
                 line(tick.a,tick.b,1.6f*scale,alpha*tick.opacity*frame.link_opacity);
         }

@@ -1,91 +1,448 @@
 {
-  "base_commit": "e7d19d4",
-  "snapshot_date": "2026-10-05",
-  "source_version": "2.3.6-hmd-preview.4",
-  "uncommitted_files": [
+  "source_version": "2.4.0",
+  "snapshot_date": "2026-10-07",
+  "native_sha256": "50A3349FBAA86705DF5DDB8CE679A6090B863832583557EFC2FE567EDEC8C981",
+  "note": "source/MouseAim is the complete public source of the shipped DLL (build.cmd); test.cmd runs 23 native suites, test-gpu.cmd the GPU HUD test; lua/tests holds the offline HUD/HMD script tests. Extracted game data and research tooling are not included.",
+  "files": [
     {
-      "path": "CHANGELOG.md",
-      "sha256": "91641351219737787edc0155017282e52be5e31f446f56bdc78e9de8fe0c068e"
+      "path": "source/MouseAim/agility_tests.cpp",
+      "sha256": "3ea8918a4b22e3c3d039ef8050b39f0e0bcfd45d7c8f27da57fb66688b4e7c66"
     },
     {
-      "path": "README.md",
-      "sha256": "203b7223568ec8e2c34ddd26bd975d531ce7d731a64f901ecd6e45dd18afba1f"
+      "path": "source/MouseAim/build.cmd",
+      "sha256": "b518eee08114789e4c3cd76a079bf15e25a5696260206bc2c1b08cad8357f20b"
     },
     {
-      "path": "docs/HELMET-SELECTION.md",
-      "sha256": "81998e3b12c815ee14690511c948f174eb4bb3aec4d5d89aa06f8c7f09fed8b8"
+      "path": "source/MouseAim/camera_context_tests.cpp",
+      "sha256": "032ef1907ea37bf4fdc11b8ec081131ee2aad41f9a9d6fe1a10ca1ec6784cd41"
     },
     {
-      "path": "docs/LIFECYCLE-FIX.md",
-      "sha256": "66312e6c2d07489b59eeb635dedcdc1744a1a6c4e56482a9f3466a52dcb74b95"
+      "path": "source/MouseAim/capture_adaptation_tests.cpp",
+      "sha256": "bb580dba793a4c3edb2b95bb252d9b3206e95328fae2560e428862a43f2cb9a0"
     },
     {
-      "path": "native/gpu_hud_test.cpp",
-      "sha256": "d5bccb44a23493472aa7bfc877553533fc392c16e484174437e781c2f34b7e34"
+      "path": "source/MouseAim/capture_runtime_tests.cpp",
+      "sha256": "ef496f7c0add18df06e1c86f8b315bce5459080c892eae9de0b5a4afad33a3bf"
     },
     {
-      "path": "native/helmet_tests.cpp",
+      "path": "source/MouseAim/control_timing_tests.cpp",
+      "sha256": "18abbf835641eaf5a3279b1f84ff52a50286560ca82bc4fa5b5345fcb5e3bb52"
+    },
+    {
+      "path": "source/MouseAim/custom_keys_tests.cpp",
+      "sha256": "cb800a18cbfc9753a53e47ec403da4655fbe77bb2d2427d2a3d854c95b49fbea"
+    },
+    {
+      "path": "source/MouseAim/cutscene_recovery_tests.cpp",
+      "sha256": "7b1e3eab29fd95e1c963322b9d75ba5504e730ddf4da91e7282ac875c5b6743e"
+    },
+    {
+      "path": "source/MouseAim/fullmodel_tests.cpp",
+      "sha256": "8a0a889a307ecb88b54a58b1145141492300ade37b8e73efbbc9dccc1423f2de"
+    },
+    {
+      "path": "source/MouseAim/gpu_hud_test.cpp",
+      "sha256": "e9990afce39a4a4dbc23c50f8cf36a19db7a4c060f4659dacb347fc0859a410c"
+    },
+    {
+      "path": "source/MouseAim/helmet_tests.cpp",
       "sha256": "a5b064dd3e9b49261238db7a47f3c7a49ed6ca5262e7eb47801d5aae7aaf947e"
     },
     {
-      "path": "native/src/gpu_hud_loop.h",
-      "sha256": "e67dc50dfaeda4480d62447957559b09326e3bf81b82c4f6cdcbb1456e3d2fed"
+      "path": "source/MouseAim/hud_interpolation_tests.cpp",
+      "sha256": "645157b5a21522f84ee48ccfe73b07cb65f06e81e679093d13acdac9a10a0541"
     },
     {
-      "path": "native/src/gpu_hud_renderer.h",
-      "sha256": "49e92bf4053f75e2cf122a67576e0c502032eb263e1c005c55e7d7ddcd2c06f0"
+      "path": "source/MouseAim/hud_prediction_tests.cpp",
+      "sha256": "9e165f5bceb404faeda068283782139ee20bdf39d7b0587a9acc12f2132d3313"
     },
     {
-      "path": "native/src/helmet_selection.h",
+      "path": "source/MouseAim/hud_reference_tests.cpp",
+      "sha256": "11bb3486d946afc3a514838173b6cf534932b43c211f8ed27222b2286c21ce19"
+    },
+    {
+      "path": "source/MouseAim/hybrid_hud_tests.cpp",
+      "sha256": "c0ec349d279abcde80e28c8eedd4fb3d5e9d5b442ce75566c3fda803c26ea26a"
+    },
+    {
+      "path": "source/MouseAim/leveling_tests.cpp",
+      "sha256": "55a75743c61655cf02a3b68681a23633fe87cd133e06d5b351866b1496eef278"
+    },
+    {
+      "path": "source/MouseAim/lua/make_reticles.py",
+      "sha256": "f4ee34cbf596ae47c996488b98fd5d2cd7923233767dc8d5946fccbb42ce686e"
+    },
+    {
+      "path": "source/MouseAim/lua/tests/test_helmet.lua",
+      "sha256": "4195a4a2bcc22a2b55f584067325119c6ba5f49c9b736286f99783bb959d0054"
+    },
+    {
+      "path": "source/MouseAim/lua/tests/test_native_hud.lua",
+      "sha256": "83e5293743482e14a0e7e5e72689ed459af09972c85335ff21ce86f4b3fc8dc1"
+    },
+    {
+      "path": "source/MouseAim/modes_tests.cpp",
+      "sha256": "60738175e254542bd5c935abb44930305c271b3573ce71285f613bf7ca0ae33f"
+    },
+    {
+      "path": "source/MouseAim/native_hud_snapshot_tests.cpp",
+      "sha256": "01f8c7a3ec41ea36df83fb2ef10b04c3bff5d6f5f4bf76a19d55373fd74b4a70"
+    },
+    {
+      "path": "source/MouseAim/observation_tests.cpp",
+      "sha256": "9942ef47dccd218cd1a228bc3f23fd07fe15377b7938f93dbb28b59a6f582148"
+    },
+    {
+      "path": "source/MouseAim/peace_agile_closedloop_tests.cpp",
+      "sha256": "4f07d5f18fbb88b41b6f1dcababb5db7ed2785bd8fb3af4174510cb1ae47bb55"
+    },
+    {
+      "path": "source/MouseAim/peace_agile_joint_tests.cpp",
+      "sha256": "e15a192110162ce3711586ae75c5453d061ffd6b7a0c0291a875a96072d830f1"
+    },
+    {
+      "path": "source/MouseAim/peace_agile_runtime_tests.cpp",
+      "sha256": "58cfd4ae5a3c1a7a8294bebc31970b05a690374c0cd7437e0b646472665045a0"
+    },
+    {
+      "path": "source/MouseAim/peace_agile_tests.cpp",
+      "sha256": "2d3bb3af772bd1beafc1e8837b49d7624d7b8809767e6f1f6eb9738b275a9040"
+    },
+    {
+      "path": "source/MouseAim/plane_tests.cpp",
+      "sha256": "6233deb9e1093cedf310ad134d6d8fadcc66f11f1c40130b2fd96a59ffb60887"
+    },
+    {
+      "path": "source/MouseAim/recorder_tests.cpp",
+      "sha256": "cc84b56e46d819e8ab389a587b9f89582318f513f1cd1356f2ddde6f010136d1"
+    },
+    {
+      "path": "source/MouseAim/run-checked-tests.py",
+      "sha256": "a6403a669a6e4390dd8e6d2821684714d6ccd3c3e8798460abd2a27138ce9e7e"
+    },
+    {
+      "path": "source/MouseAim/src/ac8_aircraft_models.h",
+      "sha256": "3c2f6f1cbc8aa913665b6c311a782eb3fb2cec7ac1c4653d6ba41abee389ec19"
+    },
+    {
+      "path": "source/MouseAim/src/adaptive_assist_runtime.h",
+      "sha256": "90d390915f69e7fd59bed8d67b7fcfc3c064a8bf036a71c7d308e20d728f507f"
+    },
+    {
+      "path": "source/MouseAim/src/adaptive_braking.h",
+      "sha256": "3a34974f8b775ab12aad7cf88e4c0a96b0c183cb8cf5db961b20bfe207e38ef9"
+    },
+    {
+      "path": "source/MouseAim/src/aim_motion.h",
+      "sha256": "d9f091fa5ce3b6d916814f569633bbc764f84f134fd1a76fd57fd9cfe136a06a"
+    },
+    {
+      "path": "source/MouseAim/src/async_diagnostics.h",
+      "sha256": "16877170511a14fe674dc709b68e8ff3cb53f623d9b8de006b1e8a66cbd808ce"
+    },
+    {
+      "path": "source/MouseAim/src/camera_probe.cpp",
+      "sha256": "7e77757ad5bfb198459141107371edfb7ec6573a91248b03500534c360012fec"
+    },
+    {
+      "path": "source/MouseAim/src/capture_adaptation.h",
+      "sha256": "80e37c5b71ee093a9d2b62ff52ac61621d9470b72c2c010bfbf33b22652d2e4b"
+    },
+    {
+      "path": "source/MouseAim/src/capture_control.h",
+      "sha256": "bd3f0d1788f196ed3699435eb35d156893bca45c9f60575d00e67c0391fc52ef"
+    },
+    {
+      "path": "source/MouseAim/src/capture_joint.h",
+      "sha256": "8653b520686cbd2f3dc407f8ac8acd323b10f46104ca34a7380096a645acacb3"
+    },
+    {
+      "path": "source/MouseAim/src/capture_joint_tests.cpp",
+      "sha256": "a83da5b1b571864ef29b71b00ee3711379847266428227fdad28f4f3c048dc6d"
+    },
+    {
+      "path": "source/MouseAim/src/capture_rate.h",
+      "sha256": "d83977b3855c4532629c5852793c13a4210d879bac1c2a2c0d666106a1ce0c01"
+    },
+    {
+      "path": "source/MouseAim/src/capture_roll.h",
+      "sha256": "5f728a260b6ea59bb8ab72967639aa3156eb7e0522514e864b67efc9f2adc14f"
+    },
+    {
+      "path": "source/MouseAim/src/control_modes.h",
+      "sha256": "36011838f8262cd8b1440fab03fd8a11a48bfca40e5afa6e1b7cd9f90c356e66"
+    },
+    {
+      "path": "source/MouseAim/src/control_observation.h",
+      "sha256": "a18f0b73ada5c946cd7f932393fc0a1405590a27b6b00f6edc6903e7f354cd22"
+    },
+    {
+      "path": "source/MouseAim/src/control_timing.h",
+      "sha256": "b3094b2ce4891349e7f3549ce7c2f85916b2fe9b2028643c2d1f7acf6697b036"
+    },
+    {
+      "path": "source/MouseAim/src/creeperux_tokens.h",
+      "sha256": "a4e0151dbf691b6ee26bbeba30cbcdac2bbbf3cf0bb661843f45ebbef119fd60"
+    },
+    {
+      "path": "source/MouseAim/src/custom_keys.h",
+      "sha256": "f2daa434f17bf38648597fe469846eccb62d870f8de6c847c22d896706806304"
+    },
+    {
+      "path": "source/MouseAim/src/fe_control.h",
+      "sha256": "35b364ab128746c482ebae3ecf4e1c8c7ca75c08cd47be36f37a9e88a185235e"
+    },
+    {
+      "path": "source/MouseAim/src/fe_model.h",
+      "sha256": "0959e21238af4db260d37c89a9411e7caf9bfe91b39f1f287305dedee2fa0dc3"
+    },
+    {
+      "path": "source/MouseAim/src/fe_runtime.h",
+      "sha256": "b61c9664c3c09213cbd04a195d95bc72e53136c2ee0404d20d18a81820e55e54"
+    },
+    {
+      "path": "source/MouseAim/src/flight_math.h",
+      "sha256": "f818db7b0b2bf2ff5bff86243d99c09ea55bcf67934980d9f633e5494fdb33b0"
+    },
+    {
+      "path": "source/MouseAim/src/free_look.h",
+      "sha256": "db3d7c2d8aea27926d0f28ec4e5e10c104c58be99a5403f665007b9e3e8e46f1"
+    },
+    {
+      "path": "source/MouseAim/src/full_model_runtime.h",
+      "sha256": "9a9c38c57ed4226a8df8af4888763dd7cb627ee3cc1d4407e3b39cc652e41bc6"
+    },
+    {
+      "path": "source/MouseAim/src/gpu_hud_loop.h",
+      "sha256": "e7d07acb510e30315608601ab372f122ea3b5d65e11bf4a4b88772844e027e6a"
+    },
+    {
+      "path": "source/MouseAim/src/gpu_hud_renderer.h",
+      "sha256": "caeed360e8c27949f088e231c74dc504207c474ff42c48ebe062d66010f01d0a"
+    },
+    {
+      "path": "source/MouseAim/src/helmet_selection.h",
       "sha256": "ffa3f2c5bde9fcfb24e765a651bce61953cce91341d211db6cead7dc7a5ac5cc"
     },
     {
-      "path": "native/src/mouse_aim.cpp",
-      "sha256": "f7b6d5e94b22fdcfa1a5516867713146da07c77c38661a5c110612466eb5a7c6"
+      "path": "source/MouseAim/src/hud_frame_cache.h",
+      "sha256": "e70032c8b116ae2d5414b9a75ae0bc6e19cdaced91800da346d1e5e95fdced2f"
     },
     {
-      "path": "native/src/smooth_overlay.h",
-      "sha256": "4aa391ac4142e7f77e7f3ea2b32e20e0601487c1c3a3557ca7a6370de9af2162"
+      "path": "source/MouseAim/src/hud_geometry.h",
+      "sha256": "2fda9af71b5657d7fb9763d5844616afdb1dbee1af6dc92426da14b580b6411c"
     },
     {
-      "path": "native/test.cmd",
-      "sha256": "d8833eb5b19e7fdc04a59e18efd28942d6ba9f00c0fbd59a2ab4e4b3f9362ded"
+      "path": "source/MouseAim/src/hud_interpolation.h",
+      "sha256": "103b81f888d170afc760517b5e530346832bd6292accbe416c246e0da703b6ab"
     },
     {
-      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8MouseAim/Scripts/helmet.lua",
-      "sha256": "2beca2e4f36435a5c26e52314063016b6b16770ff9aba31f365109bf44b0eebf"
+      "path": "source/MouseAim/src/hud_prediction.h",
+      "sha256": "5bd9267e11f18b73968441ee8c0e46aeb12bee012a64e698d1b49aa0ad9aa1c9"
     },
     {
-      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8MouseAim/Scripts/main.lua",
-      "sha256": "4c19a8db2c7be8f02840d2f5dc6f08ed6660b377f8130201695f2f569e59f0f9"
+      "path": "source/MouseAim/src/hud_timing.h",
+      "sha256": "94c7fb77eda3f48a75bac3fa0d20df47df743e198391da61f7c3b810708c1fa6"
     },
     {
-      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8SourceInit/Scripts/acceptance_observer.lua",
-      "sha256": "e9d8dba619339327a93a388ced778ab0636350e6fd9ef361ddf9c3f5c1dbeab5"
+      "path": "source/MouseAim/src/hybrid_hud_policy.h",
+      "sha256": "68b73dae12b3f02f4dd7bb1efdaec0b22042162f46be718ce378c27a31d085bb"
     },
     {
-      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8SourceInit/Scripts/msl_visuals.lua",
-      "sha256": "213a45c73da8e0de7112b3927f2da3992a0e582d0b1e91f867ef6021b2593c4f"
+      "path": "source/MouseAim/src/lua_bridge.h",
+      "sha256": "2dce112c6b68957b336bc393484cfbc43feb3883bb91f4435a9f06fb87424bd9"
     },
     {
-      "path": "package-template/payload/Game/Binaries/Win64/ue4ss/Mods/AC8SourceInit/Scripts/source_retention.lua",
-      "sha256": "c8a6fcb7cf97a36cfdff17c73c46816b268f8f6e41991d0b33a8ceb6c2198e6f"
+      "path": "source/MouseAim/src/model_control.h",
+      "sha256": "42563006143e40d7658d0045aef6df60c903ffed6539f2081d7b8d86989212d2"
     },
     {
-      "path": "package-template/\u5f00\u59cb\u4f7f\u7528.md",
-      "sha256": "ca27dec523c3c93083bd40d3a5aa8b2eb924e41c688f5a569ead5b26b1af9788"
+      "path": "source/MouseAim/src/model_control_runtime.h",
+      "sha256": "36edfc227e5e56f9b16a8fd994169e064395d69c8250e45507a3a6c0f4318c68"
     },
     {
-      "path": "tests/test_helmet.py",
-      "sha256": "5f6a7e58398ff4101c0a6bec9991a53b34946fbd856adada2d4a5a86f856947f"
+      "path": "source/MouseAim/src/model_serving.h",
+      "sha256": "c952d267744c6fa31a9621cb4b957ebfd152ed995d159f5d238df3c3adff53d2"
     },
     {
-      "path": "tests/test_visuals.py",
-      "sha256": "1c4a2ff088472a9a88906f260ad7ddcbb7cf14a9d462a40e24844ddae3b02cec"
+      "path": "source/MouseAim/src/mouse_aim.cpp",
+      "sha256": "a79973d5acbc5b53353ee49af6eccec81595fb46a8bdb20ed6311370d9fcc569"
     },
     {
-      "path": "version.json",
-      "sha256": "a15262990540f035425b3f8988ca4f61f82857b5b67776d741cff3b044858791"
+      "path": "source/MouseAim/src/native_camera.h",
+      "sha256": "b4226fc1b0c8cf7741d2367e8459bfa99bd23af1920b67e4feb9fca4531020b4"
+    },
+    {
+      "path": "source/MouseAim/src/online_assist_runtime.h",
+      "sha256": "b62db5678f4b54738cfc4bb4d04c7b37631e9914ce7d563a89e6167ebad0207a"
+    },
+    {
+      "path": "source/MouseAim/src/online_learning.h",
+      "sha256": "7ba55e4233d4a2822a69d7bf126de6f1db850bc3f541ba5d3f4c2fd2113bb5a3"
+    },
+    {
+      "path": "source/MouseAim/src/paired_mouse.h",
+      "sha256": "1eb110d347b5b829be6e9b09600ee8a01bb2731c4fe37b3960c37d85ed948265"
+    },
+    {
+      "path": "source/MouseAim/src/peace_agile_control.h",
+      "sha256": "a6c33bcef1ceae333289b451e53647aa7d2bc11248ee1fc2a2461810c1715199"
+    },
+    {
+      "path": "source/MouseAim/src/robust_intercept.h",
+      "sha256": "36a813f3d5812de87fdda846e24d8d39f11fb2763588a2276d6683caed7da7f9"
+    },
+    {
+      "path": "source/MouseAim/src/robust_intercept_tests.cpp",
+      "sha256": "fffe412b7f9c9eb682d89241841cd039eaeddf4682ed3251263b4359f32f0bae"
+    },
+    {
+      "path": "source/MouseAim/src/shadow_recorder.h",
+      "sha256": "4d9324756359250fbf1e1ca0ccc86144509f46977bb59ec931aca567cb5784b9"
+    },
+    {
+      "path": "source/MouseAim/src/shared_assist_runtime.h",
+      "sha256": "d15faee7722bc4afbc15d0386a93ea7f0d752854e55e56e83b2000c68bf96061"
+    },
+    {
+      "path": "source/MouseAim/src/shared_braking.h",
+      "sha256": "d190f095674611fcdd622f5e566bc8851955b3d66d5fb31f956f78ba77d90297"
+    },
+    {
+      "path": "source/MouseAim/src/smooth_overlay.h",
+      "sha256": "a16f7d7ffa20ba764f13a4d6322b5a6bdfcb64fd5372b45ca58bd136925bee34"
+    },
+    {
+      "path": "source/MouseAim/src/terminal_intercept.h",
+      "sha256": "09e836f2e1a13e76731ec0b6fa51a3254687b9df3885d3bc3c9b8759cde59530"
+    },
+    {
+      "path": "source/MouseAim/src/ue4ss_lua.def",
+      "sha256": "ec6e6cfa39cfc1085ec77d08bf7bec7edcdcdeea32cb3cfd4e3312a5108a362c"
+    },
+    {
+      "path": "source/MouseAim/src/vector_adaptation.h",
+      "sha256": "b433e7ad15421e75f77133c0065ec05f23c1d8e954343a753a33cea39eaadf6d"
+    },
+    {
+      "path": "source/MouseAim/src/vector_control.h",
+      "sha256": "9caac95d377e822f0f32872b16501e89d02282e1d5b9c0e699a6e78e8107ae5a"
+    },
+    {
+      "path": "source/MouseAim/src/vector_local_bias.h",
+      "sha256": "9bd51c2338f5b352dcade469ba456ba8691de720cd3cff04d0a383e96a4cb93f"
+    },
+    {
+      "path": "source/MouseAim/src/vector_local_response.h",
+      "sha256": "6ff639beb16268ce1527a99b83d0b0a3530b30a3a24669c0691dd7edd11d0e54"
+    },
+    {
+      "path": "source/MouseAim/src/vector_maneuver.h",
+      "sha256": "f20f845a759d0d6f7b7cc1c3261239cb58dbbf4d02a53684aad6c3c202f74663"
+    },
+    {
+      "path": "source/MouseAim/src/vector_pending_pose.h",
+      "sha256": "bc0183b09feea9f3e7ab45d33fb8c8ee3dc82fc70d5ae889194bf5344363ef91"
+    },
+    {
+      "path": "source/MouseAim/src/vector_pitch_authority.h",
+      "sha256": "e88d0caf5d1cb17a24fc16b8f7ffb6be875e3c585570e15505e44581836b2a7c"
+    },
+    {
+      "path": "source/MouseAim/src/vector_roll.h",
+      "sha256": "4eb832c65c700835313120a1c3f82ba155fefd4607d57838d48a54c8be4649e1"
+    },
+    {
+      "path": "source/MouseAim/src/vector_runtime.h",
+      "sha256": "c9469a8b0adc749c3d2156a046187304b936c881364b2137171ad56c871679e3"
+    },
+    {
+      "path": "source/MouseAim/src/vector_signed_dynamics.h",
+      "sha256": "dbfd56f7a278c0be2c154d0444b6c605caf0dd6ba67582be38d3ec146684c12a"
+    },
+    {
+      "path": "source/MouseAim/src/vector_stop.h",
+      "sha256": "983954f32f1a7e95771bc2ba3d80c992b568a5f71ea766ae6e223976367d93c1"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/LICENSE.txt",
+      "sha256": "4f21f857550d7be854da6ea5f2da4e6775ca4e3fbb535e4f3d961c47d0bf3335"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/buffer.c",
+      "sha256": "69045b390e0f18cf149ea0451ae750f389654eb8d2ed7f2f89c7ff04b7909519"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/buffer.h",
+      "sha256": "175ec5496c020509cf4c7670322b51b5bcd5b63a345bfefc4a19b43675857fa7"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hde/hde32.c",
+      "sha256": "2d4d7dd73d609028822aaf71ac05112b83fe6cc2ae2d6d71fa051b3fc6acfc43"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hde/hde32.h",
+      "sha256": "754579fbcec5f64fa229646ceecb241c0b7f31c8a0bb12370e604c316c569315"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hde/hde64.c",
+      "sha256": "06b588a5140e15f0a55e13ddadc7e3a4648f3223cefab2d5285b796a422bb9f5"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hde/hde64.h",
+      "sha256": "fd5b39e2865e12b9525ebda8fd9e9658b341ead5932d1bcb412a189f81ca42ca"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hde/pstdint.h",
+      "sha256": "975488009779ea99c7e04b83a160397d5cd7195cb5bf6ad79180805f756c7d00"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hde/table32.h",
+      "sha256": "e56f8641bd9133c1b99a1e6555b19eebe7ed663e5ea8de4edbe74ba461161ab4"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hde/table64.h",
+      "sha256": "0b6c69ad498e67907e0c574ab06123aee4ec30c99fa181099ea929a8d820bfc1"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/hook.c",
+      "sha256": "4005d39875ca4b8a957aabba73bd053cba77e50a8b383d48e0cb44c13f26669b"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/trampoline.c",
+      "sha256": "824ed887ec9da606960962af8973205d1f97cd03241e75517eba485280fb6377"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/minhook/src/trampoline.h",
+      "sha256": "23681f7768d5dbd23ea14b45ba64e488a337501f23122253c532b05dbed4b85f"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/ue4ss/LICENSE",
+      "sha256": "99e1d8f8b7cb68e8b2313380ae3b0c8115e39dfbc443fcf21fd67ab74ce1d57e"
+    },
+    {
+      "path": "source/MouseAim/src/vendor/ue4ss/LuaMadeSimple.hpp",
+      "sha256": "2ceb8502b12650fe5a6af7d9efb6029b18a408916c8c4ebc96a54b996a0b0ace"
+    },
+    {
+      "path": "source/MouseAim/src/war10_control.h",
+      "sha256": "4acc35b2a7da88250dfd9740acd52acf8adb3797996e52a676d4849559e77a23"
+    },
+    {
+      "path": "source/MouseAim/src/war11_control.h",
+      "sha256": "b3479ec3ece4cdfa57129276a1a0ab5610e0ed6dd4e9043d1a114f65f55231f5"
+    },
+    {
+      "path": "source/MouseAim/src/yaw_signature.h",
+      "sha256": "a8a458a4a1d37e08ad55215497689ae23931c83f9f2962ad00e1d71dbeaf4114"
+    },
+    {
+      "path": "source/MouseAim/test-gpu.cmd",
+      "sha256": "3cde4c5d42ff69540ac4421f1f94e13e66b20a1d5978febba696449de9623314"
+    },
+    {
+      "path": "source/MouseAim/test.cmd",
+      "sha256": "00fc2a2d6de29d17c76c171aef9a007715e8ddfe0015e8dd879869d6d0e140b0"
     }
   ]
 }

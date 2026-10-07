@@ -111,6 +111,9 @@ try {
  Set-Content -LiteralPath (Join-Path $w64 'ue4ss/AC8SourceInit-owner.txt') -Value $id -Encoding ASCII
  Install-SelectedUE4SS (Join-Path $payload 'ue4ss') (Join-Path $w64 'ue4ss') $features
  Apply-MouseSettings $mouseSettings (Join-Path $w64 'ue4ss/Mods/AC8MouseAim')
+ . (Join-Path $root 'Keybinding-Settings.ps1')
+ $bindings=Read-AC8Keybindings (Join-Path $root 'Keybindings.ini')
+ Apply-AC8Keybindings $bindings (Join-Path $w64 'ue4ss/Mods/AC8MouseAim')
  $stage="写入加载器 $(Join-Path $w64 'dwmapi.dll')"
  Copy-Item -LiteralPath (Join-Path $payload 'dwmapi.dll') -Destination $w64
  Write-AC8Json $state $statePath
@@ -118,7 +121,7 @@ try {
  Write-AC8Json $state $statePath
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
  Write-Host 'AC8 2.3.5 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
- Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; hold C for free look.'
+ Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; free-look/zoom keys from Keybindings.ini.'
  Write-Host ('FEATURES: mouse flight; missile mode='+$features.MissileMode)
  $stage='启动游戏'
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru

@@ -100,7 +100,7 @@ void logger_loop() {
             const auto hitches=perf_hitches.exchange(0),dropped=dropped_logs.exchange(0);
             if(emit || dropped) log_line("PERF input_player=%llu input_other=%llu gaps_over_50ms=%llu dropped_logs=%llu",player,other,hitches,dropped);
         }
-        shadow_drain();
+        shadow_drain();fe_runtime::trace_drain(module_folder);
         Sleep(100);
     }
 }
