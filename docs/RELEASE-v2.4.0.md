@@ -1,5 +1,9 @@
 # v2.4.0 — WAR 精确飞控、参考准星与过场恢复修复
 
+> v2.4.0 的发布已合并到 [v2.4.1](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.4.1)，不再单独提供下载；请下载 **AC8-Integrated-v2.4.1-share.zip**，安装步骤相同。v2.4.1 只在此基础上新增参考准星开关并修复键位设置对话框，见 [v2.4.1 说明](RELEASE-v2.4.1.md)。
+>
+> The v2.4.0 release was merged into [v2.4.1](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.4.1); download AC8-Integrated-v2.4.1-share.zip instead (same installation steps).
+
 **正式版。仅限离线单人，禁止带 Mod 进入线上或多人模式。**
 
 ## 相比 v2.3.15-beta.1 的主要变化

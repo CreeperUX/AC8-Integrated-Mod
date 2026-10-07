@@ -21,7 +21,7 @@
 - 运行 Start-GUI.cmd 或 Setup.cmd，并把新生成的 Steam 启动选项替换进去；
 - 不要复制旧版的 DLL、设置或 sessions。
 
-设置文件里没有 `hud_boresight` 时，参考准星按显示处理。安装、回退和已知边界见 [v2.4.0 说明](RELEASE-v2.4.0.md)；回退到 v2.4.0 时，同样使用其自己目录生成的启动选项。
+设置文件里没有 `hud_boresight` 时，参考准星按显示处理。安装和已知边界见 [v2.4.0 说明](RELEASE-v2.4.0.md)。v2.4.0 的发布已合并到 v2.4.1，不再单独提供下载；回退请使用 [v2.3.15-beta.1](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.15-beta.1) 或 [v2.3.6](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.6)，并替换为其目录生成的启动选项。
 
 ## 验证
 
@@ -50,4 +50,4 @@
 
 Checked in game: Alt+F7 toggles the cross with its notice and the F1 panel row; plain F7 still toggles the HUD.
 
-Install as for v2.4.0: extract the complete share ZIP to a new folder outside the game, run Start-GUI.cmd or Setup.cmd and replace the Steam launch option. A settings file without `hud_boresight` keeps the cross shown. See the [v2.4.0 notes](RELEASE-v2.4.0.md) for installation, rollback and known limits.
+Install as for v2.4.0: extract the complete share ZIP to a new folder outside the game, run Start-GUI.cmd or Setup.cmd and replace the Steam launch option. A settings file without `hud_boresight` keeps the cross shown. See the [v2.4.0 notes](RELEASE-v2.4.0.md) for installation and known limits. v2.4.0 is no longer offered separately (its release was merged into v2.4.1); to roll back, use [v2.3.15-beta.1](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.15-beta.1) or [v2.3.6](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.3.6).
