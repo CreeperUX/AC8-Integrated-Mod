@@ -120,8 +120,9 @@ try {
  Set-Content -LiteralPath (Join-Path $w64 'steam_appid.txt') -Value '2288340' -Encoding ASCII
  Write-AC8Json $state $statePath
  $env:SteamAppId='2288340';$env:SteamGameId='2288340';$env:EOS_USE_ANTICHEATCLIENTNULL='1'
- Write-Host 'AC8 2.3.5 OPTIONAL MISSILE MODULE + F4 CLASSIC/AGILE (world direction target, paired input, arrival braking) - gameplay acceptance incomplete. Single-player only. Keep this console open.'
- Write-Host 'Mouse Aim: select Expert controls. F8 instructor; F9 recenter; F3 camera view; F10 reload mouse settings; free-look/zoom keys from Keybindings.ini.'
+ $banner=Get-AC8ConsoleBanner $root $validation
+ Write-Host $banner.Title
+ Write-Host $banner.Keys
  Write-Host ('FEATURES: mouse flight; missile mode='+$features.MissileMode)
  $stage='启动游戏'
  $game=Start-Process -FilePath $exe -WorkingDirectory $w64 -WindowStyle Normal -PassThru
@@ -140,7 +141,7 @@ try {
  }
  if($ready){
   if($features.MissileEnhancement){Write-Host ('[SOURCE READY] mode='+$features.MissileMode+' verified='+$features.ExpectedFields+'; actual missile behavior depends on game mechanics.')}else{Write-Host '[MOUSE READY] Mouse module loaded; original missile behavior preserved.'}
-  Write-Host 'This is a candidate, not the completed release. Event recording is automatic.'
+  Write-Host $banner.Ready
  }elseif(!$game.HasExited){
   Write-Host '[NOT READY] The selected feature set has not reported readiness. Check the archived log.'
  }else{

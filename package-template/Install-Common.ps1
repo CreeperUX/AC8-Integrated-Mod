@@ -73,6 +73,17 @@ function Show-AC8Problem($Failure,[string]$PackageRoot,[string]$Stage='操作') 
   Write-Host "诊断文件：$log"
  }catch{Write-Host '诊断文件无法保存，请保留当前窗口截图。'}
 }
+function Get-AC8ConsoleBanner([string]$PackageRoot,$Validation) {
+ # Console text from the package's own metadata (until 2.4.2 a fixed "AC8 2.3.5 ... F4 CLASSIC/AGILE ... candidate" text).
+ $info=$null
+ try{$info=Get-Content -LiteralPath (Join-Path $PackageRoot 'package-info.json') -Raw -Encoding UTF8|ConvertFrom-Json}catch{$info=$null}
+ $version=if($info -and $info.native_controller_version){[string]$info.native_controller_version}elseif($info -and $info.version){[string]$info.version}else{'(unknown version)'}
+ $candidate=($null -ne $Validation) -and ($Validation.candidateOnly -eq $true)
+ $title='AC8 Integrated Mod '+$version+$(if($candidate){' [local candidate]'}else{''})+' - F4 PEACE/WAR flight control, optional missile module. Single-player only. Keep this console open.'
+ $keys='Mouse Aim: select Expert controls. F4 PEACE/WAR; F8 instructor; F9 recenter; F3 camera; F7 HUD, Alt+F7 gun cross; F10 reload settings; free-look/zoom keys from Keybindings.ini.'
+ $ready=if($candidate){'Local candidate build, not a published release. Event recording is automatic.'}else{'Event recording is automatic; logs are archived when the game exits.'}
+ return [pscustomobject]@{Title=$title;Keys=$keys;Ready=$ready}
+}
 function Invoke-AC8OptionalAnalysis([string]$PackageRoot,[string]$Session) {
  $python=Get-Command python.exe -ErrorAction SilentlyContinue
  if(!$python -or $python.Source -match '[\\/]WindowsApps[\\/]'){
