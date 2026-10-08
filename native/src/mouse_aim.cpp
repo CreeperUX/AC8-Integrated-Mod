@@ -850,6 +850,15 @@ uintptr_t __fastcall process_input(unsigned char* state, unsigned char* context)
         __try {
             float* axes = reinterpret_cast<float*>(pawn + 0x2268);
             if(exact.valid){
+                // Keyboard takeover (2.4.2): a channel that has just passed to a held key continues from the
+                // keyboard-only command state instead of re-ramping from the instructor's last command. The sign is
+                // the game's own key value on that (owned, unwritten) channel.
+                double* S=reinterpret_cast<double*>(state);double before[3]={S[0],S[1],S[2]};bool seeded=false;
+                for(int a=0;a<3;++a)if(fe_runtime::manual.seed[a]&&axes[a]!=0.f){
+                    const double v=manual_takeover::seeded(S[a],fe_runtime::manual.seed_value[a],axes[a]>0?1.:-1.);
+                    if(v!=S[a]){S[a]=v;seeded=true;}}
+                if(seeded)log_line("KEY_TAKEOVER owned=%d S pitch %.2f->%.2f yaw %.2f->%.2f roll %.2f->%.2f",fe_runtime::manual.s.owned,
+                    before[0],S[0],before[1],S[1],before[2],S[2]);
                 // Flight-engine axes: 0 pitch (+pull), 1 yaw (+right), 2 roll (+right wing down).
                 // Released channels keep the game's own keyboard values (stock input filter).
                 if(!own_pitch) axes[0] = static_cast<float>(exact.stick[0]);
@@ -948,7 +957,7 @@ extern "C" __declspec(dllexport) int ac8_mouseaim_start(lua_State* state) {
     }
     load_config();
     log_line("CAMERA_SETTINGS mode=%d distance_m=%.1f height_m=%.1f F3=toggle; mission/cinematic recenter enabled",camera_view_mode.load(),camera_distance_cm.load()/100,camera_height_cm.load()/100);
-    log_line("PROFILE 2.4.1 WAR=13.7 HUD=GUNCROSS-TOGGLE+HMD-FREELOOK LEVEL-REARM PEACE-BANK-GOAL WAR=FE-EXACT-WT PATH-LOCK QUINTIC-LEVEL IDLE-GATE-LEVEL ROLL-PREDICT-NEAR AIM-WINDOW CAMERA-FAULT-RETRY HIL-TUNED WT-LEVEL WT-OVERRIDE WAR-DEGRADED=V11.1 PEACE-WAR-CYCLE CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
+    log_line("PROFILE 2.4.2 WAR=13.8 HUD=GUNCROSS-TOGGLE+HMD-FREELOOK KEY-TAKEOVER-SEED LEVEL-REARM PEACE-BANK-GOAL WAR=FE-EXACT-WT PATH-LOCK QUINTIC-LEVEL IDLE-GATE-LEVEL ROLL-PREDICT-NEAR AIM-WINDOW CAMERA-FAULT-RETRY HIL-TUNED WT-LEVEL WT-OVERRIDE WAR-DEGRADED=V11.1 PEACE-WAR-CYCLE CONTROL default_mode=%d sensitivity=%.4f hud_target_hz=%d reference_fov=%.1f braking=%.2f",control_mode.load(),config.sensitivity,hud_target_hz.load(),config.mouse_reference_fov,config.arrival_braking);
     if (!prepare_hook()) return 0;
     install_native_camera();
     helmet::install();

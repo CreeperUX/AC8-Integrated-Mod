@@ -3,6 +3,7 @@
 // player pawn inside the input hook (re/AC8-FlightEngine notes). Layout verified on the shipped
 // AceCombat8.exe; every read is guarded and validated, and any failure falls back to WAR (v11).
 #include "fe_control.h"
+#include "manual_takeover.h"
 #include <share.h>
 
 namespace fe_runtime {
@@ -112,21 +113,24 @@ struct Runtime {
 };
 inline Runtime rt;
 
-// War Thunder-style manual override: ownership is decided every frame on the
-// *processed* manual input (after the keyboard ramp), threshold 0.8, no hysteresis or timer. Manual pitch
-// or yaw releases all three channels; manual roll alone releases roll only. Below the threshold the
-// instructor overrides the keys completely. AC8's equivalent of WT's keyboard ramp is the stock input
-// filter, so the keyboard-only command state is simulated with the exact input model.
-struct Manual {double m[3]{};uintptr_t pawn=0;};
+// War Thunder-style manual override (manual_takeover.h): ownership is decided every frame on the keyboard-only
+// command state, simulated with AC8's stock input filter (AC8's equivalent of WT's keyboard ramp). Manual pitch or
+// yaw releases all three channels; manual roll alone releases roll only; below the threshold the instructor overrides
+// the keys completely. 2.4.2: AC8's ramp needs 0.27-0.51 s to reach WT's 0.8, and the stock filter then re-ramped
+// from the instructor's last command (Typhoon flight: the command reached 0.8 ~0.89 s after the key press instead of
+// 0.51 s). A held key now engages at 0.3 (hand-back after release still at 0.8), and the channel continues from the
+// keyboard-only state at the handover, as WT's owned channel carries its ramped keyboard value.
+struct Manual {manual_takeover::State s;uintptr_t pawn=0;bool seed[3]{};double seed_value[3]{};};
 inline Manual manual;
+inline manual_takeover::Tuning takeover_tuning=manual_takeover::war242;
 // dir: held-key direction per FE axis (0 pitch, 1 yaw, 2 roll), -1/0/+1. Returns release mask: 1 pitch, 2 yaw, 4 roll.
-inline int manual_release(uintptr_t pawn,const unsigned char* context,const int dir[3],double threshold=.8){
+// manual.seed[a] / seed_value[a]: continue axis a's stock command state from the keyboard-only state this frame.
+inline int manual_release(uintptr_t pawn,const unsigned char* context,const int dir[3]){
  if(pawn!=manual.pawn){manual=Manual{};manual.pawn=pawn;}
+ for(bool& b:manual.seed)b=false;
  float dt=0;std::memcpy(&dt,context+0x20,4);
  if(!(dt>0&&dt<.1f)||!rt.params.valid)return (dir[0]||dir[1]?7:0)|(dir[2]?4:0);   // no model: keys win at once
- for(int a=0;a<3;++a)manual.m[a]=a==1?fe::input_yaw(rt.params,manual.m[a],dir[a],dt):fe::input_axis(rt.params,a,manual.m[a],dir[a],dt);
- if(std::abs(manual.m[0])>=threshold||std::abs(manual.m[1])>=threshold)return 7;
- return std::abs(manual.m[2])>=threshold?4:0;
+ return manual_takeover::step(rt.params,manual.s,dir,dt,takeover_tuning,manual.seed,manual.seed_value);
 }
 inline aim_motion::Estimator aim_est;inline uintptr_t aim_est_pawn=0;
 struct Command {double stick[3]{};double S[3]{};bool valid=false;int reason=0;};

@@ -1,3 +1,9 @@
+## 2.4.2
+
+- Fix: WAR keyboard takeover lag. A held key now takes over once the stock key ramp reaches 0.3 (about 0.1-0.15 s; was 0.8, 0.27-0.51 s), and the taken-over channel continues from the key ramp instead of re-ramping from the instructor's last command (never pulling back a command already in the key's direction). Reversing a held key keeps the keys in control. Hand-back about 0.1 s after release (at 0.8) and the WT ownership grouping are unchanged.
+- Mouse flight control law unchanged (WAR v13.8 = v13.7 control law + takeover rule). Log line KEY_TAKEOVER on each handover.
+- Tests: new public takeover_logic_tests (test.cmd now runs 24 suites).
+
 ## 2.4.1
 
 - Reference gun cross switch: Alt+F7 shows/hides it in flight (this session only, with a notice; the F1 panel shows the state). `hud_boresight=1/0` in MouseAim-Settings.ini sets the startup state (default shown). Plain F7 still toggles the whole mod HUD.

@@ -1,8 +1,8 @@
-# AC8 Integrated Mod — v2.4.1
+# AC8 Integrated Mod — v2.4.2
 
 **正式版。仅限离线单人，禁止用于线上或多人游戏。**
 
-**2.4.1 更新**：机头参考准星（十字）可以开关。飞行中按 **Alt+F7** 临时切换，`MouseAim-Settings.ini` 的 `hud_boresight` 决定启动时是否显示。另修复了启动器“键位设置”对话框在部分启动方式下无法保存的问题。飞控与 2.4.0 相同。
+**2.4.2 更新**：修复 WAR 中键盘接管的迟滞。按住俯仰、滚转或偏航键后约 0.1–0.15 s 即接管，响应与不装 Mod 时的按键基本相同。2.4.1 起，机头参考准星（十字）可用 **Alt+F7** 开关，`MouseAim-Settings.ini` 的 `hud_boresight` 决定启动时是否显示。
 
 鼠标指定方向，Mod 协调飞机姿态飞向圆环。按 **F4** 在两种飞控之间切换：
 - **PEACE**（默认）：原 CLASSIC 2.0；
@@ -14,10 +14,10 @@
 - 逐帧同步输入与自定义按键；
 - 修复过场后模组相机／HUD 不恢复的问题。
 
-- [v2.4.1 更新说明](docs/RELEASE-v2.4.1.md) · [v2.4.0 更新、安装及回退说明](docs/RELEASE-v2.4.0.md) · [WAR 飞控说明](docs/WAR-FLIGHT-CONTROL.md)
+- [v2.4.2 更新说明](docs/RELEASE-v2.4.2.md) · [v2.4.1 更新说明](docs/RELEASE-v2.4.1.md) · [v2.4.0 更新、安装及回退说明](docs/RELEASE-v2.4.0.md) · [WAR 飞控说明](docs/WAR-FLIGHT-CONTROL.md)
 - [安装与三种范围](docs/INSTALL.md) · [游戏内调整](docs/IN-GAME-SETTINGS.md) · [自定义键位](docs/CUSTOM-KEYBINDINGS.md) · [快捷停用](docs/MOD-DISABLE.md)
 - [按键参考](docs/KEYBINDINGS.md) · [控制原理](docs/CONTROL.md) · [原生 HUD 与参考准星](docs/NATIVE-UI-STYLE.md) · [头盔瞄准](docs/HELMET-SELECTION.md) · [已知限制](docs/LIMITATIONS.md)
-- [GitHub 下载](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.4.1)
+- [GitHub 下载](https://github.com/CreeperUX/AC8-Integrated-Mod/releases/tag/v2.4.2)
 
 ## 安装
 
@@ -34,4 +34,4 @@
 
 基于 [FletcherMiya/AC8-Mouse-Aim](https://github.com/FletcherMiya/AC8-Mouse-Aim) 发展，感谢原作者及贡献者。完整署名和许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-[English overview](https://github.com/CreeperUX/AC8-Integrated-Mod/blob/release/v2.4.1/README.en.md)
+[English overview](https://github.com/CreeperUX/AC8-Integrated-Mod/blob/release/v2.4.2/README.en.md)

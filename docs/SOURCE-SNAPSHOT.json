@@ -1,8 +1,8 @@
 {
-  "source_version": "2.4.1",
-  "snapshot_date": "2026-10-07",
-  "native_sha256": "ACCF0FDAF3562E0DBA836B14B4C96A0D844CAA0F4F27C00D351062C2CC0F9C8D",
-  "note": "source/MouseAim is the complete public source of the shipped DLL (build.cmd); test.cmd runs 23 native suites, test-gpu.cmd the GPU HUD test; lua/tests holds the offline HUD/HMD script tests. Extracted game data and research tooling are not included.",
+  "source_version": "2.4.2",
+  "snapshot_date": "2026-10-08",
+  "native_sha256": "EB256A8118D8772DF3F5616B2254B9B4D2D48D26F751DEF3E70F908A208F4841",
+  "note": "source/MouseAim is the complete public source of the shipped DLL (build.cmd); test.cmd runs 24 native suites, test-gpu.cmd the GPU HUD test; lua/tests holds the offline HUD/HMD script tests. Extracted game data and research tooling are not included.",
   "files": [
     {
       "path": "source/MouseAim/agility_tests.cpp",
@@ -198,7 +198,7 @@
     },
     {
       "path": "source/MouseAim/src/fe_runtime.h",
-      "sha256": "b61c9664c3c09213cbd04a195d95bc72e53136c2ee0404d20d18a81820e55e54"
+      "sha256": "3d172b58d7b954a3c294398dbaa72ae311a5b4e97650eb6e21fc8aeacffdf757"
     },
     {
       "path": "source/MouseAim/src/flight_math.h",
@@ -257,6 +257,10 @@
       "sha256": "2dce112c6b68957b336bc393484cfbc43feb3883bb91f4435a9f06fb87424bd9"
     },
     {
+      "path": "source/MouseAim/src/manual_takeover.h",
+      "sha256": "efae23f973936229174be0736b6f2ea7432357bc1c92819d490cc738b8edfb29"
+    },
+    {
       "path": "source/MouseAim/src/model_control.h",
       "sha256": "42563006143e40d7658d0045aef6df60c903ffed6539f2081d7b8d86989212d2"
     },
@@ -270,7 +274,7 @@
     },
     {
       "path": "source/MouseAim/src/mouse_aim.cpp",
-      "sha256": "25de8dbacb682a8d465b6cf9d7eada05be23286c6f4ac19454308167bcc02736"
+      "sha256": "43aee8fbe34b3df0a5d64859b2b18ec55f149a52ec857cc59c76e5fa45ef16de"
     },
     {
       "path": "source/MouseAim/src/native_camera.h",
@@ -445,12 +449,16 @@
       "sha256": "a8a458a4a1d37e08ad55215497689ae23931c83f9f2962ad00e1d71dbeaf4114"
     },
     {
+      "path": "source/MouseAim/takeover_logic_tests.cpp",
+      "sha256": "1d36a9d5d96647ad946570f957a8919153aefffc26b00ff25d8f011a4c62ae4e"
+    },
+    {
       "path": "source/MouseAim/test-gpu.cmd",
       "sha256": "3cde4c5d42ff69540ac4421f1f94e13e66b20a1d5978febba696449de9623314"
     },
     {
       "path": "source/MouseAim/test.cmd",
-      "sha256": "00fc2a2d6de29d17c76c171aef9a007715e8ddfe0015e8dd879869d6d0e140b0"
+      "sha256": "374e683ba12536ef14fefab9a4fae7f75908c3e8e0e888214ac974a5c780eeca"
     }
   ]
 }

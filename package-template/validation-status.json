@@ -2,7 +2,7 @@
   "deploymentAllowed": true,
   "candidateOnly": false,
   "releaseAccepted": true,
-  "scope": "Stable 2.4.1 release gate: 21-suite native gate; the 23 public native suites and the GPU HUD test built from the shipped source; offline Lua HUD/HMD tests; package, settings and key-settings tests; WAR flight control unchanged from 2.4.0 (flown on several aircraft); not a claim of exhaustive in-game acceptance.",
-  "nativeControllerVersion": "2.4.1",
+  "scope": "Stable 2.4.2 release gate: 23-suite native gate (incl. keyboard-takeover tests on the exact plant); the 24 public native suites and the GPU HUD test built from the shipped source; offline Lua HUD/HMD tests; package, settings and key-settings tests; keyboard takeover checked in flight (F/A-18E); not a claim of exhaustive in-game acceptance.",
+  "nativeControllerVersion": "2.4.2",
   "gameBuild": "25201480"
 }
