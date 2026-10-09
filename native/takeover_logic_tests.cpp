@@ -54,9 +54,15 @@ int main(){
  //    opposing one with the ramp, ignore a ramp still on the other side after a quick re-press
  {using manual_takeover::seeded;
   assert(seeded(.97,.25,1)==.97);              // pitch: instructor already pulling harder - no dip
-  assert(seeded(.44,-.25,-1)==-.25);           // roll: instructor opposing - continue from the ramp
+  assert(seeded(.44,.25,-1)==-.25);            // roll: instructor opposing - continue from the ramp
   assert(seeded(.13,.25,1)==.25);              // same direction but weaker - ramp value
   assert(seeded(-.17,-.58,1)==-.17);           // ramp still on the old side (quick re-press) - keep the stock state
-  assert(seeded(-.6,-.3,-1)==-.6);}
+  assert(seeded(-.6,.3,-1)==-.6);
+  // F-22 flight: key direction mirrored onto the flight-engine sign (d=+1 while the key convention says -1); the ramp
+  // along the key (+0.27) still replaces the slightly opposing stock state
+  assert(seeded(-.06,.27,1)==.27);
+  manual_takeover::State s;int dir[3]{0,0,-1};bool seed[3];double sv[3];int n=0;
+  while(!manual_takeover::step(p,s,dir,dt,K,seed,sv)&&++n<60){}
+  assert(seed[2]&&sv[2]>.25&&sv[2]<.3+1e-9&&s.m[2]<0);}   // seed value is measured along the key
  std::puts("PASS takeover: held key engages at 0.3 (roll ~0.14 s, yaw ~0.1 s) with a seed equal to the keyboard ramp, taps under that stay with the instructor, hand-back at 0.8 after release, pitch/yaw own all three, reversal while held keeps the keys, re-press seeds again");
 }

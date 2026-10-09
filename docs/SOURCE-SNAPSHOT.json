@@ -1,7 +1,7 @@
 {
   "source_version": "2.4.2",
-  "snapshot_date": "2026-10-08",
-  "native_sha256": "EB256A8118D8772DF3F5616B2254B9B4D2D48D26F751DEF3E70F908A208F4841",
+  "snapshot_date": "2026-10-09",
+  "native_sha256": "E47F61923303B1A50E233D788F74490BA84F9AF946A45FCFB2CCAE4F4B14FF57",
   "note": "source/MouseAim is the complete public source of the shipped DLL (build.cmd); test.cmd runs 24 native suites, test-gpu.cmd the GPU HUD test; lua/tests holds the offline HUD/HMD script tests. Extracted game data and research tooling are not included.",
   "files": [
     {
@@ -258,7 +258,7 @@
     },
     {
       "path": "source/MouseAim/src/manual_takeover.h",
-      "sha256": "efae23f973936229174be0736b6f2ea7432357bc1c92819d490cc738b8edfb29"
+      "sha256": "069fc86017552ac5d5935d91a541e2e91593fb171f1363e56774ece60cc9f59e"
     },
     {
       "path": "source/MouseAim/src/model_control.h",
@@ -450,7 +450,7 @@
     },
     {
       "path": "source/MouseAim/takeover_logic_tests.cpp",
-      "sha256": "1d36a9d5d96647ad946570f957a8919153aefffc26b00ff25d8f011a4c62ae4e"
+      "sha256": "0c7c2e81cb5b64dff65aa90f34d2be209aac8a7f7fef754669a8b204a24d9266"
     },
     {
       "path": "source/MouseAim/test-gpu.cmd",

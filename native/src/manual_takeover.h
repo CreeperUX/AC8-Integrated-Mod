@@ -15,17 +15,21 @@ struct State{double m[3]{};int owned=0;bool engaged[3]{};};
 struct Tuning{double on=.8,off=.8;bool seed=false,hold=false;};   // defaults = 2.4.1 behaviour; the runtime passes its own
 inline constexpr Tuning war242{.3,.8,true,true};     // engage 0.3 while held, hand back at 0.8, continue from m, hold through reversals
 inline int bit(int a){return a==0?1:a==1?2:4;}
-// Command state to continue from at the handover, key direction d (+1/-1): whichever of the current stock state and
-// the keyboard ramp is further along the key - never pulls back a command the instructor already had in the key's
-// direction (F/A-18E flight: a pitch takeover cut the pull 0.97 -> 0.25), never uses a ramp still on the other side
-// after a quick re-press (roll -0.17 -> +0.58), and replaces an opposing instructor command with the ramp value.
-inline double seeded(double S,double m_prev,double d){return d*std::max(d*S,d*m_prev);}
+// Command state to continue from at the handover. d: the game's own key value sign on that flight-engine channel
+// (+1/-1); along: the keyboard ramp measured along the held key (positive = toward the key). Whichever of the
+// current stock state and the ramp is further along the key - never pulls back a command the instructor already had
+// in the key's direction (F/A-18E flight: a pitch takeover cut the pull 0.97 -> 0.25), never uses a ramp still on the
+// other side after a quick re-press (roll -0.17 -> +0.58), and replaces an opposing instructor command with the ramp.
+// `along` is measured in the key-direction convention of `dir` and applied with the game's sign d, so the result does
+// not depend on how dir maps onto the flight-engine signs (roll and yaw are mirrored: F-22 flight, a roll takeover
+// against an opposing instructor was left unseeded when the signed ramp was compared with d directly).
+inline double seeded(double S,double along,double d){return d*std::max(d*S,along);}
 // dir: held-key direction per axis (-1/0/+1). Returns the ownership mask (1 pitch, 2 yaw, 4 roll; pitch or yaw owned
 // -> all three, roll alone -> roll only). seed[a]: axis a has just passed to a held key; seed_value[a] is the
-// keyboard-only state before this frame, so one stock filter step from it lands exactly on m[a].
+// keyboard-only state before this frame measured along the held key (|seed_value| one stock step from m[a]).
 inline int step(const fe::Params& p,State& s,const int dir[3],double dt,const Tuning& k,bool seed[3],double seed_value[3]){
  for(int a=0;a<3;++a){
-  seed_value[a]=s.m[a];seed[a]=false;
+  seed_value[a]=s.m[a]*(dir[a]>0?1:dir[a]<0?-1:0);seed[a]=false;
   s.m[a]=a==1?fe::input_yaw(p,s.m[a],dir[a],dt):fe::input_axis(p,a,s.m[a],dir[a],dt);
  }
  bool act[3];
