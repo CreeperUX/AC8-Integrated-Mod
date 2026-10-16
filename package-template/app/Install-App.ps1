@@ -46,6 +46,7 @@ try{
  try{Set-Clipboard -Value $option;Write-Host '（已复制到剪贴板）'}catch{}
  Write-Host '以后从开始菜单的“AC8 Integrated”打开启动器；更新、检查并修复也在启动器里，卸载在 Windows 设置 → 应用。'
  if($import){Write-Host ('便携版仍在原处：'+$import+'。确认安装版正常后可以自行删除（其中 sessions 保存着旧的飞行记录和存档备份）。')}
+  Write-Host '如果您是虚拟机版：请直接按回车打开启动器，使用“从虚拟机游戏启动”板块选择虚拟机内的游戏目录（启动前需开启硬件虚拟化 VT-x / AMD-V）。' -ForegroundColor Yellow
  if(!$NoLaunch -and ($Yes -or (Read-Host '直接回车打开启动器；输入 N 结束') -ine 'N')){
   $launcher=[IO.Path]::Combine($InstallRoot,'AC8 Integrated.exe')
   if([IO.File]::Exists($launcher)){Start-Process -FilePath $launcher}

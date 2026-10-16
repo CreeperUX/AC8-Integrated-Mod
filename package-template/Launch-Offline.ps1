@@ -1,4 +1,4 @@
-﻿param([switch]$CleanupOnly,[switch]$CheckOnly)
+﻿param([switch]$CleanupOnly,[switch]$CheckOnly,[switch]$AllowNoSteam,[string]$GameRoot='')
 $ErrorActionPreference='Stop'
 if($CleanupOnly -and $CheckOnly){throw 'CleanupOnly and CheckOnly cannot be combined.'}
 $root=$PSScriptRoot
@@ -15,8 +15,12 @@ if(!$CleanupOnly -and !$CheckOnly){
 }
 Assert-ModEnabled
 if(!$CleanupOnly){& (Join-Path $root 'Check-Package.ps1') -PackageRoot $root}
-$gameRoot=([string](Get-Content -LiteralPath (Join-Path $data 'game-path.txt') -Raw -Encoding UTF8)).Trim()
-$gameRoot=Resolve-AC8GameRoot $gameRoot
+if($GameRoot -and $GameRoot.Trim()){
+ $gameRoot=Resolve-AC8GameRoot $GameRoot
+}else{
+ $gameRoot=([string](Get-Content -LiteralPath (Join-Path $data 'game-path.txt') -Raw -Encoding UTF8)).Trim()
+ $gameRoot=Resolve-AC8GameRoot $gameRoot
+}
 Assert-AC8PackageLocation $root $gameRoot
 $w64=[IO.Path]::GetFullPath((Join-Path $gameRoot 'Game/Binaries/Win64'))
 $exe=Join-Path $w64 'AceCombat8.exe'
@@ -74,7 +78,7 @@ $validation=Get-Content -LiteralPath (Join-Path $root 'validation-status.json') 
 if($validation.deploymentAllowed -ne $true){throw 'Candidate is gated off. No game files staged. See validation-status.json.'}
 if(Test-Path -LiteralPath $statePath){Stop-AC8Problem 'OLD_SESSION' '上一次运行尚未完成清理。' '正常关闭游戏后运行 Cleanup-Offline.cmd，再从 Steam 或 Start.cmd 启动。'}
 if(Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue){throw 'Game is already running.'}
-if(!(Get-Process -Name steam -ErrorAction SilentlyContinue)){throw 'Start Steam first.'}
+if(!$AllowNoSteam -and !(Get-Process -Name steam -ErrorAction SilentlyContinue)){throw 'Start Steam first.'}
 if(!(Test-Path -LiteralPath $exe) -or (Get-AC8FileHash -LiteralPath $exe).Hash -ne $expectedHash){throw 'Game build mismatch. This candidate supports build 25201480 only.'}
 foreach($n in 'dwmapi.dll','ue4ss','steam_appid.txt'){
  if(Test-Path -LiteralPath (Join-Path $w64 $n)){Stop-AC8Problem 'LOADER_CONFLICT' "检测到已有加载器：$n" '请从 Steam 或 Start.cmd 进入恢复流程，或运行 Recover-Cleanup.cmd 核对归属后清理。'}

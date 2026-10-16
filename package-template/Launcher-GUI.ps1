@@ -24,7 +24,7 @@ $script:themeMode=$Theme
 Set-CreeperUXTheme $window $script:themeMode
 Set-AC8WindowIcon $window
 $script:controls=@{}
-foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark','ModeDescription','Detect','GameCandidates','SteamCandidates','PackageVersion','DisableMod','EnableMod','Keybindings','FlightRecording','ExtraMods','AppUpdate','AppRepair','AutoUpdate'){$script:controls[$name]=$window.FindName($name)}
+foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','VmGamePath','BrowseVm','GuidanceOnly','MouseOnly','FullInstall','Check','Save','Start','CopyOption','LaunchOption','Recover','OpenLogs','StatusTitle','StatusMessage','StatusCard','BusyBar','PreviewRoot','ThemeToggle','StatusMark','ModeDescription','Detect','GameCandidates','SteamCandidates','PackageVersion','DisableMod','EnableMod','Keybindings','FlightRecording','ExtraMods','AppUpdate','AppRepair','AutoUpdate','StartOffline'){$script:controls[$name]=$window.FindName($name)}
 $script:worker=$null;$script:async=$null;$script:option=''
 $infoPath=Join-Path $PSScriptRoot 'package-info.json'
 if(Test-Path -LiteralPath $infoPath){
@@ -39,7 +39,7 @@ function Set-AC8GuiStatus([string]$Title,[string]$Message,[bool]$Success=$true){
  $script:controls.StatusMark.SetResourceReference([Windows.Controls.Border]::BackgroundProperty,$key)
 }
 function Set-AC8GuiBusy([bool]$Busy){
- foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','GuidanceOnly','MouseOnly','FullInstall','Check','Detect','Save','Start','Recover','GameCandidates','SteamCandidates','DisableMod','EnableMod','Keybindings','FlightRecording','ExtraMods','AppUpdate','AppRepair','AutoUpdate'){$script:controls[$name].IsEnabled=!$Busy}
+ foreach($name in 'GamePath','SteamPath','BrowseGame','BrowseSteam','VmGamePath','BrowseVm','GuidanceOnly','MouseOnly','FullInstall','Check','Detect','Save','Start','StartOffline','Recover','BrowseVm','GameCandidates','SteamCandidates','DisableMod','EnableMod','Keybindings','FlightRecording','ExtraMods','AppUpdate','AppRepair','AutoUpdate'){$script:controls[$name].IsEnabled=!$Busy}
  $script:controls.BusyBar.IsIndeterminate=[Windows.SystemParameters]::ClientAreaAnimation
  $script:controls.BusyBar.Value=50
  $script:controls.BusyBar.Visibility=if($Busy){'Visible'}else{'Collapsed'}
@@ -50,7 +50,7 @@ function Start-AC8GuiWork([string]$Action,[bool]$Confirm=$false){
  if($Action -ne 'UpdateAuto'){Set-AC8GuiStatus '正在处理…' '请稍候，完成后会在这里显示结果。'}
  try {
   $script:worker=[PowerShell]::Create()
-  [void]$script:worker.AddCommand((Join-Path $PSScriptRoot 'Gui-Worker.ps1')).AddParameter('Action',$Action).AddParameter('Root',$PSScriptRoot).AddParameter('GamePath',$script:controls.GamePath.Text).AddParameter('SteamPath',$script:controls.SteamPath.Text).AddParameter('MissileMode',(Get-AC8GuiSelectedMode $script:controls)).AddParameter('ConfirmRecovery',$Confirm)
+  [void]$script:worker.AddCommand((Join-Path $PSScriptRoot 'Gui-Worker.ps1')).AddParameter('Action',$Action).AddParameter('Root',$PSScriptRoot).AddParameter('GamePath',$script:controls.GamePath.Text).AddParameter('SteamPath',$script:controls.SteamPath.Text).AddParameter('MissileMode',(Get-AC8GuiSelectedMode $script:controls)).AddParameter('VmGamePath',[string]$script:controls.VmGamePath.Text).AddParameter('ConfirmRecovery',$Confirm)
   $script:async=$script:worker.BeginInvoke()
   $timer.Start()
  }catch{
@@ -120,11 +120,18 @@ $script:controls.BrowseGame.Add_Click({
  $dialog.Description='选择 AC8 游戏文件夹（根目录或 Win64 均可）';$dialog.ShowNewFolderButton=$false
  try{if($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$script:controls.GamePath.Text=$dialog.SelectedPath}}finally{$dialog.Dispose()}
 })
+$script:controls.BrowseVm.Add_Click({
+ $dialog=New-Object System.Windows.Forms.FolderBrowserDialog
+ $dialog.Description='选择虚拟机内的 AC8 游戏文件夹（根目录或 Win64 均可）';$dialog.ShowNewFolderButton=$false
+ try{if($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$script:controls.VmGamePath.Text=$dialog.SelectedPath}}finally{$dialog.Dispose()}
+})
 $script:controls.BrowseSteam.Add_Click({
  $dialog=New-Object Microsoft.Win32.OpenFileDialog
  $dialog.Title='选择 Steam 安装目录中的 steam.exe';$dialog.Filter='Steam 程序 (steam.exe)|steam.exe';$dialog.CheckFileExists=$true
  if($dialog.ShowDialog($window)){$script:controls.SteamPath.Text=$dialog.FileName}
+  Start-AC8GuiWork 'SaveSteam'
 })
+ if($script:controls.SteamPath -and $script:controls.SteamPath.Add_LostFocus){$script:controls.SteamPath.Add_LostFocus({if(!$script:worker -and $script:controls.SteamPath.Text -ne (Get-AC8GuiSavedPath $PSScriptRoot 'steam-path.txt')){Start-AC8GuiWork 'SaveSteam'}})}
 $script:controls.Check.Add_Click({Start-AC8GuiWork 'Check'})
 $script:controls.Detect.Add_Click({Start-AC8GuiWork 'Discover'})
 $script:controls.GameCandidates.Add_SelectionChanged({
@@ -177,6 +184,7 @@ $script:controls.AutoUpdate.Add_Click({
  catch{Set-AC8GuiStatus '设置未保存' $_.Exception.Message $false}
 })
 $script:controls.Start.Add_Click({Start-AC8GuiWork 'Start'})
+$script:controls.StartOffline.Add_Click({Start-AC8GuiWork 'StartOffline'})
 $script:controls.Recover.Add_Click({
  $message="将检查当前游戏路径中的加载器，先备份校验再清理。`n`n请确认这些残留属于 AC8 Integrated。若安装过其他 Mod 或不清楚来源，请取消。`n`n游戏路径："+$script:controls.GamePath.Text
  if(Show-CreeperUXConfirmation $window $message){Start-AC8GuiWork 'Recover' $true}
@@ -260,6 +268,7 @@ if($RenderPreview){
 try{
  $script:controls.GamePath.Text=Get-AC8GuiSavedPath $PSScriptRoot 'game-path.txt'
  $script:controls.SteamPath.Text=Get-AC8GuiSavedPath $PSScriptRoot 'steam-path.txt'
+ $script:controls.VmGamePath.Text=Get-AC8GuiSavedPath $PSScriptRoot 'vm-game-path.txt'
  Set-AC8GuiSelectedMode $script:controls (Read-FeatureSettings (Join-Path $script:dataRoot 'features.ini')).MissileMode
  Update-AC8GuiModeDescription
  $script:option=Get-AC8GuiSavedPath $PSScriptRoot 'Steam-Launch-Option.txt'
