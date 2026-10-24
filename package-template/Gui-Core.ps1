@@ -7,14 +7,14 @@ function Get-AC8GuiSavedPath([string]$Root,[string]$Name){
  if(Test-Path -LiteralPath $path -PathType Leaf){$text=Get-Content -LiteralPath $path -Raw -Encoding UTF8;if($null -ne $text){return $text.Trim()}}
  return ''
 }
-function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[ValidateSet('guidance','full','none')][string]$MissileMode){
+function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[ValidateSet('guidance','full','none')][string]$MissileMode,[string]$VmGamePath=''){
  $option='"'+(Get-AC8SteamEntry $Root)+'" %command%'
  $data=Get-AC8DataRoot $Root
  $values=[ordered]@{
   'game-path.txt'=$GameRoot
-  'steam-path.txt'=$Steam
   'features.ini'=('missile_mode='+$MissileMode)
   'Steam-Launch-Option.txt'=$option
+  'vm-game-path.txt'=$VmGamePath
  }
  $original=@{};$temporary=@{}
  try {
@@ -36,8 +36,16 @@ function Save-AC8GuiSettings([string]$Root,[string]$GameRoot,[string]$Steam,[Val
  }finally{foreach($path in $temporary.Values){if(Test-Path -LiteralPath $path){Remove-Item -LiteralPath $path -Force}}}
  return $option
 }
+function Save-AC8SteamPath([string]$Root,[string]$Steam){
+ # Steam 路径独立持久化：只写 steam-path.txt 一个文件，原子替换、失败即抛，不影响其他设置。
+ $data=Get-AC8DataRoot $Root
+ $path=Join-Path $data 'steam-path.txt'
+ $temporary=$path+'.'+[guid]::NewGuid().ToString('N')+'.tmp'
+ Set-Content -LiteralPath $temporary -Value $Steam -Encoding UTF8
+ Move-Item -LiteralPath $temporary -Destination $path -Force
+}
 function Invoke-AC8GuiAction {
- param([ValidateSet('Discover','Check','Save','Start','Recover','UpdateCheck','UpdateAuto')][string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[ValidateSet('guidance','full','none')][string]$MissileMode,[bool]$ConfirmRecovery=$false)
+ param([ValidateSet('Discover','Check','Save','SaveSteam','Start','StartOffline','Recover','UpdateCheck','UpdateAuto')][string]$Action,[string]$Root,[string]$GamePath,[string]$SteamPath,[ValidateSet('guidance','full','none')][string]$MissileMode,[bool]$ConfirmRecovery=$false,[string]$VmGamePath='')
  if($Action -in @('UpdateCheck','UpdateAuto')){return Invoke-AC8GuiUpdateCheck $Root ($Action -eq 'UpdateAuto')}
  if($Action -eq 'Discover'){
   $found=Find-AC8Installations -GamePath $GamePath -SteamPath $SteamPath
@@ -53,6 +61,42 @@ function Invoke-AC8GuiAction {
   }
   if($found.Warnings.Count){$result.Message+=' '+($found.Warnings -join ' ')}
   return $result
+ }
+ if($Action -eq 'SaveSteam'){
+  # Steam 路径独立保存：只处理 steam-path.txt，不要求游戏路径、不触发其他校验。
+  $steamInput=$SteamPath.Trim().Trim('"')
+  if($steamInput){
+   if(!(Test-Path -LiteralPath $steamInput -PathType Leaf) -or [IO.Path]::GetFileName($steamInput) -ine 'steam.exe'){
+    Stop-AC8Problem 'STEAM_PATH' '请选择有效的 steam.exe。' '点击 Steam 路径右侧的选择按钮，找到 Steam 安装目录中的 steam.exe。'
+   }
+   $steamInput=[IO.Path]::GetFullPath($steamInput)
+  }
+  Assert-AC8WriteAccess (Get-AC8DataRoot $Root)
+  Save-AC8SteamPath $Root $steamInput
+  return [pscustomobject]@{Success=$true;Title='Steam 路径已保存';Message=$(if($steamInput){'已保存 Steam 程序位置：'+$steamInput}else{'已清空 Steam 路径记录。'});GameRoot=$null;Option=$null}
+ }
+ if($Action -eq 'StartOffline'){
+  # 虚拟机启动：完全不依赖 Steam 和上方“游戏位置”。填写虚拟机游戏位置时只用该副本，否则使用上方游戏位置。
+  if($VmGamePath -and $VmGamePath.Trim()){
+   $game=Resolve-AC8GameRoot $VmGamePath
+  }else{
+   $game=Resolve-AC8GameRoot $GamePath
+  }
+  Assert-AC8PackageLocation $Root $game
+  Assert-AC8NoLinks $game
+  & (Join-Path $Root 'Check-Package.ps1') -PackageRoot $Root
+  $exe=Join-Path $game 'Game/Binaries/Win64/AceCombat8.exe'
+  if((Get-AC8FileHash -LiteralPath $exe).Hash -ne '51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'){
+   Stop-AC8Problem 'GAME_BUILD' '游戏版本与本包适配版本不一致。' '本包适配 Build 25201480，请核对游戏版本。'
+  }
+  $residuals=@(Get-AC8Residuals $game)
+  $active=Test-Path -LiteralPath (Join-Path (Get-AC8DataRoot $Root) 'active-session.json')
+  if([bool](Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue)){Stop-AC8Problem 'GAME_RUNNING' '游戏正在运行。' '请正常退出游戏，等待清理完成后再操作。'}
+  if($active -or $residuals.Count){Stop-AC8Problem 'LOADER_CONFLICT' ('存在未完成会话或加载器残留：'+($residuals -join '、')) '请先点击“备份并清理”，确认归属并完成清理后再操作。'}
+  $savedFeatures=Read-FeatureSettings (Join-Path (Get-AC8DataRoot $Root) 'features.ini')
+  if($savedFeatures.MissileMode -ne $MissileMode){Stop-AC8Problem 'UNSAVED' '当前选择尚未保存。' '先点击“保存设置”，再启动游戏。'}
+  & (Join-Path $Root 'Start-ModSession.ps1') -AllowNoSteam -GameRoot $game
+  return [pscustomobject]@{Success=$true;Title='已直接启动';Message=('Mod 已注入并启动游戏（未经 Steam）：'+$game+'。请保留启动控制台，游戏退出后会自动清理还原；云存档同步本次不可用。');GameRoot=$null;Option=$null}
  }
  $game=Resolve-AC8GameRoot $GamePath
  Assert-AC8PackageLocation $Root $game
@@ -87,7 +131,8 @@ function Invoke-AC8GuiAction {
  if($Action -eq 'Save'){
   Assert-AC8WriteAccess (Get-AC8DataRoot $Root)
   Assert-AC8WriteAccess (Join-Path $game 'Game/Binaries/Win64')
-  $option=Save-AC8GuiSettings $Root $game $steam $MissileMode
+  $option=Save-AC8GuiSettings $Root $game $steam $MissileMode $VmGamePath
+   Save-AC8SteamPath $Root $steam
   return [pscustomobject]@{Success=$true;Title='设置已保存';Message=('已保存：'+(Get-AC8GuiModeLabel $MissileMode)+'。下次启动生效。首次设置或移动整合包后，请复制启动选项到 Steam。');GameRoot=$game;Option=$option}
  }
  $savedGame=Get-AC8GuiSavedPath $Root 'game-path.txt';$savedSteam=Get-AC8GuiSavedPath $Root 'steam-path.txt'

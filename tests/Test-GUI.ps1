@@ -23,6 +23,13 @@ function Pass($text){$script:count++;Write-Host "PASS $text"}
 function Expect-Code($action,$code){$caught=$false;try{& $action}catch{if($_.Exception.Data['AC8Code'] -ne $code){throw};$caught=$true};if(!$caught){throw "Expected $code"}}
 if((Get-AC8GuiSavedPath $package 'game-path.txt') -ne '' -or (Get-AC8GuiSavedPath $package 'steam-path.txt') -ne ''){throw 'Empty first-run settings were not accepted'}
 Pass 'first launch accepts empty path settings'
+# Steam path persists independently: its own action writes only steam-path.txt, no game path required.
+$null=Invoke-AC8GuiAction SaveSteam $package '' $steam 'none'
+if((Get-AC8GuiSavedPath $package 'steam-path.txt') -ne $steam){throw 'SaveSteam did not persist the steam path'}
+Expect-Code {Invoke-AC8GuiAction SaveSteam $package '' 'C:\not\a\steam.exe' 'none'} 'STEAM_PATH'
+$badSteam=Join-Path $root 'not-steam.exe';Set-Content -LiteralPath $badSteam -Value 'fixture only'
+Expect-Code {Invoke-AC8GuiAction SaveSteam $package '' $badSteam 'none'} 'STEAM_PATH'
+Pass 'steam path saves independently with steam.exe validation'
 $before=@(Get-ChildItem -LiteralPath $game -Recurse -Force).Count
 $result=Invoke-AC8GuiAction Check $package $w64 $steam 'none'
 if(!$result.Success -or $result.GameRoot -ne $game -or @(Get-ChildItem -LiteralPath $game -Recurse -Force).Count -ne $before){throw 'GUI check wrote to game or failed normalization'}
@@ -75,7 +82,7 @@ Pass 'invalid mode rejected before configuration mutation'
 Pass 'running game blocks configuration mutation'
 # Force partial settings replacement to fail; even originally-empty files must be restored byte-for-byte.
 [IO.File]::WriteAllBytes((Join-Path $package 'steam-path.txt'),[byte[]]@())
-$names=@('game-path.txt','steam-path.txt','features.ini','Steam-Launch-Option.txt')
+$names=@('game-path.txt','steam-path.txt','features.ini','Steam-Launch-Option.txt','vm-game-path.txt')
 $original=@{};foreach($name in $names){$original[$name]=[Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $package $name)))}
 & {
  function Move-Item {param($LiteralPath,$Destination,[switch]$Force)
@@ -110,6 +117,26 @@ $null=Invoke-AC8GuiAction Save $package $game $steam 'none'
 $result=Invoke-AC8GuiAction Start $package $game $steam 'none'
 if(!$result.Success -or $result.Title -ne '已发送启动请求'){throw 'Start handoff result missing'}
 Pass 'start action delegates to Steam bridge after matching saved settings'
+# Direct offline launch: only a test stub receives the session call; the VM path must resolve to its own game copy.
+# The stub records the resolved GameRoot so tests can assert which copy was used without trusting the result object.
+$marker=Join-Path $root 'offline-stub-gameroot.txt'
+Set-Content -LiteralPath (Join-Path $package 'Start-ModSession.ps1') -Value ('param([switch]$AllowNoSteam,[string]$GameRoot) Set-Content -LiteralPath '''+$marker.Replace("'","''")+''' -Value $GameRoot') -Encoding UTF8
+$null=Invoke-AC8GuiAction Save $package $game $steam 'none'
+$result=Invoke-AC8GuiAction StartOffline $package $game $steam 'none'
+if(!$result.Success -or $result.Title -ne '已直接启动' -or $null -ne $result.GameRoot){throw 'Offline start handoff result missing or leaks GameRoot'}
+if((Get-Content -LiteralPath $marker -Raw).Trim() -ne $game){throw 'Offline start did not pass the main game root'}
+$vmRoot=Join-Path $root 'VM 游戏文件夹';$vmW64=Join-Path $vmRoot 'Game/Binaries/Win64'
+New-Item -ItemType Directory -Path $vmW64 -Force | Out-Null
+Set-Content -LiteralPath (Join-Path $vmW64 'AceCombat8.exe') -Value 'fixture only'
+$result=Invoke-AC8GuiAction StartOffline $package $game $steam 'none' $false $vmW64
+if(!$result.Success -or (Get-Content -LiteralPath $marker -Raw).Trim() -ne $vmRoot){throw 'Offline start did not resolve the VM game path'}
+if((Get-AC8GuiSavedPath $package 'vm-game-path.txt') -ne ''){throw 'Save persisted an unexpected VM path'}
+Expect-Code {Invoke-AC8GuiAction StartOffline $package $game $steam 'full' $false $vmW64} 'UNSAVED'
+# VM start is fully independent of the main game path and Steam: empty main path still works with a VM path.
+$result=Invoke-AC8GuiAction StartOffline $package '' '' 'none' $false $vmW64
+if(!$result.Success -or (Get-Content -LiteralPath $marker -Raw).Trim() -ne $vmRoot){throw 'Offline start still depends on the main game path or Steam'}
+Expect-Code {Invoke-AC8GuiAction StartOffline $package '' '' 'none'} 'GAME_PATH'
+Pass 'offline start uses VM game path with its own validation'
 & powershell.exe -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $package 'Launcher-GUI.ps1') -SmokeTest
 if($LASTEXITCODE){throw 'Real GUI dispatcher smoke failed'}
 Pass 'real WPF button, disabled busy state and asynchronous error presentation'
