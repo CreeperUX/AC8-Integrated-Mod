@@ -18,6 +18,11 @@ static uintptr_t __fastcall original_fixture(uintptr_t,bool force,uintptr_t targ
     forwarded=target;forced_arg=force;broadcast_arg=broadcast;return target;
 }
 int main(){
+    // Each build's release return address is its call site plus the call's 0x14 bytes; an unknown image has no row,
+    // and before an install the addresses are build 25201480's.
+    assert(helmet::build_for(0x6AD2D0A7,0x215A2000)&&helmet::build_for(0x6AD2D0A7,0x215A2000)->site+0x14==0x7d529e0);
+    assert(helmet::build_for(0x6AA0E27D,0x2195A000)&&helmet::build_for(0x6AA0E27D,0x2195A000)->site+0x14==0x7d630e0);
+    assert(!helmet::build_for(0x6AA0E27D,0x215A2000)&&helmet::release_return_rva==0x7d630e0&&helmet::select_rva==0x7296f40);
     alignas(8) std::array<unsigned char,0x1b00> pawn{};
     alignas(8) std::array<unsigned char,0x900> component{};
     uintptr_t items[]={0x20000,0x30000};

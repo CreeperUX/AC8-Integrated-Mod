@@ -1,5 +1,19 @@
 // Build-specific offsets independently resolved from the read-only probe and
 // native getter disassembly. Only location/rotation and the adjacent float FOV are eligible for changes.
+// The executables the camera is checked against: image identity, then the RVAs of the camera manager's vtable, its
+// slot 241 update, the camera cache getter and the actor function whose +0x19 reads the root component. Steam build
+// 26002268's were found from 25201480's code by masked signatures (one match each), and its field offsets (0x1A0,
+// 0x220, 0x14A0, 0x14D0) are unchanged in both builds' reflected layouts.
+struct CameraBuild {DWORD stamp,image;uintptr_t vtable,update,cache,actor;};
+constexpr CameraBuild camera_builds[]={
+    {0x6AA0E27D,0x2195A000,0xC9D3160,0x70C8ED0,0x48FC6B0,0x3FD7430},  // Steam build 25201480
+    {0x6AD2D0A7,0x215A2000,0xC9BCE20,0x70B4960,0x48EF260,0x3FCABB0},  // Steam build 26002268
+};
+inline const CameraBuild* camera_build_for(DWORD stamp,DWORD image){
+    for(const auto& b:camera_builds)if(b.stamp==stamp&&b.image==image)return &b;
+    return nullptr;
+}
+uintptr_t camera_vtable_rva=camera_builds[0].vtable;  // the running build's, once install_native_camera matched it
 using CameraUpdate = void(__fastcall*)(void*,float);
 CameraUpdate original_camera_update=nullptr;
 struct CameraCommand { uintptr_t manager=0,pawn=0; double p=0,y=0,r=0; ULONGLONG tick=0; };
@@ -69,7 +83,7 @@ bool apply_native_camera(void* manager,const CameraCommand& cmd,int mode,CameraS
     __try {
         auto base=reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
         native_camera_reject=CAM_VTABLE;
-        if(*reinterpret_cast<uintptr_t*>(manager)!=base+0xC9D3160) return false;
+        if(*reinterpret_cast<uintptr_t*>(manager)!=base+camera_vtable_rva) return false;
         native_camera_reject=CAM_ROOT;
         auto root=*reinterpret_cast<uintptr_t*>(cmd.pawn+0x1A0);
         if(root<65536||(root&7)) return false;
@@ -177,19 +191,21 @@ bool install_native_camera() {
     const unsigned char update_bytes[]={0x48,0x8B,0xC4,0x48,0x89,0x58,0x18,0x57,0x48,0x81,0xEC,0x40,0x01,0,0};
     const unsigned char cache_bytes[]={0x48,0x8D,0x81,0xA0,0x14,0,0,0xC3};
     const unsigned char actor_bytes[]={0x48,0x8B,0x81,0xA0,0x01,0,0};
-    if(nt->FileHeader.TimeDateStamp!=0x6AA0E27D || nt->OptionalHeader.SizeOfImage!=0x2195A000 ||
-       memcmp(base+0x70C8ED0,update_bytes,sizeof(update_bytes)) ||
-       memcmp(base+0x48FC6B0,cache_bytes,sizeof(cache_bytes)) ||
-       memcmp(base+0x3FD7430+0x19,actor_bytes,sizeof(actor_bytes))) {
+    const CameraBuild* build=camera_build_for(nt->FileHeader.TimeDateStamp,nt->OptionalHeader.SizeOfImage);
+    if(!build ||
+       memcmp(base+build->update,update_bytes,sizeof(update_bytes)) ||
+       memcmp(base+build->cache,cache_bytes,sizeof(cache_bytes)) ||
+       memcmp(base+build->actor+0x19,actor_bytes,sizeof(actor_bytes))) {
         log_line("native camera refused: executable identity/signature mismatch"); return false;
     }
-    auto slot=reinterpret_cast<void**>(base+0xC9D3160+241*sizeof(void*));
-    if(*slot!=base+0x70C8ED0) { log_line("native camera refused: vtable slot already changed"); return false; }
+    auto slot=reinterpret_cast<void**>(base+build->vtable+241*sizeof(void*));
+    if(*slot!=base+build->update) { log_line("native camera refused: vtable slot already changed"); return false; }
+    camera_vtable_rva=build->vtable;
     DWORD protection=0;
     if(!VirtualProtect(slot,sizeof(void*),PAGE_READWRITE,&protection)) return false;
     original_camera_update=reinterpret_cast<CameraUpdate>(*slot);
     InterlockedExchangePointer(slot,reinterpret_cast<void*>(&update_native_camera));
     DWORD ignored=0; VirtualProtect(slot,sizeof(void*),protection,&ignored);
-    log_line("native camera post-update registered; activation requires matching live manager and fresh pose");
+    log_line("native camera post-update registered for image %08lX; activation requires matching live manager and fresh pose",build->stamp);
     return true;
 }

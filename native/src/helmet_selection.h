@@ -1,9 +1,21 @@
-// AC8 build 25201480. SelectTarget(bool bForcedSelect, LiveGameObject*
+// AC8 builds 25201480 and 26002268. SelectTarget(bool bForcedSelect, LiveGameObject*
 // OverrideTarget, bool bForceBroadcast). Only the player release call site is
 // eligible; automatic, scripted and weapon-change calls retain stock behavior.
 #include <intrin.h>
 namespace helmet {
-constexpr uintptr_t select_rva=0x7296f40, release_return_rva=0x7d630e0;
+// Per build: image identity, SelectTarget's RVA, and the release call site's RVA (the call ends at site+0x14, its
+// return address). Build 26002268's were found from 25201480's code by masked signatures (one match each), and the
+// component offsets (0x1ae8, 0x750, 0x870) are unchanged in both builds' reflected layouts.
+struct Build {DWORD stamp,image;uintptr_t select,site;};
+constexpr Build builds[]={
+    {0x6AA0E27D,0x2195A000,0x7296f40,0x7d630cc},  // Steam build 25201480
+    {0x6AD2D0A7,0x215A2000,0x7283700,0x7d529cc},  // Steam build 26002268
+};
+inline const Build* build_for(DWORD stamp,DWORD image){
+    for(const auto& b:builds)if(b.stamp==stamp&&b.image==image)return &b;
+    return nullptr;
+}
+uintptr_t select_rva=builds[0].select, release_return_rva=builds[0].site+0x14;  // the running build's after install
 struct Snapshot {uintptr_t pawn=0,component=0,selected=0,candidate=0;uint64_t tick=0;};
 Snapshot snapshot; // Written and consumed only on the verified game thread.
 using Select=uintptr_t(__fastcall*)(uintptr_t,bool,uintptr_t,bool);
@@ -71,12 +83,17 @@ uintptr_t __fastcall select(uintptr_t component,bool forced,uintptr_t target,boo
 bool install() {
     auto base=reinterpret_cast<unsigned char*>(GetModuleHandleW(nullptr));
     const unsigned char caller[]={0x48,0x8b,0x8b,0xe8,0x1a,0,0,0x45,0x33,0xc9,0x45,0x33,0xc0,0x33,0xd2,0xe8};
+    auto* nt=reinterpret_cast<const IMAGE_NT_HEADERS64*>(base+reinterpret_cast<const IMAGE_DOS_HEADER*>(base)->e_lfanew);
+    const Build* build=build_for(nt->FileHeader.TimeDateStamp,nt->OptionalHeader.SizeOfImage);
     bool match=false;
-    __try {match=memcmp(base+select_rva,entry_bytes,sizeof(entry_bytes))==0 &&
-        memcmp(base+0x7d630cc,caller,sizeof(caller))==0 &&
-        *reinterpret_cast<const int32_t*>(base+0x7d630dc)==int32_t(select_rva-release_return_rva);
-    } __except(EXCEPTION_EXECUTE_HANDLER) {match=false;}
+    if(build) {
+        __try {match=memcmp(base+build->select,entry_bytes,sizeof(entry_bytes))==0 &&
+            memcmp(base+build->site,caller,sizeof(caller))==0 &&
+            *reinterpret_cast<const int32_t*>(base+build->site+0x10)==int32_t(build->select-(build->site+0x14));
+        } __except(EXCEPTION_EXECUTE_HANDLER) {match=false;}
+    }
     if(!match){log_line("HMD unavailable: selection signature mismatch; stock selection retained");return false;}
+    select_rva=build->select;release_return_rva=build->site+0x14;
     auto status=MH_CreateHook(base+select_rva,reinterpret_cast<void*>(&select),reinterpret_cast<void**>(&original));
     if(status==MH_ERROR_MEMORY_ALLOC){
         supported=install_absolute(base+select_rva,reinterpret_cast<void*>(&select),original);
