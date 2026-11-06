@@ -23,7 +23,6 @@ $exe=Join-Path $w64 'AceCombat8.exe'
 $statePath=Join-Path $data 'active-session.json'
 . (Join-Path $root 'Cleanup-Core.ps1')
 Assert-AC8NoLinks $w64
-$expectedHash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'
 $operation=$null
 if(!$CheckOnly){$operation=Enter-AC8Operation $gameRoot}
 try {
@@ -75,7 +74,7 @@ if($validation.deploymentAllowed -ne $true){throw 'Candidate is gated off. No ga
 if(Test-Path -LiteralPath $statePath){Stop-AC8Problem 'OLD_SESSION' '上一次运行尚未完成清理。' '正常关闭游戏后运行 Cleanup-Offline.cmd，再从 Steam 或 Start.cmd 启动。'}
 if(Get-Process -Name AceCombat8 -ErrorAction SilentlyContinue){throw 'Game is already running.'}
 if(!(Get-Process -Name steam -ErrorAction SilentlyContinue)){throw 'Start Steam first.'}
-if(!(Test-Path -LiteralPath $exe) -or (Get-AC8FileHash -LiteralPath $exe).Hash -ne $expectedHash){throw 'Game build mismatch. This candidate supports build 25201480 only.'}
+if(!(Get-AC8GameBuild $exe)){throw 'Game build mismatch. This candidate supports builds 25201480 and 26002268 only.'}
 foreach($n in 'dwmapi.dll','ue4ss','steam_appid.txt'){
  if(Test-Path -LiteralPath (Join-Path $w64 $n)){Stop-AC8Problem 'LOADER_CONFLICT' "检测到已有加载器：$n" '请从 Steam 或 Start.cmd 进入恢复流程，或运行 Recover-Cleanup.cmd 核对归属后清理。'}
 }
