@@ -28,6 +28,22 @@ $result=Invoke-AC8GuiAction Check $package $w64 $steam 'none'
 if(!$result.Success -or $result.GameRoot -ne $game -or @(Get-ChildItem -LiteralPath $game -Recurse -Force).Count -ne $before){throw 'GUI check wrote to game or failed normalization'}
 Pass 'read-only environment check and root normalization'
 & {
+ function Get-AC8FileHash {param($LiteralPath)
+  if([IO.Path]::GetFileName($LiteralPath) -eq 'AceCombat8.exe'){return [pscustomobject]@{Hash='3E47FD42858D1F2B81E59D7F57394A014C0EB6AAF4C02EE3DA351B6A42936BE2'}}
+  Microsoft.PowerShell.Utility\Get-FileHash -LiteralPath $LiteralPath
+ }
+ $result=Invoke-AC8GuiAction Check $package $w64 $steam 'none'
+ if(!$result.Success -or $result.GameRoot -ne $game){throw 'GUI check refused build 26002268'}
+}
+& {
+ function Get-AC8FileHash {param($LiteralPath)
+  if([IO.Path]::GetFileName($LiteralPath) -eq 'AceCombat8.exe'){return [pscustomobject]@{Hash=('0'*64)}}
+  Microsoft.PowerShell.Utility\Get-FileHash -LiteralPath $LiteralPath
+ }
+ Expect-Code {Invoke-AC8GuiAction Check $package $w64 $steam 'none'} 'GAME_BUILD'
+}
+Pass 'environment check accepts build 26002268 and refuses an unknown game build'
+& {
  $fixtureDiscovery=[pscustomobject]@{GamePath=$game;SteamPath=$steam;GameCandidates=@($game);SteamCandidates=@($steam);Warnings=@()}
  function Find-AC8Installations {param($GamePath,$SteamPath) return $fixtureDiscovery}
  $beforeSettings=Get-Content -LiteralPath (Join-Path $package 'features.ini') -Raw

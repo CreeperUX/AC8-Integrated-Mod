@@ -37,6 +37,10 @@ int main(){
  alignas(8) std::array<unsigned char,0x1600> manager{};
  manager.fill(0x5a);
  auto base=reinterpret_cast<uintptr_t>(GetModuleHandleW(nullptr));
+ // Both Steam builds have a camera row and an unknown image has none; before an install the vtable is 25201480's.
+ assert(camera_build_for(0x6AA0E27D,0x2195A000)&&camera_build_for(0x6AA0E27D,0x2195A000)->vtable==0xC9D3160);
+ assert(camera_build_for(0x6AD2D0A7,0x215A2000)&&camera_build_for(0x6AD2D0A7,0x215A2000)->update==0x70B4960);
+ assert(!camera_build_for(0x6AD2D0A7,0x2195A000)&&!camera_build_for(0,0)&&camera_vtable_rva==0xC9D3160);
  *reinterpret_cast<uintptr_t*>(manager.data())=base+0xC9D3160;
  *reinterpret_cast<uintptr_t*>(pawn.data()+0x1A0)=reinterpret_cast<uintptr_t>(root.data());
  double position[3]={100000000,200000000,300000000};memcpy(root.data()+0x220,position,sizeof(position));

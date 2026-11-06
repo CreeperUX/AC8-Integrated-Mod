@@ -45,6 +45,26 @@ $fakeSteam=Join-Path $root 'steam.exe';Set-Content -LiteralPath $fakeSteam -Valu
 if((Get-Content -LiteralPath (Join-Path $package 'game-path.txt') -Raw -Encoding UTF8).Trim() -ne $game){throw 'Setup persisted wrong root'}
 if((Get-Content -LiteralPath (Join-Path $package 'features.ini') -Raw) -notmatch 'missile_mode=none'){throw 'Feature retry failed'}
 Pass 'actual Setup retries wrong path and menu choice, then saves normalized configuration'
+& {
+ function Get-AC8FileHash {param($LiteralPath) return [pscustomobject]@{Hash=$global:AC8UXHash}}
+ $global:AC8UXHash='51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'
+ if((Get-AC8GameBuild $exe) -ne '25201480'){throw 'Build 25201480 not recognized'}
+ $global:AC8UXHash='3E47FD42858D1F2B81E59D7F57394A014C0EB6AAF4C02EE3DA351B6A42936BE2'
+ if((Get-AC8GameBuild $exe) -ne '26002268'){throw 'Build 26002268 not recognized'}
+ $global:AC8UXHash='0'*64
+ if($null -ne (Get-AC8GameBuild $exe)){throw 'Unknown game build accepted'}
+ if($null -ne (Get-AC8GameBuild (Join-Path $w64 'missing.exe'))){throw 'Missing EXE accepted'}
+}
+& {
+ $global:AC8UXAnswers=New-Object 'System.Collections.Generic.Queue[string]';$global:AC8UXAnswers.Enqueue($w64)
+ function Read-Host {param($Prompt) if(!$global:AC8UXAnswers.Count){throw 'Unexpected prompt'};return $global:AC8UXAnswers.Dequeue()}
+ function Get-AC8FileHash {param($LiteralPath)
+  if($LiteralPath -eq $exe){return [pscustomobject]@{Hash='0'*64}}
+  Microsoft.PowerShell.Utility\Get-FileHash -LiteralPath $LiteralPath
+ }
+ Expect-Code {& (Join-Path $package 'Setup.ps1')} 'GAME_BUILD'
+}
+Pass 'game builds 25201480 and 26002268 recognized; Setup refuses any other AceCombat8.exe'
 $ue=Join-Path $w64 'ue4ss';New-Item -ItemType Directory -Path $ue | Out-Null
 Set-Content -LiteralPath (Join-Path $ue 'AC8SourceInit-owner.txt') -Value ([guid]::NewGuid().ToString())
 & {function Read-Host {param($Prompt) return ''};Expect-Code {Repair-AC8ResidualsInteractive $package $game} 'LOADER_CONFLICT'}

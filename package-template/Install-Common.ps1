@@ -19,6 +19,16 @@ function Resolve-AC8GameRoot([string]$InputPath) {
  }
  Stop-AC8Problem 'GAME_PATH' '未在所选位置找到 AC8 游戏。' 'Steam → 游戏 → 管理 → 浏览本地文件，复制打开的文件夹路径。输入 Q 可取消。'
 }
+# Steam build of AceCombat8.exe from its SHA-256; $null for a missing file or a build this package does not support.
+# The native module checks its own addresses per build as well (native_camera.h, helmet_selection.h).
+function Get-AC8GameBuild([string]$Exe) {
+ $builds=@{
+  '51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F'='25201480'
+  '3E47FD42858D1F2B81E59D7F57394A014C0EB6AAF4C02EE3DA351B6A42936BE2'='26002268'
+ }
+ if(!(Test-Path -LiteralPath $Exe -PathType Leaf)){return $null}
+ return $builds[[string](Get-AC8FileHash -LiteralPath $Exe).Hash]
+}
 function Assert-AC8PackageLocation([string]$PackageRoot,[string]$GameRoot) {
  $package=[IO.Path]::GetFullPath($PackageRoot).TrimEnd('\','/')
  $game=[IO.Path]::GetFullPath($GameRoot).TrimEnd('\','/')
