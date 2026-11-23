@@ -2,7 +2,7 @@
   "deploymentAllowed": true,
   "candidateOnly": false,
   "releaseAccepted": true,
-  "scope": "Stable 2.5.2 release gate: 23-suite native gate; the 24 public native suites and the GPU HUD test built from the shipped source; offline Lua HUD/HMD tests; package, settings, launcher (hosted AC8 Integrated.exe), cleanup/archive, key-settings, extra-mod manager (mods with their own IoStore assets, deployed copies not archived) and installed-app tests (setup, import, signed update and its refusals, repair, rollback, uninstall, launcher in use); the 2.5 installed app flown 2026-10-15 (F/A-18E); flight control unchanged from 2.4.2 (flown), WAR as the startup default; not a claim of exhaustive in-game acceptance.",
-  "nativeControllerVersion": "2.5.2",
-  "gameBuild": "25201480"
+  "scope": "Stable 2.5.3 release gate: Steam game builds 26002268 and 25201480 (launcher hash table; native camera and HMD addresses per build, checked read-only against the 26002268 executable; flight-control fingerprint unchanged); 23-suite native gate; the 24 public native suites and the GPU HUD test built from the shipped source; offline Lua HUD/HMD tests; package, settings, launcher (hosted AC8 Integrated.exe), cleanup/archive, key-settings, extra-mod manager (mods with their own IoStore assets, deployed copies not archived) and installed-app tests (setup, import, signed update and its refusals, repair, rollback, uninstall, launcher in use); the 2.5 installed app flown 2026-10-15 (F/A-18E); flight control unchanged from 2.4.2 (flown), WAR as the startup default; not a claim of exhaustive in-game acceptance.",
+  "nativeControllerVersion": "2.5.3",
+  "gameBuild": "26002268"
 }

@@ -10,7 +10,7 @@
 
 ## 安装
 
-1. 从 GitHub 发布页下载 **AC8-Integrated-Setup-v2.5.2.exe**。安装程序没有代码签名证书，Windows 可能提示“Windows 已保护你的电脑”，点击“更多信息”→“仍要运行”。
+1. 从 GitHub 发布页下载 **AC8-Integrated-Setup-v2.5.3.exe**。安装程序没有代码签名证书，Windows 可能提示“Windows 已保护你的电脑”，点击“更多信息”→“仍要运行”。
 2. 退出游戏后运行。程序安装到当前用户的 `%LOCALAPPDATA%\Programs\AC8 Integrated`，不需要管理员权限，不改动游戏目录和 Steam 设置。
 3. 正在使用便携版时，安装程序会根据 Steam 启动选项找到它，询问是否导入设置、键位、安装范围、游戏和 Steam 路径以及附加 Mod。便携版本身不会被改动。
 4. 把安装程序显示的一行（已复制到剪贴板）粘贴到 Steam → AC8 → 属性 → 通用 → 启动选项，替换原有内容。形式为：

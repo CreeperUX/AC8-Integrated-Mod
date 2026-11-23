@@ -1,3 +1,9 @@
+## 2.5.3
+
+- Steam game build 26002268 (2026-11-02 update, #9, #10; PR #11 by bakasayaka): Get-AC8GameBuild maps each supported AceCombat8.exe hash to its build; Setup, the environment check and Launch-Offline accept 26002268 and 25201480 and still refuse any other build (GAME_BUILD).
+- Native camera and HMD selection keep one row per build (image TimeDateStamp/SizeOfImage and RVAs) and install for the running build after the same byte checks. The flight-control hook fingerprint matches both builds unchanged.
+- version.json and validation-status.json name build 26002268 (supported_game_builds lists both). Version 2.5.3; flight control unchanged.
+
 ## 2.5.2
 
 - Extra-mod manager: Pak/IoStore files inside a mod folder are installed with the mod (PW-MkI: AC8OverrideLoader\payloads mounts them); only Pak files outside every mod folder are left out with a note. The zip's own UE4SS loader is still never installed.

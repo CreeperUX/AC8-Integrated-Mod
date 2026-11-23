@@ -1,7 +1,7 @@
 {
-  "source_version": "2.5.2",
-  "snapshot_date": "2026-10-22",
-  "native_sha256": "1F0644A5CAAE181428E45F73450C75FEACBCB4CD92EBAF2655098EAFA7494AB6",
+  "source_version": "2.5.3",
+  "snapshot_date": "2026-11-23",
+  "native_sha256": "5AF00958DC3BA4C5C1D670C6BE36C2A7FA0BC7F6787A646FE91A31F31ECC361A",
   "note": "source/MouseAim is the complete public source of the shipped DLL (build.cmd); test.cmd runs 24 native suites, test-gpu.cmd the GPU HUD test; lua/tests holds the offline HUD/HMD script tests. Extracted game data and research tooling are not included.",
   "files": [
     {
@@ -14,7 +14,7 @@
     },
     {
       "path": "source/MouseAim/camera_context_tests.cpp",
-      "sha256": "032ef1907ea37bf4fdc11b8ec081131ee2aad41f9a9d6fe1a10ca1ec6784cd41"
+      "sha256": "b35cd5f2edd668a4ce1a70429545e9ae67cdaffb60f5dfbeca79e6b3cc6fa978"
     },
     {
       "path": "source/MouseAim/capture_adaptation_tests.cpp",
@@ -46,7 +46,7 @@
     },
     {
       "path": "source/MouseAim/helmet_tests.cpp",
-      "sha256": "a5b064dd3e9b49261238db7a47f3c7a49ed6ca5262e7eb47801d5aae7aaf947e"
+      "sha256": "0c104d83dbb0c34ab5754c239da916651022855c4c41dd3881e07a44a04a4bfb"
     },
     {
       "path": "source/MouseAim/hud_interpolation_tests.cpp",
@@ -238,7 +238,7 @@
     },
     {
       "path": "source/MouseAim/src/helmet_selection.h",
-      "sha256": "ffa3f2c5bde9fcfb24e765a651bce61953cce91341d211db6cead7dc7a5ac5cc"
+      "sha256": "b8e99d72e08f663a803e2fd8477765026919779721ba46a737ae4e5b6288c2f7"
     },
     {
       "path": "source/MouseAim/src/hud_frame_cache.h",
@@ -290,11 +290,11 @@
     },
     {
       "path": "source/MouseAim/src/mouse_aim.cpp",
-      "sha256": "7cbefe78815c1e16667a412b812e058b31e9accbc199e1e5c41fb38674d7b757"
+      "sha256": "0297fbb81eda73b18a187b7d359ce4fcd61f23c5177a31e5c19d671d9d6bb47a"
     },
     {
       "path": "source/MouseAim/src/native_camera.h",
-      "sha256": "b4226fc1b0c8cf7741d2367e8459bfa99bd23af1920b67e4feb9fca4531020b4"
+      "sha256": "f6267ddeb554193014b9f8c545ffec78e89112f610aed5623ce0e5a2286675d1"
     },
     {
       "path": "source/MouseAim/src/online_assist_runtime.h",

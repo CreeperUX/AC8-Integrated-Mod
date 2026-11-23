@@ -51,8 +51,8 @@ python scripts/build-package.py --runtime-root "D:\Mods\AC8-Integrated-v2.3.2-sh
 # 一次性：生成更新签名密钥。私钥加密保存在仓库之外（只有当前 Windows 用户能解密），公钥写入 package-template/app/update-key.xml。
 powershell -File scripts/new-update-key.ps1 -PrivateKeyPath "<仓库之外>\ac8-update-signing.key"
 # 每次发布：为 share.zip 生成签名的 update-manifest.json(.sig)，并用 IExpress 生成安装程序。
-powershell -File scripts/sign-release.ps1 -Zip dist\AC8-Integrated-v2.5.2-share.zip -PrivateKeyPath "<…>\ac8-update-signing.key"
-powershell -File scripts/build-setup.ps1 -Zip dist\AC8-Integrated-v2.5.2-share.zip
+powershell -File scripts/sign-release.ps1 -Zip dist\AC8-Integrated-v2.5.3-share.zip -PrivateKeyPath "<…>\ac8-update-signing.key"
+powershell -File scripts/build-setup.ps1 -Zip dist\AC8-Integrated-v2.5.3-share.zip
 ```
 
 安装版从 GitHub `releases/latest` 读取 `update-manifest.json` 与 `.sig`，用包内公钥校验签名，再核对 zip 的大小、SHA-256 和 `FILES.sha256`。签名脚本会用 zip 内的公钥复核，公私钥不匹配时拒绝生成。安装版的结构、更新、修复、回退与卸载见 `package-template/app/App-Core.ps1`，测试见 `tests/Test-App.ps1`。

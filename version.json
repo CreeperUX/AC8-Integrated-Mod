@@ -1,10 +1,10 @@
 {
-  "version": "2.5.2",
+  "version": "2.5.3",
   "status": "release",
-  "game_build": "25201480",
-  "game_sha256": "51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F",
+  "game_build": "26002268",
+  "game_sha256": "3E47FD42858D1F2B81E59D7F57394A014C0EB6AAF4C02EE3DA351B6A42936BE2",
   "steam_app_id": 2288340,
-  "native_controller_version": "2.5.2 (WAR 13.8)",
+  "native_controller_version": "2.5.3 (WAR 13.8)",
   "functional_baseline": "2.4.2",
   "release_approved": true,
   "control_modes": {
@@ -16,5 +16,9 @@
     "2": 3,
     "4": 3,
     "5": 3
+  },
+  "supported_game_builds": {
+    "26002268": "3E47FD42858D1F2B81E59D7F57394A014C0EB6AAF4C02EE3DA351B6A42936BE2",
+    "25201480": "51510E2A520565DBE81FB0D569E95CD4393077ACAAA859371489B80B8128829F"
   }
 }
