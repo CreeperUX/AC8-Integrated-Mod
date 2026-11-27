@@ -933,7 +933,12 @@ bool prepare_hook() {
 
 bool offline_authorized() {
     wchar_t value[16]{};
-    return GetEnvironmentVariableW(L"EOS_USE_ANTICHEATCLIENTNULL", value, 16) > 0 && wcscmp(value, L"1") == 0;
+    if (GetEnvironmentVariableW(L"EOS_USE_ANTICHEATCLIENTNULL", value, 16) > 0 && wcscmp(value, L"1") == 0) return true;
+    // AC8 co-op LAN sessions (coop/lan-integration branch): the co-op launcher sets AC8COOP_PRIVATE_SESSION=1 only for
+    // a game it starts on the private LAN path after its own Easy Anti-Cheat precheck has passed, and it never sets
+    // EOS_USE_ANTICHEATCLIENTNULL. Such a session never reaches official online play.
+    value[0] = 0;
+    return GetEnvironmentVariableW(L"AC8COOP_PRIVATE_SESSION", value, 16) > 0 && wcscmp(value, L"1") == 0;
 }
 bool bridge_verified=false;
 DWORD bridge_thread=0;
